@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  doc-page:not(:defined) { visibility: hidden; }
+  body { margin: 0; }
+  a { color: #1F5C46; }
+  a:hover { color: #123A2C; }
+</style>
+<script src="./doc-page.js"></script>
+</helmet>
+<doc-page margin="0.8in">
+<div style="font-family: 'Instrument Sans', system-ui, sans-serif; color: #17191C; font-size: 14.5px; line-height: 1.6;">
+
+<h1 style="font-size: 30px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 8px; line-height: 1.15;">Stage 0 — Foundation and Technology Choice</h1>
+<p style="margin: 0 0 6px; font-size: 15px; color: #45483F;">The two weeks of work that make the existing tracker safe to build a CRM on, and the stack the rest of the system should be written in. Every component runs on a permanent free tier — $0 per month, no card required.</p>
+<p style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; margin: 0 0 26px;">Companion to the stage-wise development plan</p>
+
+<h2 style="font-size: 19px; font-weight: 600; margin: 0 0 10px; letter-spacing: -0.01em;">1. Technology recommendation</h2>
+<p style="margin: 0 0 12px;">Short answer: keep Supabase, replace the front end. The database side of what you built is the right choice and switching it would cost months for no gain. The browser side — one 1,400-line file that rebuilds the page with <code style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: #F1EFE9; padding: 1px 4px; border-radius: 3px;">innerHTML</code> — will not survive nine more stages of features.</p>
+
+<table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 0 0 14px;">
+<thead>
+<tr style="background: #F4F3EF;">
+<th style="text-align: left; padding: 8px 10px; border-bottom: 1.5px solid #17191C; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; width: 132px;">Layer</th>
+<th style="text-align: left; padding: 8px 10px; border-bottom: 1.5px solid #17191C; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; width: 168px;">Choice</th>
+<th style="text-align: left; padding: 8px 10px; border-bottom: 1.5px solid #17191C; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500;">Why</th>
+</tr>
+</thead>
+<tbody>
+<tr style="break-inside: avoid;"><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Database</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Supabase Postgres</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Already in production. Row-level security enforces roles in the data layer, which is exactly what Stage 0 needs.</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Auth</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Supabase Auth + Google</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Working today. Add role claims and, later, a separate client-portal role.</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Front end</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Vite + React + TypeScript</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Every query goes straight to Supabase and is policed by RLS, so no server of our own is needed — the app compiles to static files that any free host serves. TypeScript types are generated from the Postgres schema, so a column rename becomes a compile error instead of a blank screen.</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Data fetching</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">TanStack Query</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Caching, retries, loading and error states as standard — it fixes the silent-failure and full-re-render problems structurally, not case by case.</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Styling</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Tailwind + shadcn/ui</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Tables, dialogs, date pickers and forms already built and accessible. A CRM is mostly these.</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Background jobs</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Supabase Edge Functions + pg_cron</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Needed from Stage 4 for nightly Search Console and GA4 pulls. No separate server to run.</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Charts</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Recharts</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Enough for trend lines and deltas; no licence cost.</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Hosting</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Cloudflare Pages</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Free for commercial use with unlimited bandwidth and a preview URL per branch. Netlify or GitHub Pages are equivalent fallbacks.</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Migrations</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Supabase CLI + Git</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Schema changes reviewed and reversible instead of typed into the dashboard.</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Repo &amp; automation</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">GitHub + Actions</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Unlimited private repositories, and 2,000 free Actions minutes a month — enough to run the nightly database backup the free Supabase tier does not give you.</td></tr>
+</tbody>
+</table>
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 8px;">Staying at zero, honestly</h3>
+<p style="margin: 0 0 10px;">The free tiers are not trials. Supabase permits commercial use on the free plan and the current allowance is 500 MB of database per project, two active projects, 50,000 monthly active users, 5 GB of egress and 500,000 edge-function calls. For an in-house tool with seven to fifteen users that is not tight. Three constraints do need managing:</p>
+<ul style="margin: 0 0 10px; padding-left: 20px;">
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">The 7-day inactivity pause.</strong> A free project with no database queries for a week is paused and has to be resumed manually. A tool your team opens daily never trips this; the staging project will, so expect to wake it before use, or point a free uptime pinger at it.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">No backups on the free plan.</strong> There is no daily backup and no point-in-time recovery, so this is the one thing you must build yourself: a GitHub Action running <code style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: #F1EFE9; padding: 1px 4px; border-radius: 3px;">pg_dump</code> nightly into a private repository or Cloudflare R2's free tier. It is half a day of work in Stage 0 and it is not optional.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">500 MB fills up at Stage 4.</strong> Daily Search Console rows per client are the only thing in this system with real volume. Store daily data for 90 days, roll everything older into monthly aggregates, and keep query-level detail only for tracked keywords. Done that way, fifteen clients stay well inside the cap for years.</li>
+</ul>
+<p style="margin: 0 0 18px;">Data sources also stay free: the Search Console API, the GA4 Data API and the Meta Graph API cost nothing. Paid rank tracking and backlink authority scores from Stages 4 and 5 are the only genuinely paid items in the whole plan — drop them, use Search Console's own average position for ranking and manual checks for link quality, and the number stays zero. If you ever outgrow the free tier, the escape hatch is an Oracle Cloud always-free VM running self-hosted Supabase, which is still $0 but costs you server maintenance instead.</p>
+
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 8px;">Alternatives, and why not</h3>
+<table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 0 0 14px;">
+<thead>
+<tr style="background: #F4F3EF;">
+<th style="text-align: left; padding: 8px 10px; border-bottom: 1.5px solid #17191C; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; width: 168px;">Option</th>
+<th style="text-align: left; padding: 8px 10px; border-bottom: 1.5px solid #17191C; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500;">Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr style="break-inside: avoid;"><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Laravel + MySQL</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Excellent for CRUD CRMs and cheap to hire for, but it means rewriting the working database and losing realtime. Choose it only if your developer is a PHP specialist.</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Django + Postgres</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Strong admin scaffolding and good for the data-pipeline stages, but you would run and pay for your own infrastructure from day one.</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Airtable / Notion / Monday</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Fastest path to Stages 1–3, but the Stage 4 data volume (daily Search Console rows per client) breaks these tools, and you cannot build a white-label client portal on them.</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Self-hosted Supabase on a free VM</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Oracle Cloud's always-free tier can run the whole stack at no cost with no storage cap, but you own patching, uptime and backups. Hold it in reserve for when 500 MB becomes real, not now.</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Keep vanilla JS</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Viable for one more stage, then every new screen gets slower to build. The re-render bug is a symptom of the architecture, not a typo.</td></tr>
+</tbody>
+</table>
+
+<div style="break-inside: avoid; border-left: 3px solid #1F5C46; background: #F3F6F4; padding: 14px 18px; margin: 0 0 22px;">
+<p style="margin: 0; font-size: 14px;"><strong style="font-weight: 600;">Migration approach: no big bang.</strong> The current tracker stays live and in daily use. The new app is built beside it against the same database, screen by screen, starting with the Stage 1 account record. When a screen is better in the new app, the old tab is removed. The team never loses a working tool, and no data is migrated because there is only one database.</p>
+</div>
+
+<h2 style="font-size: 19px; font-weight: 600; margin: 0 0 10px; letter-spacing: -0.01em; break-before: page;">2. Stage 0 scope</h2>
+<p style="margin: 0 0 16px;">Six workstreams. None of them add a feature; all of them are prerequisites.</p>
+
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 6px;">0.1 Roles and row-level security <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 400; color: #6E7168;">· 4 days · highest priority</span></h3>
+<p style="margin: 0 0 8px;">Today <code style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: #F1EFE9; padding: 1px 4px; border-radius: 3px;">isAdmin()</code> runs in the browser and the anon key is public in the page source. Anyone who signs in with any Google account can query your tables directly with a few lines of JavaScript. The fix is to move the decision into Postgres.</p>
+<pre style="break-inside: avoid; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; line-height: 1.55; background: #F7F6F2; border: 1px solid #E2E0D8; border-radius: 6px; padding: 12px 14px; margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere;">-- 1. role as a real type, on the existing team_members table
+create type member_role as enum ('admin', 'manager', 'member', 'client');
+alter table team_members alter column role type member_role using role::member_role;
+
+-- 2. helper functions, security definer so policies can call them
+create or replace function auth_member_id() returns uuid
+  language sql stable security definer as $$
+  select id from team_members where lower(email) = lower(auth.jwt() ->> 'email');
+$$;
+
+create or replace function is_admin() returns boolean
+  language sql stable security definer as $$
+  select exists (
+    select 1 from team_members
+    where lower(email) = lower(auth.jwt() ->> 'email') and role = 'admin');
+$$;
+
+-- 3. lock every table, then grant back deliberately
+alter table projects        enable row level security;
+alter table assignments     enable row level security;
+alter table checklist_runs  enable row level security;
+alter table offpage_runs    enable row level security;
+alter table keywords        enable row level security;
+alter table keyword_checks  enable row level security;
+alter table team_members    enable row level security;
+
+-- 4. example: members read projects they are assigned to, admins read all
+create policy projects_read on projects for select using (
+  is_admin() or exists (
+    select 1 from assignments a
+    where a.project_id = projects.id and a.member_id = auth_member_id())
+);
+create policy projects_write on projects for all using (is_admin()) with check (is_admin());</pre>
+<p style="margin: 0 0 8px;">Same pattern for every table: read scoped to assignment, write scoped to assignment or admin, <code style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: #F1EFE9; padding: 1px 4px; border-radius: 3px;">team_members</code> writable by admins only. The existing <code style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: #F1EFE9; padding: 1px 4px; border-radius: 3px;">upsert_*</code> RPC functions need the same treatment — check the caller's role inside the function rather than trusting the argument.</p>
+<p style="margin: 0 0 18px; font-size: 13px; color: #45483F;"><strong style="font-weight: 600;">Test:</strong> sign in with a personal Gmail that is not in <code style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; background: #F1EFE9; padding: 1px 4px; border-radius: 3px;">team_members</code>, run a select against each table from the browser console, and get zero rows every time.</p>
+
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 6px;">0.2 Migrations and environments <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 400; color: #6E7168;">· 2 days</span></h3>
+<ul style="margin: 0 0 8px; padding-left: 20px;">
+<li style="margin-bottom: 4px;">Repository created; the current <code style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: #F1EFE9; padding: 1px 4px; border-radius: 3px;">index.html</code> committed as the baseline.</li>
+<li style="margin-bottom: 4px;">Existing schema pulled into versioned migration files with the Supabase CLI. From here no schema change happens in the dashboard.</li>
+<li style="margin-bottom: 4px;">A second Supabase project as staging, seeded with anonymised data.</li>
+<li style="margin-bottom: 4px;">Nightly <code style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: #F1EFE9; padding: 1px 4px; border-radius: 3px;">pg_dump</code> via GitHub Actions into a private repository, verified by actually restoring one dump into staging. The free Supabase plan has no backups of its own.</li>
+</ul>
+<p style="margin: 0 0 18px; font-size: 13px; color: #45483F;"><strong style="font-weight: 600;">Test:</strong> a schema change can be applied to staging, reviewed, then applied to production by one command.</p>
+
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 6px;">0.3 Stop the re-render data loss <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 400; color: #6E7168;">· 2 days</span></h3>
+<p style="margin: 0 0 8px;">Every loader ends in <code style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: #F1EFE9; padding: 1px 4px; border-radius: 3px;">render()</code>, which replaces the whole main panel. With realtime on and notes saving 650 ms after you stop typing, a colleague's edit can wipe a half-written note and drop the cursor. This is a patch on the legacy app, not a rewrite:</p>
+<ul style="margin: 0 0 8px; padding-left: 20px;">
+<li style="margin-bottom: 4px;">Skip the re-render while any input or textarea inside the panel has focus; queue it and apply when focus leaves.</li>
+<li style="margin-bottom: 4px;">Ignore realtime events that originated from this browser session.</li>
+<li style="margin-bottom: 4px;">Preserve scroll position and open sub-tab across renders.</li>
+</ul>
+<p style="margin: 0 0 18px; font-size: 13px; color: #45483F;"><strong style="font-weight: 600;">Test:</strong> two browsers, same project; type a long note in one while the other ticks checklist items, and lose nothing.</p>
+
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 6px;">0.4 Error and empty states <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 400; color: #6E7168;">· 1 day</span></h3>
+<p style="margin: 0 0 8px;">Every read currently does <code style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: #F1EFE9; padding: 1px 4px; border-radius: 3px;">res.data || []</code>, so a permission failure and an empty table look identical. Surface the error, retry once, and give the "Loading your projects…" gate a real empty state — right now an empty checklist template leaves the app stuck on that message forever.</p>
+<p style="margin: 0 0 18px; font-size: 13px; color: #45483F;"><strong style="font-weight: 600;">Test:</strong> revoke a policy in staging; the UI says what failed instead of showing a blank board.</p>
+
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 6px;">0.5 Audit log <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 400; color: #6E7168;">· 1 day</span></h3>
+<p style="margin: 0 0 8px;">One table, one trigger, attached to every table that matters. Needed later for client-facing accountability and for answering "who marked this done".</p>
+<pre style="break-inside: avoid; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; line-height: 1.55; background: #F7F6F2; border: 1px solid #E2E0D8; border-radius: 6px; padding: 12px 14px; margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere;">create table audit_log (
+  id          bigserial primary key,
+  table_name  text not null,
+  row_id      text not null,
+  action      text not null,          -- insert | update | delete
+  actor_email text,
+  changed     jsonb,
+  at          timestamptz not null default now()
+);
+create index on audit_log (table_name, row_id, at desc);</pre>
+<p style="margin: 0 0 18px; font-size: 13px; color: #45483F;"><strong style="font-weight: 600;">Test:</strong> change a checklist status and find the before/after in one row of the log.</p>
+
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 6px;">0.6 App skeleton <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 400; color: #6E7168;">· 2 days</span></h3>
+<p style="margin: 0 0 8px;">Not a feature — the runway for Stage 1. Vite + React app created, deployed to Cloudflare Pages behind Google sign-in, connected to the same Supabase project, TypeScript types generated from the schema, Tailwind and the component library installed, and one real screen ported (the projects list) to prove the pattern end to end.</p>
+<p style="margin: 0 0 20px; font-size: 13px; color: #45483F;"><strong style="font-weight: 600;">Test:</strong> the new app shows the same live project data as the old one, and an unauthorised account sees nothing in either.</p>
+
+<h2 style="font-size: 19px; font-weight: 600; margin: 0 0 10px; letter-spacing: -0.01em;">3. Two-week schedule</h2>
+<table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 0 0 20px;">
+<thead>
+<tr style="background: #F4F3EF;">
+<th style="text-align: left; padding: 8px 10px; border-bottom: 1.5px solid #17191C; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; width: 92px;">Days</th>
+<th style="text-align: left; padding: 8px 10px; border-bottom: 1.5px solid #17191C; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500;">Work</th>
+</tr>
+</thead>
+<tbody>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">1–2</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Repo, migrations pulled, staging project, backup restore test (0.2)</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">3–6</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Role enum, helper functions, RLS policies on all seven tables, RPC hardening, penetration test with an outside account (0.1)</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">7–8</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Focus-aware rendering, self-event filtering, scroll preservation (0.3)</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">9</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Error and empty states across all loaders (0.4)</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">10</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Audit log table and triggers (0.5)</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">11–12</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">App skeleton, Cloudflare Pages deploy, projects list ported (0.6)</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">13–14</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Buffer, team walkthrough, Stage 1 kickoff</td></tr>
+</tbody>
+</table>
+
+<h2 style="font-size: 19px; font-weight: 600; margin: 0 0 10px; letter-spacing: -0.01em;">4. What I need from you to start</h2>
+<ol style="margin: 0 0 20px; padding-left: 20px;">
+<li style="margin-bottom: 5px;">Who is writing the code — you, an in-house developer, or a contractor? The stack recommendation holds either way, but the hand-off detail changes.</li>
+<li style="margin-bottom: 5px;">Owner access to the Supabase project, and a GitHub organisation to hold the repository.</li>
+<li style="margin-bottom: 5px;">The current role list: who must be admin, who is manager, who is member.</li>
+<li style="margin-bottom: 5px;">Confirmation that a two-hour maintenance window is acceptable when RLS goes live, in case a policy is too strict on the first pass.</li>
+<li style="margin-bottom: 5px;">Whether this stays internal or becomes a product you sell. It does not change Stage 0, but it changes how the account tables are shaped in Stage 1, and that is three weeks away.</li>
+</ol>
+
+<h2 style="font-size: 19px; font-weight: 600; margin: 0 0 10px; letter-spacing: -0.01em;">5. Definition of done</h2>
+<p style="margin: 0;">Stage 0 is complete when an account outside the allowlist can retrieve nothing from any table, two people can work in the same project without losing each other's input, every schema change is a reviewed file in Git, every data change is attributable in the audit log, a verified nightly backup exists off-platform, and a new screen can be added to the new app in hours rather than by editing a 1,400-line file.</p>
+
+</div>
+</doc-page>
+</x-dc>
+</body>
+</html>

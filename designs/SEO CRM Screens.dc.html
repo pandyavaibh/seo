@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #F4F3EF; }
+  a { color: #1F5C46; text-decoration: none; }
+  a:hover { color: #123A2C; text-decoration: underline; }
+  * { box-sizing: border-box; }
+</style>
+</helmet>
+<div style="font-family: 'Instrument Sans', system-ui, sans-serif; color: #17191C; background: #F4F3EF; min-height: 100vh; display: grid; grid-template-columns: 216px minmax(0, 1fr);">
+
+  <aside style="background: #17191C; color: #C9CBC4; padding: 20px 14px; display: flex; flex-direction: column; gap: 24px; min-height: 100vh;">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 0 8px;">
+      <span style="width: 26px; height: 26px; border-radius: 7px; background: #1F5C46; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: #FFFFFF;">S</span>
+      <span style="font-size: 14px; font-weight: 600; color: #FFFFFF; letter-spacing: -0.01em;">SEO CRM</span>
+    </div>
+    <nav style="display: flex; flex-direction: column; gap: 2px;">
+      <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4">
+        <button onClick="{{ n.onClick }}" style="{{ n.style }}">
+          <span>{{ n.label }}</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; opacity: 0.55;">{{ n.count }}</span>
+        </button>
+      </sc-for>
+    </nav>
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding: 13px; border: 1px solid #2E3136; border-radius: 10px;">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #7E8179;">Team booked</span>
+      <span style="font-size: 23px; font-weight: 600; color: #FFFFFF; line-height: 1;">{{ utilisation }}</span>
+      <div style="height: 5px; border-radius: 3px; background: #2E3136; overflow: hidden;">
+        <div style="height: 100%; background: #3F8A63; width: {{ utilisation }};"></div>
+      </div>
+      <span style="font-size: 11px; color: #7E8179;">{{ utilisationNote }}</span>
+    </div>
+  </aside>
+
+  <main style="padding: 22px clamp(16px, 3vw, 32px) 56px; display: flex; flex-direction: column; gap: 18px; min-width: 0;">
+
+    <sc-if value="{{ isClients }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 18px;">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between;">
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #6E7168;">8 accounts · 20 engagements</span>
+            <h1 style="margin: 0; font-size: 25px; font-weight: 600; letter-spacing: -0.02em;">Clients</h1>
+          </div>
+          <button style="border: 1px solid #17191C; background: #17191C; color: #F4F3EF; font-family: inherit; font-size: 13px; font-weight: 500; padding: 9px 16px; border-radius: 8px; cursor: pointer;" style-hover="background: #2C3035;">Add client</button>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E2E0D8; border-radius: 12px; overflow: hidden;">
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; min-width: 860px; border-collapse: collapse; font-size: 13px;">
+              <thead>
+                <tr style="text-align: left; background: #FAF9F6;">
+                  <th style="padding: 10px 18px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4;">Account</th>
+                  <th style="padding: 10px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4;">Health</th>
+                  <th style="padding: 10px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4;">Organic clicks MoM</th>
+                  <th style="padding: 10px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4;">Engagements</th>
+                  <th style="padding: 10px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4;">Staffed</th>
+                  <th style="padding: 10px 18px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4;">Renewal</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ clientRows }}" as="c" hint-placeholder-count="8">
+                  <tr onClick="{{ c.onOpen }}" style="cursor: pointer; border-bottom: 1px solid #F1EFE9;" style-hover="background: #FAF9F6;">
+                    <td style="padding: 12px 18px;">
+                      <div style="display: flex; flex-direction: column; gap: 2px;">
+                        <span style="font-weight: 500; font-size: 13.5px;">{{ c.name }}</span>
+                        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #6E7168;">{{ c.site }}</span>
+                      </div>
+                    </td>
+                    <td style="padding: 12px 14px;">
+                      <span style="display: inline-block; font-size: 11.5px; font-weight: 500; padding: 3px 9px; border-radius: 999px; background: {{ c.healthBg }}; color: {{ c.healthFg }};">{{ c.health }}</span>
+                    </td>
+                    <td style="padding: 12px 14px;">
+                      <div style="display: flex; align-items: baseline; gap: 8px;">
+                        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px;">{{ c.clicks }}</span>
+                        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 500; color: {{ c.deltaColor }};">{{ c.delta }}</span>
+                      </div>
+                    </td>
+                    <td style="padding: 12px 14px; color: #45483F;">{{ c.projectCount }}</td>
+                    <td style="padding: 12px 14px;">
+                      <div style="display: flex; gap: 3px;">
+                        <sc-for list="{{ c.chips }}" as="ch" hint-placeholder-count="3">
+                          <span title="{{ ch.name }}" style="width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; background: {{ ch.tint }};">{{ ch.initials }}</span>
+                        </sc-for>
+                      </div>
+                    </td>
+                    <td style="padding: 12px 18px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: {{ c.renewalColor }};">{{ c.renewal }}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAccount }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <button onClick="{{ backToClients }}" style="align-self: flex-start; border: none; background: transparent; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; cursor: pointer; padding: 0;" style-hover="color: #17191C;">← All clients</button>
+        <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; justify-content: space-between;">
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #6E7168;">{{ acc.industry }} · {{ acc.site }}</span>
+            <h1 style="margin: 0; font-size: 25px; font-weight: 600; letter-spacing: -0.02em;">{{ acc.name }}</h1>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="display: inline-block; font-size: 12px; font-weight: 500; padding: 5px 11px; border-radius: 999px; background: {{ acc.healthBg }}; color: {{ acc.healthFg }};">{{ acc.health }}</span>
+            <button style="border: 1px solid #DCDAD2; background: #FFFFFF; color: #17191C; font-family: inherit; font-size: 13px; font-weight: 500; padding: 8px 14px; border-radius: 8px; cursor: pointer;" style-hover="background: #EFEDE6;">Log activity</button>
+            <button style="border: 1px solid #17191C; background: #17191C; color: #F4F3EF; font-family: inherit; font-size: 13px; font-weight: 500; padding: 9px 16px; border-radius: 8px; cursor: pointer;" style-hover="background: #2C3035;">New engagement</button>
+          </div>
+        </div>
+
+        <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 10px;">
+          <sc-for list="{{ acc.stats }}" as="s" hint-placeholder-count="5">
+            <div style="background: #FFFFFF; border: 1px solid #E2E0D8; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #6E7168;">{{ s.label }}</span>
+              <span style="font-size: 23px; font-weight: 600; letter-spacing: -0.02em; line-height: 1;">{{ s.value }}</span>
+              <span style="font-size: 11.5px; font-weight: 500; color: {{ s.noteColor }};">{{ s.note }}</span>
+            </div>
+          </sc-for>
+        </section>
+
+        <section style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start;">
+          <div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+            <div style="background: #FFFFFF; border: 1px solid #E2E0D8; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px;">
+              <h2 style="margin: 0; font-size: 14.5px; font-weight: 600;">Engagements</h2>
+              <sc-for list="{{ acc.projects }}" as="p" hint-placeholder-count="3">
+                <div onClick="{{ p.onOpen }}" style="display: flex; align-items: center; gap: 12px; padding: 11px 12px; border: 1px solid #EDEBE4; border-radius: 10px; background: #FCFBF8; cursor: pointer;" style-hover="border-color: #B9B6A9;">
+                  <div style="display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0;">
+                    <span style="font-size: 13.5px; font-weight: 500;">{{ p.name }}</span>
+                    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: #6E7168;">{{ p.type }}</span>
+                  </div>
+                  <div style="display: flex; gap: 3px;">
+                    <sc-for list="{{ p.chips }}" as="ch" hint-placeholder-count="2">
+                      <span title="{{ ch.name }}" style="width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; font-weight: 600; background: {{ ch.tint }};">{{ ch.initials }}</span>
+                    </sc-for>
+                  </div>
+                  <span style="display: inline-block; font-size: 11.5px; font-weight: 500; padding: 3px 9px; border-radius: 999px; background: {{ p.stageBg }}; color: {{ p.stageFg }};">{{ p.stage }}</span>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #6E7168; min-width: 52px; text-align: right;">{{ p.due }}</span>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="background: #FFFFFF; border: 1px solid #E2E0D8; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px;">
+              <h2 style="margin: 0; font-size: 14.5px; font-weight: 600;">Activity</h2>
+              <sc-for list="{{ acc.activity }}" as="a" hint-placeholder-count="4">
+                <div style="display: flex; gap: 11px; align-items: flex-start;">
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: #6E7168; width: 54px; flex: none; padding-top: 2px;">{{ a.date }}</span>
+                  <span style="width: 7px; height: 7px; border-radius: 50%; background: {{ a.dot }}; margin-top: 6px; flex: none;"></span>
+                  <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+                    <span style="font-size: 13px; line-height: 1.45; text-wrap: pretty;">{{ a.text }}</span>
+                    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #6E7168;">{{ a.who }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="flex: 1 1 280px; max-width: 340px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="background: #FFFFFF; border: 1px solid #E2E0D8; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px;">
+              <h2 style="margin: 0; font-size: 14.5px; font-weight: 600;">Contract</h2>
+              <sc-for list="{{ acc.contract }}" as="f" hint-placeholder-count="4">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px;">
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: #6E7168;">{{ f.label }}</span>
+                  <span style="font-size: 13px; font-weight: 500;">{{ f.value }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background: #FFFFFF; border: 1px solid #E2E0D8; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px;">
+              <h2 style="margin: 0; font-size: 14.5px; font-weight: 600;">Contacts</h2>
+              <sc-for list="{{ acc.contacts }}" as="ct" hint-placeholder-count="2">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="width: 28px; height: 28px; flex: none; border-radius: 50%; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; background: #EDEBE4;">{{ ct.initials }}</span>
+                  <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+                    <span style="font-size: 13px; font-weight: 500;">{{ ct.name }}</span>
+                    <span style="font-size: 11.5px; color: #6E7168;">{{ ct.role }}</span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background: #1F5C46; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; color: #EAF2ED;">
+              <h2 style="margin: 0; font-size: 14.5px; font-weight: 600; color: #FFFFFF;">Next report</h2>
+              <span style="font-size: 13px; line-height: 1.5; text-wrap: pretty;">{{ acc.reportNote }}</span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #A9CCBB;">{{ acc.reportDue }}</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isProject }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <button onClick="{{ backToAccount }}" style="align-self: flex-start; border: none; background: transparent; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; cursor: pointer; padding: 0;" style-hover="color: #17191C;">← {{ proj.client }}</button>
+        <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; justify-content: space-between;">
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #6E7168;">{{ proj.type }} · due {{ proj.due }}</span>
+            <h1 style="margin: 0; font-size: 25px; font-weight: 600; letter-spacing: -0.02em;">{{ proj.name }}</h1>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="display: inline-block; font-size: 12px; font-weight: 500; padding: 5px 11px; border-radius: 999px; background: {{ proj.stageBg }}; color: {{ proj.stageFg }};">{{ proj.stage }}</span>
+            <button style="border: 1px solid #17191C; background: #17191C; color: #F4F3EF; font-family: inherit; font-size: 13px; font-weight: 500; padding: 9px 16px; border-radius: 8px; cursor: pointer;" style-hover="background: #2C3035;">Add task</button>
+          </div>
+        </div>
+
+        <section style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start;">
+          <div style="flex: 1 1 460px; min-width: 0; background: #FFFFFF; border: 1px solid #E2E0D8; border-radius: 12px; overflow: hidden;">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #EDEBE4;">
+              <h2 style="margin: 0; font-size: 14.5px; font-weight: 600;">Tasks</h2>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6E7168;">{{ proj.hoursNote }}</span>
+            </div>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; min-width: 540px; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                  <tr style="text-align: left; background: #FAF9F6;">
+                    <th style="padding: 9px 18px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4;">Task</th>
+                    <th style="padding: 9px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4;">Owner</th>
+                    <th style="padding: 9px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4;">Logged / est</th>
+                    <th style="padding: 9px 18px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4; width: 92px;">Log</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ proj.tasks }}" as="t" hint-placeholder-count="6">
+                    <tr style="border-bottom: 1px solid #F1EFE9;">
+                      <td style="padding: 11px 18px;">
+                        <div style="display: flex; align-items: center; gap: 9px;">
+                          <span style="width: 13px; height: 13px; flex: none; border-radius: 4px; border: 1.5px solid {{ t.boxColor }}; background: {{ t.boxFill }};"></span>
+                          <span style="color: {{ t.textColor }};">{{ t.label }}</span>
+                        </div>
+                      </td>
+                      <td style="padding: 11px 12px;">
+                        <span title="{{ t.ownerName }}" style="width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; background: {{ t.ownerTint }};">{{ t.ownerInitials }}</span>
+                      </td>
+                      <td style="padding: 11px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: {{ t.loggedColor }};">{{ t.hours }}</td>
+                      <td style="padding: 11px 18px;">
+                        <button onClick="{{ t.onLog }}" style="border: 1px solid #DCDAD2; background: #FFFFFF; font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 4px 9px; border-radius: 6px; cursor: pointer; color: #17191C;" style-hover="background: #EFEDE6;">+1h</button>
+                      </td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style="flex: 1 1 280px; max-width: 340px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="background: #FFFFFF; border: 1px solid #E2E0D8; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 11px;">
+              <h2 style="margin: 0; font-size: 14.5px; font-weight: 600;">Assigned team</h2>
+              <sc-for list="{{ proj.team }}" as="m" hint-placeholder-count="3">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="width: 28px; height: 28px; flex: none; border-radius: 50%; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; background: {{ m.tint }};">{{ m.initials }}</span>
+                  <div style="display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0;">
+                    <span style="font-size: 13px; font-weight: 500;">{{ m.name }}</span>
+                    <span style="font-size: 11px; color: #6E7168;">{{ m.role }}</span>
+                  </div>
+                  <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: {{ m.loadColor }};">{{ m.loadLabel }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background: #FFFFFF; border: 1px solid #E2E0D8; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 13px;">
+              <h2 style="margin: 0; font-size: 14.5px; font-weight: 600;">This month</h2>
+              <sc-for list="{{ proj.bars }}" as="b" hint-placeholder-count="3">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px;">
+                    <span style="font-size: 12.5px;">{{ b.label }}</span>
+                    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #45483F;">{{ b.value }}</span>
+                  </div>
+                  <div style="height: 6px; border-radius: 3px; background: #ECEAE2; overflow: hidden;">
+                    <div style="height: 100%; border-radius: 3px; width: {{ b.pct }}; background: {{ b.color }};"></div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </section>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCapacity }}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between;">
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #6E7168;">Week 39 · 10 people</span>
+            <h1 style="margin: 0; font-size: 25px; font-weight: 600; letter-spacing: -0.02em;">Capacity &amp; strength</h1>
+          </div>
+        </div>
+        <div style="background: #FFFFFF; border: 1px solid #E2E0D8; border-radius: 12px; overflow: hidden;">
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; min-width: 880px; border-collapse: collapse; font-size: 13px;">
+              <thead>
+                <tr style="text-align: left; background: #FAF9F6;">
+                  <th style="padding: 10px 18px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4;">Person</th>
+                  <th style="padding: 10px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4;">Projects</th>
+                  <th style="padding: 10px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4; width: 230px;">Booked</th>
+                  <th style="padding: 10px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4;">Technical</th>
+                  <th style="padding: 10px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4;">Content</th>
+                  <th style="padding: 10px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4;">Off-page</th>
+                  <th style="padding: 10px 18px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; font-weight: 500; border-bottom: 1px solid #EDEBE4;">Analytics</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ capacityRows }}" as="r" hint-placeholder-count="10">
+                  <tr style="border-bottom: 1px solid #F1EFE9;">
+                    <td style="padding: 12px 18px;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="width: 28px; height: 28px; flex: none; border-radius: 50%; display: grid; place-items: center; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; background: {{ r.tint }};">{{ r.initials }}</span>
+                        <div style="display: flex; flex-direction: column; gap: 1px;">
+                          <span style="font-weight: 500;">{{ r.name }}</span>
+                          <span style="font-size: 11px; color: #6E7168;">{{ r.role }}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td style="padding: 12px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #45483F;">{{ r.projectCount }}</td>
+                    <td style="padding: 12px 14px;">
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="flex: 1; height: 6px; border-radius: 3px; background: #ECEAE2; overflow: hidden;">
+                          <div style="height: 100%; border-radius: 3px; width: {{ r.loadPct }}; background: {{ r.loadColor }};"></div>
+                        </div>
+                        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: {{ r.loadColor }}; min-width: 54px;">{{ r.loadLabel }}</span>
+                      </div>
+                    </td>
+                    <td style="padding: 12px 14px;"><span style="{{ r.s1 }}">{{ r.skill1 }}</span></td>
+                    <td style="padding: 12px 14px;"><span style="{{ r.s2 }}">{{ r.skill2 }}</span></td>
+                    <td style="padding: 12px 14px;"><span style="{{ r.s3 }}">{{ r.skill3 }}</span></td>
+                    <td style="padding: 12px 18px;"><span style="{{ r.s4 }}">{{ r.skill4 }}</span></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p style="margin: 0; font-size: 12.5px; color: #6E7168; max-width: 62ch;">Skill rating 1–5 per discipline. A column where only one person scores 4 or above is a single point of failure — here that is analytics.</p>
+      </div>
+    </sc-if>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860}}">
+const TINTS = ["#D9E6DE","#EDE3CE","#DCE2EC","#E9DCE2","#E0E6D4","#E6DFD2","#D6E4E6","#EAE0E8","#DFE7DA","#ECE5D8"];
+
+const MEMBERS = [
+  { id: "maya", name: "Maya Fernandes", role: "Technical SEO Lead", capacity: 34, skills: [5,2,2,3] },
+  { id: "ken", name: "Ken Oyelaran", role: "Content Strategist", capacity: 36, skills: [2,5,3,2] },
+  { id: "priya", name: "Priya Raghavan", role: "Digital PR / Links", capacity: 36, skills: [1,3,5,2] },
+  { id: "tomas", name: "Tomas Berg", role: "Analytics", capacity: 32, skills: [3,1,1,5] },
+  { id: "aisha", name: "Aisha Kone", role: "Account Manager", capacity: 30, skills: [2,3,2,2] },
+  { id: "daniel", name: "Daniel Whitmore", role: "Content Writer", capacity: 36, skills: [1,4,2,1] },
+  { id: "sofia", name: "Sofia Marchetti", role: "Technical SEO", capacity: 34, skills: [4,2,1,3] },
+  { id: "rhea", name: "Rhea Kapoor", role: "Outreach Executive", capacity: 36, skills: [1,2,4,1] },
+  { id: "omar", name: "Omar Haddad", role: "On-page Specialist", capacity: 36, skills: [3,4,2,2] },
+  { id: "lena", name: "Lena Vogt", role: "Junior SEO", capacity: 36, skills: [2,2,3,2] }
+];
+
+const CLIENTS = [
+  { id: "northwind", name: "Northwind Finance", site: "northwindfinance.com", industry: "Fintech", retainer: "$14,000/mo", since: "Mar 2023", renewal: "Jan 2027", health: "At risk", am: "aisha", clicks: "42,180", delta: "−12%", dir: "down" },
+  { id: "belmark", name: "Belmark Retail", site: "belmark.co", industry: "E-commerce", retainer: "$9,000/mo", since: "Jul 2024", renewal: "Mar 2027", health: "Healthy", am: "aisha", clicks: "88,940", delta: "+9%", dir: "up" },
+  { id: "ardent", name: "Ardent Legal", site: "ardentlegal.com", industry: "Professional services", retainer: "$7,000/mo", since: "Feb 2025", renewal: "Nov 2026", health: "Watch", am: "ken", clicks: "11,260", delta: "+2%", dir: "flat" },
+  { id: "pike", name: "Pike & Co", site: "pikeandco.io", industry: "B2B SaaS", retainer: "$11,000/mo", since: "Sep 2024", renewal: "Jun 2027", health: "Healthy", am: "ken", clicks: "63,410", delta: "+17%", dir: "up" },
+  { id: "vela", name: "Vela Health", site: "velahealth.com", industry: "Healthcare", retainer: "$16,000/mo", since: "Jan 2026", renewal: "Aug 2027", health: "Healthy", am: "aisha", clicks: "29,870", delta: "+24%", dir: "up" },
+  { id: "corva", name: "Corva Interiors", site: "corvainteriors.com", industry: "Home & design", retainer: "$5,500/mo", since: "May 2025", renewal: "Dec 2026", health: "Watch", am: "aisha", clicks: "18,020", delta: "−4%", dir: "down" },
+  { id: "hexon", name: "Hexon Tools", site: "hexontools.com", industry: "Manufacturing", retainer: "$8,000/mo", since: "Nov 2024", renewal: "Apr 2027", health: "Healthy", am: "ken", clicks: "24,650", delta: "+6%", dir: "up" },
+  { id: "lumen", name: "Lumen Travel", site: "lumentravel.com", industry: "Travel", retainer: "$6,500/mo", since: "Aug 2025", renewal: "Feb 2027", health: "Healthy", am: "aisha", clicks: "51,300", delta: "+11%", dir: "up" }
+];
+
+const TYPES = ["Technical", "Content", "Off-page", "Local", "Migration", "Analytics"];
+const STAGES = ["Discovery", "In progress", "Client review", "Shipped"];
+const STAGE_TINT = {
+  "Discovery": { bg: "#E6E9F0", fg: "#3A4560" },
+  "In progress": { bg: "#E2ECE5", fg: "#1F5C46" },
+  "Client review": { bg: "#F7EDD4", fg: "#7A5405" },
+  "Shipped": { bg: "#EDEBE4", fg: "#5A5D55" }
+};
+
+const PROJECT_SEEDS = [
+  ["northwind", "Crawl budget remediation", 0, 1, "Sep 26", 16, ["maya","tomas"]],
+  ["northwind", "Finance guide link campaign", 2, 1, "Oct 24", 14, ["priya","rhea"]],
+  ["northwind", "Monthly retainer — Sep", 1, 1, "Sep 30", 10, ["omar","lena"]],
+  ["belmark", "Q4 content cluster build", 1, 1, "Oct 17", 18, ["ken","daniel"]],
+  ["belmark", "Core Web Vitals fixes", 0, 3, "Sep 12", 4, ["sofia"]],
+  ["belmark", "Monthly retainer — Sep", 1, 1, "Sep 30", 9, ["omar"]],
+  ["ardent", "Schema rollout spec", 0, 2, "Sep 22", 6, ["maya"]],
+  ["ardent", "Practice-area page refresh", 1, 1, "Oct 8", 12, ["daniel","omar"]],
+  ["pike", "Competitor gap analysis", 1, 0, "Oct 2", 8, ["ken"]],
+  ["pike", "Local landing page set", 3, 3, "Sep 8", 4, ["daniel"]],
+  ["pike", "SaaS comparison hub", 1, 1, "Oct 20", 15, ["ken","lena"]],
+  ["vela", "Domain migration audit", 4, 0, "Oct 10", 12, ["sofia","maya"]],
+  ["vela", "GA4 measurement plan", 5, 2, "Sep 25", 10, ["tomas"]],
+  ["vela", "Patient guide content set", 1, 1, "Nov 4", 16, ["daniel","ken"]],
+  ["corva", "Image & speed audit", 0, 1, "Oct 3", 7, ["sofia"]],
+  ["corva", "Interior design link drive", 2, 1, "Oct 30", 11, ["rhea"]],
+  ["hexon", "Product taxonomy rebuild", 0, 0, "Nov 12", 14, ["maya","omar"]],
+  ["hexon", "Trade publication outreach", 2, 1, "Oct 15", 9, ["priya"]],
+  ["lumen", "Destination hub expansion", 1, 1, "Oct 28", 17, ["ken","lena","daniel"]],
+  ["lumen", "Seasonal rank recovery", 0, 2, "Sep 29", 8, ["sofia","tomas"]]
+];
+
+const TASK_POOL = [
+  ["Baseline crawl and issue export", 4, 4, true],
+  ["Priority fix list agreed with client dev", 3, 2, false],
+  ["Internal linking pass on money pages", 5, 1, false],
+  ["Title and meta rewrite, 40 URLs", 6, 6, true],
+  ["Schema validation in staging", 2, 0, false],
+  ["Monthly performance pull from GSC", 1, 1, true],
+  ["Content brief review", 3, 2, false],
+  ["Indexation check and resubmission", 2, 0, false]
+];
+
+class Component extends DCLogic {
+  state = { view: "clients", clientId: "northwind", projectId: "p0", logged: {} };
+
+  member(id) { return MEMBERS.find(m => m.id === id); }
+  initials(name) { return name.split(" ").map(w => w[0]).join(""); }
+  tint(id) { return TINTS[MEMBERS.findIndex(m => m.id === id) % TINTS.length]; }
+
+  projects() {
+    return PROJECT_SEEDS.map((s, i) => ({
+      id: "p" + i, client: s[0], name: s[1], type: TYPES[s[2]], stage: STAGES[s[3]],
+      due: s[4], hours: s[5], team: s[6]
+    }));
+  }
+
+  booked(memberId) {
+    return this.projects().reduce((sum, p) => {
+      if (p.stage === "Shipped" || !p.team.includes(memberId)) return sum;
+      return sum + p.hours / p.team.length + 2;
+    }, 0);
+  }
+
+  loadInfo(memberId) {
+    const m = this.member(memberId);
+    const h = this.booked(memberId);
+    const ratio = h / m.capacity;
+    return {
+      color: ratio > 1 ? "#C0561C" : ratio > 0.88 ? "#C4891C" : "#3F8A63",
+      label: Math.round(h) + "/" + m.capacity + "h",
+      pct: Math.min(100, Math.round(ratio * 100)) + "%"
+    };
+  }
+
+  chips(ids) {
+    return ids.map(id => ({ name: this.member(id).name, initials: this.initials(this.member(id).name), tint: this.tint(id) }));
+  }
+
+  healthColors(h) {
+    if (h === "At risk") return { bg: "#F7E2D6", fg: "#8E3C10" };
+    if (h === "Watch") return { bg: "#F7EDD4", fg: "#7A5405" };
+    return { bg: "#E2ECE5", fg: "#1F5C46" };
+  }
+
+  skillStyle(n) {
+    const bg = n >= 4 ? "#E2ECE5" : n === 3 ? "#F1EFE9" : "#F7F6F2";
+    const fg = n >= 4 ? "#1F5C46" : n === 3 ? "#45483F" : "#8C8F86";
+    return "display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; font-weight: 600; background: " + bg + "; color: " + fg + ";";
+  }
+
+  renderVals() {
+    const { view, clientId, projectId, logged } = this.state;
+    const projects = this.projects();
+    const navBase = "display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; font-family: inherit; font-size: 13px; font-weight: 500; text-align: left; padding: 9px 12px; border-radius: 8px; border: none; cursor: pointer;";
+    const navOn = navBase + " background: #262A2F; color: #FFFFFF;";
+    const navOff = navBase + " background: transparent; color: #A7A9A2;";
+
+    const navItems = [
+      { key: "clients", label: "Clients", count: CLIENTS.length },
+      { key: "project", label: "Engagements", count: projects.length },
+      { key: "capacity", label: "Capacity", count: MEMBERS.length }
+    ].map(n => ({
+      ...n,
+      style: (view === n.key || (n.key === "clients" && view === "account")) ? navOn : navOff,
+      onClick: () => this.setState({ view: n.key })
+    }));
+
+    const totalCap = MEMBERS.reduce((s, m) => s + m.capacity, 0);
+    const totalBooked = MEMBERS.reduce((s, m) => s + this.booked(m.id), 0);
+
+    const clientRows = CLIENTS.map(c => {
+      const hc = this.healthColors(c.health);
+      const mine = projects.filter(p => p.client === c.id);
+      const ids = [...new Set(mine.flatMap(p => p.team))];
+      return {
+        name: c.name, site: c.site, health: c.health, healthBg: hc.bg, healthFg: hc.fg,
+        clicks: c.clicks, delta: c.delta,
+        deltaColor: c.dir === "up" ? "#3F8A63" : c.dir === "down" ? "#C0561C" : "#6E7168",
+        projectCount: mine.length, chips: this.chips(ids),
+        renewal: c.renewal,
+        renewalColor: c.renewal === "Nov 2026" || c.renewal === "Dec 2026" ? "#C4891C" : "#45483F",
+        onOpen: () => this.setState({ view: "account", clientId: c.id })
+      };
+    });
+
+    const c = CLIENTS.find(x => x.id === clientId) || CLIENTS[0];
+    const hc = this.healthColors(c.health);
+    const accProjects = projects.filter(p => p.client === c.id);
+    const acc = {
+      name: c.name, site: c.site, industry: c.industry,
+      health: c.health, healthBg: hc.bg, healthFg: hc.fg,
+      stats: [
+        { label: "Organic clicks", value: c.clicks, note: c.delta + " vs last month", noteColor: c.dir === "up" ? "#3F8A63" : c.dir === "down" ? "#C0561C" : "#6E7168" },
+        { label: "Conversions", value: c.dir === "down" ? "312" : "584", note: c.dir === "down" ? "−7% vs last month" : "+13% vs last month", noteColor: c.dir === "down" ? "#C0561C" : "#3F8A63" },
+        { label: "Keywords top 10", value: c.dir === "down" ? "48" : "126", note: c.dir === "down" ? "−9 this month" : "+14 this month", noteColor: c.dir === "down" ? "#C0561C" : "#3F8A63" },
+        { label: "Links live", value: "23", note: "of 30 monthly target", noteColor: "#6E7168" },
+        { label: "Hours logged", value: "86", note: "September to date", noteColor: "#6E7168" }
+      ],
+      projects: accProjects.map(p => {
+        const st = STAGE_TINT[p.stage];
+        return { name: p.name, type: p.type, stage: p.stage, stageBg: st.bg, stageFg: st.fg, due: p.due, chips: this.chips(p.team), onOpen: () => this.setState({ view: "project", projectId: p.id }) };
+      }),
+      contract: [
+        { label: "Retainer", value: c.retainer },
+        { label: "Client since", value: c.since },
+        { label: "Renewal", value: c.renewal },
+        { label: "Account manager", value: this.member(c.am).name },
+        { label: "Hours budget", value: "120h / mo" }
+      ],
+      contacts: [
+        { name: "Helen Ward", role: "Head of Marketing", initials: "HW" },
+        { name: "Dev Patel", role: "Web lead", initials: "DP" }
+      ],
+      activity: [
+        { date: "Sep 18", dot: "#C0561C", text: "Flagged 12% click drop on the product hub; crawl remediation moved to priority.", who: "Maya Fernandes" },
+        { date: "Sep 15", dot: "#1F5C46", text: "Monthly call — client approved the Q4 content plan and extra link budget.", who: "Aisha Kone" },
+        { date: "Sep 09", dot: "#6E7168", text: "Search Console access re-granted after the property migration.", who: "Tomas Berg" },
+        { date: "Sep 02", dot: "#1F5C46", text: "August report sent. Conversions up 8% year on year.", who: "Aisha Kone" }
+      ],
+      reportNote: "August report delivered. September report compiles automatically once the month closes.",
+      reportDue: "Due Oct 3"
+    };
+
+    const p = projects.find(x => x.id === projectId) || projects[0];
+    const stp = STAGE_TINT[p.stage];
+    const tasks = TASK_POOL.map((t, i) => {
+      const key = p.id + "-" + i;
+      const extra = logged[key] || 0;
+      const total = t[2] + extra;
+      const owner = p.team[i % p.team.length];
+      const done = t[3] || total >= t[1];
+      return {
+        label: t[0],
+        ownerName: this.member(owner).name,
+        ownerInitials: this.initials(this.member(owner).name),
+        ownerTint: this.tint(owner),
+        hours: total + " / " + t[1] + "h",
+        loggedColor: total > t[1] ? "#C0561C" : total >= t[1] ? "#3F8A63" : "#45483F",
+        boxColor: done ? "#3F8A63" : "#C3C0B5",
+        boxFill: done ? "#3F8A63" : "transparent",
+        textColor: done ? "#8C8F86" : "#17191C",
+        onLog: () => this.setState(s => ({ logged: { ...s.logged, [key]: (s.logged[key] || 0) + 1 } }))
+      };
+    });
+    const loggedTotal = tasks.reduce((s, t) => s + parseInt(t.hours, 10), 0);
+    const proj = {
+      name: p.name, client: CLIENTS.find(x => x.id === p.client).name, type: p.type,
+      stage: p.stage, stageBg: stp.bg, stageFg: stp.fg, due: p.due,
+      hoursNote: loggedTotal + "h logged of " + p.hours * 4 + "h budget",
+      tasks,
+      team: p.team.map(id => {
+        const m = this.member(id);
+        const l = this.loadInfo(id);
+        return { name: m.name, role: m.role, tint: this.tint(id), initials: this.initials(m.name), loadLabel: l.label, loadColor: l.color };
+      }),
+      bars: [
+        { label: "Checklist complete", value: "18 / 24", pct: "75%", color: "#3F8A63" },
+        { label: "Links live", value: "23 / 30", pct: "77%", color: "#3F8A63" },
+        { label: "Hours against budget", value: loggedTotal + " / " + p.hours * 4 + "h", pct: Math.min(100, Math.round((loggedTotal / (p.hours * 4)) * 100)) + "%", color: loggedTotal > p.hours * 4 ? "#C0561C" : "#C4891C" }
+      ]
+    };
+
+    const capacityRows = MEMBERS.map(m => {
+      const l = this.loadInfo(m.id);
+      return {
+        name: m.name, role: m.role, initials: this.initials(m.name), tint: this.tint(m.id),
+        projectCount: projects.filter(pr => pr.team.includes(m.id) && pr.stage !== "Shipped").length,
+        loadPct: l.pct, loadLabel: l.label, loadColor: l.color,
+        skill1: m.skills[0], skill2: m.skills[1], skill3: m.skills[2], skill4: m.skills[3],
+        s1: this.skillStyle(m.skills[0]), s2: this.skillStyle(m.skills[1]),
+        s3: this.skillStyle(m.skills[2]), s4: this.skillStyle(m.skills[3])
+      };
+    });
+
+    return {
+      navItems,
+      utilisation: Math.round((totalBooked / totalCap) * 100) + "%",
+      utilisationNote: Math.round(totalBooked) + "h of " + totalCap + "h",
+      isClients: view === "clients",
+      isAccount: view === "account",
+      isProject: view === "project",
+      isCapacity: view === "capacity",
+      backToClients: () => this.setState({ view: "clients" }),
+      backToAccount: () => this.setState({ view: "account", clientId: p.client }),
+      clientRows, acc, proj, capacityRows
+    };
+  }
+}
+</script>
+</body>
+</html>

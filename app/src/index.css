@@ -1,0 +1,92 @@
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap");
+@import "tailwindcss";
+
+/* Design tokens — see docs/DESIGN_HANDOFF.md "Design tokens" section.
+   These are the source of truth; keep this file and that doc in sync. */
+@theme {
+  --font-sans: "Instrument Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-paper: #f4f3ef;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #faf9f6;
+  --color-surface-sunken-2: #fcfbf8;
+
+  --color-ink: #17191c;
+  --color-ink-secondary: #45483f;
+  --color-ink-muted: #6e7168;
+  --color-ink-faint: #8c8f86;
+
+  --color-border: #e2e0d8;
+  --color-border-light: #edebe4;
+  --color-border-light-2: #f1efe9;
+  --color-track: #ecebe2;
+
+  --color-brand: #1f5c46;
+  --color-signal-green: #3f8a63;
+  --color-signal-amber: #c4891c;
+  --color-signal-red: #c0561c;
+
+  --color-sidebar: #17191c;
+  --color-sidebar-surface: #262a2f;
+  --color-sidebar-border: #2e3136;
+  --color-sidebar-text: #c9cbc4;
+  --color-sidebar-text-muted: #a7a9a2;
+  --color-sidebar-label: #7e8179;
+
+  --color-pill-green-bg: #e2ece5;
+  --color-pill-green-fg: #1f5c46;
+  --color-pill-amber-bg: #f7edd4;
+  --color-pill-amber-fg: #7a5405;
+  --color-pill-red-bg: #f7e2d6;
+  --color-pill-red-fg: #8e3c10;
+  --color-pill-neutral-bg: #edebe4;
+  --color-pill-neutral-fg: #5a5d55;
+  --color-pill-blue-bg: #e6e9f0;
+  --color-pill-blue-fg: #3a4560;
+
+  /* Avatar tints, cycled by member index */
+  --color-tint-0: #d9e6de;
+  --color-tint-1: #ede3ce;
+  --color-tint-2: #dce2ec;
+  --color-tint-3: #e9dce2;
+  --color-tint-4: #e0e6d4;
+  --color-tint-5: #e6dfd2;
+  --color-tint-6: #d6e4e6;
+  --color-tint-7: #eae0e8;
+  --color-tint-8: #dfe7da;
+  --color-tint-9: #ece5d8;
+
+  /* Standard shadcn semantic aliases, mapped onto the tokens above so any
+     copied shadcn component source works without translation. */
+  --color-background: var(--color-paper);
+  --color-foreground: var(--color-ink);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-ink);
+  --color-popover: var(--color-surface);
+  --color-popover-foreground: var(--color-ink);
+  --color-primary: var(--color-ink);
+  --color-primary-foreground: #f4f3ef;
+  --color-secondary: var(--color-surface);
+  --color-secondary-foreground: var(--color-ink);
+  --color-muted: var(--color-surface-sunken);
+  --color-muted-foreground: var(--color-ink-muted);
+  --color-accent: var(--color-surface-sunken);
+  --color-accent-foreground: var(--color-ink);
+  --color-destructive: var(--color-signal-red);
+  --color-destructive-foreground: #ffffff;
+  --color-border: var(--color-border);
+  --color-input: var(--color-border);
+  --color-ring: var(--color-ink);
+
+  --radius: 0.5rem;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.5;
+}

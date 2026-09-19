@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  doc-page:not(:defined) { visibility: hidden; }
+  body { margin: 0; }
+  a { color: #1F5C46; }
+  a:hover { color: #123A2C; }
+</style>
+<script src="./doc-page.js"></script>
+</helmet>
+<doc-page margin="0.8in">
+<div style="font-family: 'Instrument Sans', system-ui, sans-serif; color: #17191C; font-size: 14.5px; line-height: 1.6;">
+
+<h1 style="font-size: 30px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 8px; line-height: 1.15;">SEO CRM — Stage-Wise Development Plan</h1>
+<p style="margin: 0 0 6px; font-size: 15px; color: #45483F;">A single system for client management, SEO project delivery, team capacity, backlink production, and performance data from Google Search Console, GA4, and Meta.</p>
+<p style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #6E7168; margin: 0 0 26px;">Draft v1 · September 2026 · Planning document, not a build commitment</p>
+
+<h2 style="font-size: 19px; font-weight: 600; margin: 0 0 10px; letter-spacing: -0.01em;">1. Where we are starting from</h2>
+<p style="margin: 0 0 12px;">The existing tracker is already a working multi-user application, not a prototype. It runs on Supabase with Google sign-in, an allowlist of team members, projects, assignments, a monthly sitewide checklist per project, an off-page module with a 200-link monthly target across 16 activity types, keyword lists with rank checks, and realtime sync so two people see the same board. That is a genuine Stage 0 asset: the data model for <em>delivery</em> already exists and the team already uses it.</p>
+<p style="margin: 0 0 12px;">What it is not yet is a CRM. It has no client entity (only projects), no commercial layer (retainer, renewal, invoice), no capacity or skills model, no live performance data from Search Console or GA4, no backlink lifecycle beyond a count, no reporting output, and no client-facing view. It also has three engineering issues to fix before anything is built on top: authorisation is enforced only in the browser, every data load rebuilds the whole page (which can wipe a teammate's in-progress note), and read failures are silent.</p>
+<p style="margin: 0 0 20px;">The plan below keeps the existing database and grows it. Nothing gets thrown away.</p>
+
+<h2 style="font-size: 19px; font-weight: 600; margin: 0 0 10px; letter-spacing: -0.01em;">2. What the reference products tell us</h2>
+<p style="margin: 0 0 12px;">The eleven products you shared fall into four groups, and each group contributes a different part of the target system.</p>
+
+<p style="margin: 0 0 6px;"><strong style="font-weight: 600;">Sales CRMs (Pipedrive, SugarCRM, Nutshell).</strong> These own the pre-sale half: pipelines, deal stages, activity history, forecasting. Pipedrive's own SEO pitch is that <cite index="3-13:3-16">the right platform adapts to the agency's workflow, integrates with SEO and reporting tools, and centralises client, lead and communication data, with workflow automation and project templates replacing admin work. Take from them: the deal pipeline, the contact/activity timeline, and automated follow-up reminders.</p>
+
+<p style="margin: 0 0 6px;"><strong style="font-weight: 600;">Client-portal all-in-ones (SuiteDash, HoneyBook, Bonsai, GrowCRM).</strong> These own the post-sale relationship: proposals, contracts, invoicing, file sharing, white-label portals. SuiteDash's argument is that <cite index="12-3:12-6">a contact created in the CRM is immediately available to invoicing, estimates, proposals, scheduling and every other toolkit — the same data rather than a copy, with no connector to authorise and no sync step to debug. Take from them: one shared client record across delivery and billing, and a branded client login.</p>
+
+<p style="margin: 0 0 6px;"><strong style="font-weight: 600;">Work management (ClickUp, seocrm.com, afternorth).</strong> These own the delivery engine: templates, recurring tasks, time tracking, workload. ClickUp frames the agency-specific needs as <cite index="1-2:1-4">assigning tasks based on skill set, availability or workload; scheduling automated performance reports; and alerting on task deadlines and milestones. seocrm.com's project module similarly <cite index="8-4">creates auto and recurring tasks, assigns and tracks progress, and bills by project, hour, month or performance. Take from them: the SEO project template library, recurring monthly workstreams, per-task hour logging, and the workload view.</p>
+
+<p style="margin: 0 0 20px;"><strong style="font-weight: 600;">SEO data (Mangools).</strong> Keyword research, rank tracking, SERP and backlink analysis. We do not rebuild this — we ingest from it and from the free Google APIs, then present it inside the client record.</p>
+
+<div style="break-inside: avoid; border-left: 3px solid #1F5C46; background: #F3F6F4; padding: 14px 18px; margin: 0 0 22px;">
+<p style="margin: 0; font-size: 14px;"><strong style="font-weight: 600;">The gap worth building.</strong> None of these products ties <em>SEO performance movement</em> to <em>the work that caused it</em> and <em>the person who did it</em>. A CRM that answers "this client is down 18% in clicks, here is which deliverables slipped, who owns them, and what we are doing this month" is the thing that does not exist off the shelf. That is the spine of this plan.</p>
+</div>
+
+<h2 style="font-size: 19px; font-weight: 600; margin: 0 0 10px; letter-spacing: -0.01em;">3. Roadmap at a glance</h2>
+<table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 0 0 8px;">
+<thead>
+<tr style="background: #F4F3EF;">
+<th style="text-align: left; padding: 8px 10px; border-bottom: 1.5px solid #17191C; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; width: 58px;">Stage</th>
+<th style="text-align: left; padding: 8px 10px; border-bottom: 1.5px solid #17191C; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500;">Name</th>
+<th style="text-align: left; padding: 8px 10px; border-bottom: 1.5px solid #17191C; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500;">Outcome</th>
+<th style="text-align: left; padding: 8px 10px; border-bottom: 1.5px solid #17191C; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; width: 76px;">Est.</th>
+</tr>
+</thead>
+<tbody>
+<tr style="break-inside: avoid;"><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">0</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Harden the foundation</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8;">Existing tracker made safe and stable to build on</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">2 wks</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">1</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">CRM core</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8;">Clients, contacts, leads, retainers, activity timeline</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">3–4 wks</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">2</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Project &amp; task engine</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8;">SEO templates, recurring work, hour logging by team member</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">4 wks</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">3</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Team, strength &amp; capacity</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8;">Skills matrix, availability, allocation planner, utilisation</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">3 wks</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">4</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Search performance</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8;">GSC + GA4 ingestion, up/down scorecard, alerts</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">4–5 wks</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">5</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Backlink production</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8;">Prospect-to-indexed link pipeline, targets, quality control</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">3 wks</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">6</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Social &amp; lead capture</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8;">Facebook/Instagram metrics, UTM discipline, leads into pipeline</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">3 wks</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">7</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Reporting &amp; client portal</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8;">White-label monthly report, client login, invoicing</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">4 wks</td></tr>
+<tr style="break-inside: avoid;"><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">8</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">Intelligence</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8;">Forecasting, anomaly detection, AI summaries, public API</td><td style="padding: 8px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">ongoing</td></tr>
+</tbody>
+</table>
+<p style="margin: 0 0 22px; font-size: 12.5px; color: #6E7168;">Estimates assume one full-time developer plus your review time. Stages 1–3 must run in order. Stages 4, 5 and 6 are independent of each other and can be reordered or parallelised.</p>
+
+<h2 style="font-size: 19px; font-weight: 600; margin: 0 0 10px; letter-spacing: -0.01em; break-before: page;">4. Stage detail</h2>
+
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 6px;">Stage 0 — Harden the foundation <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 400; color: #6E7168;">· 2 weeks</span></h3>
+<p style="margin: 0 0 8px;">Nothing new for users; everything that makes the next eight stages safe.</p>
+<ul style="margin: 0 0 8px; padding-left: 20px;">
+<li style="margin-bottom: 4px;">Row-level security on every table, with policies mirroring the roles (admin, manager, member, client). Today the browser decides who is an admin; the database must decide.</li>
+<li style="margin-bottom: 4px;">Replace full-page re-render with targeted updates, so realtime edits no longer interrupt someone typing a note.</li>
+<li style="margin-bottom: 4px;">Error and empty states on every read; no more silent failures that look like no data.</li>
+<li style="margin-bottom: 4px;">Audit log table: who changed what, when. Required later for client-facing accountability.</li>
+<li style="margin-bottom: 4px;">Environment split (staging vs production) and database migrations under version control.</li>
+</ul>
+<p style="margin: 0 0 18px; font-size: 13px; color: #45483F;"><strong style="font-weight: 600;">Exit criteria:</strong> a non-allowlisted Google account can sign in and retrieve nothing; two people can edit the same project simultaneously without data loss.</p>
+
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 6px;">Stage 1 — CRM core <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 400; color: #6E7168;">· 3–4 weeks</span></h3>
+<p style="margin: 0 0 8px;">Introduce the client as the top-level record. Projects become children of clients rather than standalone rows.</p>
+<ul style="margin: 0 0 8px; padding-left: 20px;">
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Accounts:</strong> company, website, industry, timezone, health flag, account manager, start date, contract end, retainer value, scope summary.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Contacts:</strong> multiple people per account with role, email, phone, preferred channel.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Lead pipeline:</strong> stages from enquiry to proposal to won/lost, with value, source, expected close date, and loss reason.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Activity timeline:</strong> calls, meetings, emails logged, notes, file attachments — one chronological record per account.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Renewal watch:</strong> contract end dates surfaced 90/60/30 days out.</li>
+</ul>
+<p style="margin: 0 0 18px; font-size: 13px; color: #45483F;"><strong style="font-weight: 600;">Exit criteria:</strong> every existing project is attached to an account; the account page shows commercial terms, contacts, and live delivery status side by side.</p>
+
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 6px;">Stage 2 — Project &amp; task engine <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 400; color: #6E7168;">· 4 weeks</span></h3>
+<p style="margin: 0 0 8px;">Generalise today's fixed monthly checklist into a template system, and let team members record their own hours.</p>
+<ul style="margin: 0 0 8px; padding-left: 20px;">
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Template library:</strong> technical audit, on-page optimisation, content production, off-page campaign, migration, local SEO, monthly retainer. Each template carries tasks, default owners by role, estimated hours, and priority.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Recurring workstreams:</strong> the current monthly sitewide checklist becomes one recurring template instance, generated automatically on the 1st.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Tasks:</strong> assignee, watcher, due date, estimate, dependency, status, priority, checklist, comments, attachments.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Hour logging:</strong> each member logs time against a task — start/stop timer or manual entry, with a weekly timesheet view and manager approval. This feeds capacity in Stage 3 and profitability in Stage 7.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Views:</strong> list, kanban by stage, calendar by due date, and a per-person "my week".</li>
+</ul>
+<p style="margin: 0 0 18px; font-size: 13px; color: #45483F;"><strong style="font-weight: 600;">Exit criteria:</strong> a new client can be onboarded from a template in under five minutes; a week of logged hours reconciles against the timesheet total.</p>
+
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 6px;">Stage 3 — Team management, strength &amp; capacity <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 400; color: #6E7168;">· 3 weeks</span></h3>
+<p style="margin: 0 0 8px;">The answer to "who should take this, and can they?"</p>
+<ul style="margin: 0 0 8px; padding-left: 20px;">
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Skills matrix:</strong> each member rated across technical SEO, content, outreach, analytics, local, client communication. This is the "team work strength" view — it also exposes single points of failure where only one person can do a thing.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Availability:</strong> weekly contracted hours, leave, holidays, part-time patterns.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Allocation planner:</strong> drag a project onto a person; the system warns when the assignment pushes them past capacity, and suggests who has room and the right skill.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Utilisation dashboard:</strong> booked vs capacity per person and per team, billable vs internal split, trend over weeks.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Performance:</strong> tasks completed on time, checklist completion rate, average turnaround, links delivered vs target.</li>
+</ul>
+<p style="margin: 0 0 18px; font-size: 13px; color: #45483F;"><strong style="font-weight: 600;">Exit criteria:</strong> the planner refuses to silently overbook anyone, and a manager can staff a new retainer in one screen.</p>
+
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 6px; break-before: page;">Stage 4 — Search performance: GSC and GA4 <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 400; color: #6E7168;">· 4–5 weeks</span></h3>
+<p style="margin: 0 0 8px;">Where "project up or down" gets answered with data instead of opinion. Each account connects its own Google properties via OAuth; a nightly job pulls and stores the numbers so history survives Google's own retention limits.</p>
+<ul style="margin: 0 0 8px; padding-left: 20px;">
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Search Console:</strong> clicks, impressions, CTR, average position — by date, query, page, country and device; index coverage and validation status; Core Web Vitals; manual actions and security issues.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">GA4:</strong> sessions and users by channel, organic landing-page performance, engagement rate, conversions and conversion value, lead events, assisted conversions.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Rank tracking:</strong> keep the existing manual keyword checks, and allow import from Mangools or a similar source so the two sit in one table.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Health scorecard:</strong> per account, a month-over-month and year-over-year delta on the five metrics that matter, rolled into a single up/flat/down signal on the client card.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Alerts:</strong> clicks down more than a set threshold week-over-week, indexation drop, position loss on a priority keyword, conversion tracking stopped firing.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Annotations:</strong> mark deployments, migrations, algorithm updates and content launches on the timeline, so a movement can be explained by the work next to it.</li>
+</ul>
+<p style="margin: 0 0 18px; font-size: 13px; color: #45483F;"><strong style="font-weight: 600;">Exit criteria:</strong> opening any account shows last month's organic performance without anyone logging into Google; an alert fires within 24 hours of a real drop.</p>
+
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 6px;">Stage 5 — Backlink production <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 400; color: #6E7168;">· 3 weeks</span></h3>
+<p style="margin: 0 0 8px;">Today's off-page module counts activities against a 200-per-month target. This turns each count into a tracked object with a lifecycle.</p>
+<ul style="margin: 0 0 8px; padding-left: 20px;">
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Link record:</strong> prospect domain, contact, authority metric, relevance, target URL, anchor text, link type (guest post, directory, profile, web 2.0, PR, niche edit), cost, owner.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Pipeline:</strong> prospected → contacted → negotiating → content sent → published → verified live → submitted for indexing → indexed. Each transition timestamped and attributed.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Quality control:</strong> duplicate-domain check across all clients, anchor-text distribution warning, flags for links that disappear or go nofollow on re-check.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Targets:</strong> monthly quota per client and per activity type, carried over from the current model, with progress and forecast.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Outreach log:</strong> emails sent, replies, response rate per prospect list and per team member.</li>
+</ul>
+<p style="margin: 0 0 18px; font-size: 13px; color: #45483F;"><strong style="font-weight: 600;">Exit criteria:</strong> every link the team claims can be clicked, verified live, and traced to who built it and what it cost.</p>
+
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 6px;">Stage 6 — Social and lead capture <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 400; color: #6E7168;">· 3 weeks</span></h3>
+<ul style="margin: 0 0 8px; padding-left: 20px;">
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Meta connection:</strong> Facebook Page and Instagram professional account per client, pulling reach, engagement, follower growth, and post-level performance.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Paid:</strong> campaign spend, impressions, clicks, leads and cost per lead, reconciled against GA4 conversions.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Content calendar:</strong> planned posts with owner, status and approval, so social sits in the same workload as SEO tasks.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">UTM builder:</strong> enforced naming so channel attribution in GA4 stays clean.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Lead routing:</strong> form and Meta lead-ad submissions land in the Stage 1 pipeline with source intact.</li>
+</ul>
+<p style="margin: 0 0 18px; font-size: 13px; color: #45483F;"><strong style="font-weight: 600;">Exit criteria:</strong> a client's monthly lead count can be broken down by channel without opening any external tool.</p>
+
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 6px;">Stage 7 — Reporting, client portal and billing <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 400; color: #6E7168;">· 4 weeks</span></h3>
+<p style="margin: 0 0 8px;">The payoff stage: the data assembled in 4–6 becomes the thing the client sees, and the thing that gets invoiced.</p>
+<ul style="margin: 0 0 8px; padding-left: 20px;">
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Report builder:</strong> white-label monthly report combining performance deltas, work completed, links built, keywords moved, and next month's plan. Exportable to PDF and schedulable by email.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Client portal:</strong> read-only login showing progress, approved deliverables, reports and invoices, with a comment thread. Nothing internal — no hours, no margins.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Billing:</strong> retainer schedule, one-off projects, expenses (link costs, tools), invoice generation, payment status.</li>
+<li style="margin-bottom: 4px;"><strong style="font-weight: 600;">Profitability:</strong> retainer value minus logged hours at cost rate minus expenses, per account per month.</li>
+</ul>
+<p style="margin: 0 0 18px; font-size: 13px; color: #45483F;"><strong style="font-weight: 600;">Exit criteria:</strong> the monthly report for every client is produced without manual spreadsheet work.</p>
+
+<h3 style="font-size: 15.5px; font-weight: 600; margin: 0 0 6px;">Stage 8 — Intelligence <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 400; color: #6E7168;">· ongoing</span></h3>
+<p style="margin: 0 0 20px;">Forecasting traffic against target, anomaly detection that separates a real drop from seasonality, AI-written first drafts of report commentary, churn-risk scoring from health plus engagement, and a public API with webhooks for anything not built in.</p>
+
+<h2 style="font-size: 19px; font-weight: 600; margin: 0 0 10px; letter-spacing: -0.01em; break-before: page;">5. Data model</h2>
+<p style="margin: 0 0 10px;">Twelve core entities. Existing tables are marked; the rest are new.</p>
+<table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 0 0 22px;">
+<thead>
+<tr style="background: #F4F3EF;">
+<th style="text-align: left; padding: 8px 10px; border-bottom: 1.5px solid #17191C; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; width: 150px;">Entity</th>
+<th style="text-align: left; padding: 8px 10px; border-bottom: 1.5px solid #17191C; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500;">Holds</th>
+<th style="text-align: left; padding: 8px 10px; border-bottom: 1.5px solid #17191C; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; width: 62px;">Stage</th>
+</tr>
+</thead>
+<tbody>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">account</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Client company, website, retainer, contract dates, health</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">1</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">contact</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">People at the client, role, channel preference</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">1</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">deal</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Pre-sale opportunity, stage, value, source</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">1</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">project <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #6E7168;">exists</span></td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Engagement under an account, now with dates and budget</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">2</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">task</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Unit of work, owner, estimate, due date, dependency</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">2</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">time_entry</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Hours logged by a member against a task</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">2</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">member <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #6E7168;">exists</span></td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Person, role, capacity, cost rate, skills, leave</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">3</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">assignment <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #6E7168;">exists</span></td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Member on a project, allocated hours per week</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">3</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">metric_snapshot</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Daily GSC / GA4 / Meta figures per account, stored locally</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">4</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">keyword <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #6E7168;">exists</span></td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Target term, volume, intent, priority, rank history</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">4</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">backlink</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Prospect through indexed link, anchor, cost, status</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">5</td></tr>
+<tr><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-weight: 500;">invoice</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8;">Retainer or project billing, line items, payment status</td><td style="padding: 7px 10px; border-bottom: 1px solid #E2E0D8; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">7</td></tr>
+</tbody>
+</table>
+
+<h2 style="font-size: 19px; font-weight: 600; margin: 0 0 10px; letter-spacing: -0.01em;">6. Roles and permissions</h2>
+<p style="margin: 0 0 20px;"><strong style="font-weight: 600;">Admin</strong> sees everything including rates, margins and invoices. <strong style="font-weight: 600;">Manager</strong> sees their accounts, full delivery and capacity data, but not company-wide financials. <strong style="font-weight: 600;">Member</strong> sees their assigned projects and tasks, logs their own hours, and cannot view rates or other people's timesheets. <strong style="font-weight: 600;">Client</strong> sees only the portal: their own progress, reports and invoices. Every rule is enforced in the database, not the interface.</p>
+
+<h2 style="font-size: 19px; font-weight: 600; margin: 0 0 10px; letter-spacing: -0.01em;">7. Decisions needed before Stage 1</h2>
+<ol style="margin: 0 0 20px; padding-left: 20px;">
+<li style="margin-bottom: 5px;"><strong style="font-weight: 600;">Build or buy.</strong> Stages 1, 2 and 7 are largely commodity. If the goal is speed, an off-the-shelf CRM plus a custom SEO-data layer gets you there faster. If the goal is a product you own and can sell later, building is justified. This changes everything downstream.</li>
+<li style="margin-bottom: 5px;"><strong style="font-weight: 600;">Internal tool or product.</strong> Multi-tenancy, billing and onboarding only matter if you intend to sell it.</li>
+<li style="margin-bottom: 5px;"><strong style="font-weight: 600;">Rank data source.</strong> Mangools, DataForSEO, or continue manual checks. Affects Stage 4 cost and scope.</li>
+<li style="margin-bottom: 5px;"><strong style="font-weight: 600;">Backlink metrics source.</strong> Authority scores require a paid API (Ahrefs, Moz, Majestic). Decide before Stage 5.</li>
+<li style="margin-bottom: 5px;"><strong style="font-weight: 600;">Team size and accounts to support.</strong> Sets the capacity model and the API quota budget.</li>
+<li style="margin-bottom: 5px;"><strong style="font-weight: 600;">Client portal in scope or not.</strong> It roughly doubles Stage 7 and adds a permanent support burden.</li>
+</ol>
+
+<h2 style="font-size: 19px; font-weight: 600; margin: 0 0 10px; letter-spacing: -0.01em;">8. Recommended first move</h2>
+<p style="margin: 0 0 10px;">Do Stage 0 regardless of the build-or-buy decision — the current tool is in daily use and the authorisation gap is real today.</p>
+<p style="margin: 0;">In parallel, I can design the Stage 1–3 screens (account record, project workspace, capacity planner) so you can see the system before committing engineering time to it. Designs first, then the build order is easy to defend.</p>
+
+</div>
+</doc-page>
+</x-dc>
+</body>
+</html>
