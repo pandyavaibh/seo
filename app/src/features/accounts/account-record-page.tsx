@@ -10,9 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   useAccount,
+  useAddContact,
+  useDeleteContact,
   useTeamMembers,
   useUpdateAccount,
+  useUpdateContact,
   type AccountDetail,
+  type ContactInput,
 } from '@/features/accounts/use-account'
 import {
   ProjectHoursPanel,
@@ -212,6 +216,197 @@ function EditAccountForm({
             Cancel
           </Button>
         </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+type ContactDetail = AccountDetail['contacts'][number]
+
+function contactFieldClass() {
+  return 'text-[13px] rounded-[8px] border border-border px-2 py-[6px] bg-surface w-full'
+}
+
+function ContactForm({
+  initial,
+  onSave,
+  onCancel,
+  saving,
+  saveError,
+  saveLabel,
+}: {
+  initial: ContactInput
+  onSave: (input: ContactInput) => void
+  onCancel: () => void
+  saving: boolean
+  saveError: string | null
+  saveLabel: string
+}) {
+  const [name, setName] = React.useState(initial.name)
+  const [role, setRole] = React.useState(initial.role)
+  const [email, setEmail] = React.useState(initial.email)
+  const [phone, setPhone] = React.useState(initial.phone)
+  const [isPrimary, setIsPrimary] = React.useState(initial.isPrimary)
+  const fieldClass = contactFieldClass()
+
+  return (
+    <div className="flex flex-col gap-2 p-[10px] border border-border-light rounded-[10px] bg-surface-sunken-2">
+      <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))' }}>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Name *"
+          className={fieldClass}
+        />
+        <input
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+          placeholder="Role"
+          className={fieldClass}
+        />
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          className={fieldClass}
+        />
+        <input
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="Phone"
+          className={fieldClass}
+        />
+      </div>
+      <label className="flex items-center gap-[6px] text-[12px] text-ink-secondary">
+        <input
+          type="checkbox"
+          checked={isPrimary}
+          onChange={(e) => setIsPrimary(e.target.checked)}
+        />
+        Primary contact
+      </label>
+      {saveError && <p className="m-0 text-[12px] text-signal-red">{saveError}</p>}
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          disabled={!name.trim() || saving}
+          onClick={() => onSave({ name, role, email, phone, isPrimary })}
+        >
+          {saving ? 'Saving…' : saveLabel}
+        </Button>
+        <Button variant="secondary" size="sm" onClick={onCancel} disabled={saving}>
+          Cancel
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function ContactsCard({ accountId, contacts }: { accountId: string; contacts: ContactDetail[] }) {
+  const [showAdd, setShowAdd] = React.useState(false)
+  const [editingId, setEditingId] = React.useState<string | null>(null)
+  const addContact = useAddContact(accountId)
+  const updateContact = useUpdateContact(accountId)
+  const deleteContact = useDeleteContact(accountId)
+
+  const emptyInput: ContactInput = { name: '', role: '', email: '', phone: '', isPrimary: false }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Contacts</CardTitle>
+        {!showAdd && (
+          <Button variant="secondary" size="sm" onClick={() => setShowAdd(true)}>
+            Add contact
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent className="p-[16px_18px] flex flex-col gap-3">
+        {showAdd && (
+          <ContactForm
+            initial={emptyInput}
+            saving={addContact.isPending}
+            saveError={
+              addContact.isError
+                ? addContact.error instanceof Error
+                  ? addContact.error.message
+                  : 'Failed to add contact'
+                : null
+            }
+            saveLabel="Add contact"
+            onCancel={() => setShowAdd(false)}
+            onSave={(input) =>
+              addContact.mutate(input, { onSuccess: () => setShowAdd(false) })
+            }
+          />
+        )}
+        {contacts.length === 0 && !showAdd && (
+          <p className="m-0 text-[13px] text-ink-muted">No contacts added yet.</p>
+        )}
+        {contacts.map((c) =>
+          editingId === c.id ? (
+            <ContactForm
+              key={c.id}
+              initial={{
+                name: c.name,
+                role: c.role ?? '',
+                email: c.email ?? '',
+                phone: c.phone ?? '',
+                isPrimary: c.isPrimary,
+              }}
+              saving={updateContact.isPending}
+              saveError={
+                updateContact.isError
+                  ? updateContact.error instanceof Error
+                    ? updateContact.error.message
+                    : 'Failed to save contact'
+                  : null
+              }
+              saveLabel="Save"
+              onCancel={() => setEditingId(null)}
+              onSave={(input) =>
+                updateContact.mutate(
+                  { ...input, id: c.id },
+                  { onSuccess: () => setEditingId(null) },
+                )
+              }
+            />
+          ) : (
+            <div key={c.id} className="flex items-center gap-[10px]">
+              <span className="w-7 h-7 flex-none rounded-full grid place-items-center font-mono text-[10px] font-semibold bg-border-light">
+                {initials(c.name)}
+              </span>
+              <div className="flex flex-col gap-[1px] min-w-0 flex-1">
+                <span className="text-[13px] font-medium">
+                  {c.name}
+                  {c.isPrimary && (
+                    <span className="ml-[6px] font-mono text-[9.5px] uppercase tracking-[0.08em] text-ink-muted">
+                      Primary
+                    </span>
+                  )}
+                </span>
+                {(c.role || c.email || c.phone) && (
+                  <span className="text-[11.5px] text-ink-muted truncate">
+                    {[c.role, c.email, c.phone].filter(Boolean).join(' · ')}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => setEditingId(c.id)}
+                className="border-none bg-transparent font-mono text-[10.5px] text-ink-muted hover:text-ink cursor-pointer p-0"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => deleteContact.mutate(c.id)}
+                disabled={deleteContact.isPending}
+                className="border-none bg-transparent font-mono text-[10.5px] text-ink-muted hover:text-signal-red cursor-pointer p-0"
+              >
+                Remove
+              </button>
+            </div>
+          ),
+        )}
       </CardContent>
     </Card>
   )
@@ -704,33 +899,7 @@ export function AccountRecordPage() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Contacts</CardTitle>
-                </CardHeader>
-                <CardContent className="p-[16px_18px] flex flex-col gap-3">
-                  {acc.contacts.length === 0 && (
-                    <p className="m-0 text-[13px] text-ink-muted">
-                      No contacts added yet.
-                    </p>
-                  )}
-                  {acc.contacts.map((c) => (
-                    <div key={c.id} className="flex items-center gap-[10px]">
-                      <span className="w-7 h-7 flex-none rounded-full grid place-items-center font-mono text-[10px] font-semibold bg-border-light">
-                        {initials(c.name)}
-                      </span>
-                      <div className="flex flex-col gap-[1px] min-w-0">
-                        <span className="text-[13px] font-medium">{c.name}</span>
-                        {c.role && (
-                          <span className="text-[11.5px] text-ink-muted">
-                            {c.role}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+              {accountId && <ContactsCard accountId={accountId} contacts={acc.contacts} />}
             </div>
           </section>
         </>

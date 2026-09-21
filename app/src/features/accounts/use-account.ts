@@ -25,7 +25,14 @@ export interface AccountDetail {
     dueOn: string | null
     staffed: { id: string; name: string }[]
   }[]
-  contacts: { id: string; name: string; role: string | null }[]
+  contacts: {
+    id: string
+    name: string
+    role: string | null
+    email: string | null
+    phone: string | null
+    isPrimary: boolean
+  }[]
   activities: {
     id: string
     kind: ActivityKind
@@ -56,7 +63,7 @@ export function useAccount(accountId: string | undefined) {
             .eq('account_id', accountId!),
           supabase
             .from('contacts')
-            .select('id, name, role')
+            .select('id, name, role, email, phone, is_primary')
             .eq('account_id', accountId!)
             .order('is_primary', { ascending: false }),
           supabase
@@ -98,7 +105,14 @@ export function useAccount(accountId: string | undefined) {
             .map((a) => a.team_members)
             .filter((m): m is { id: string; name: string } => m != null),
         })),
-        contacts: contactsRes.data ?? [],
+        contacts: (contactsRes.data ?? []).map((c) => ({
+          id: c.id,
+          name: c.name,
+          role: c.role,
+          email: c.email,
+          phone: c.phone,
+          isPrimary: c.is_primary,
+        })),
         activities: (activitiesRes.data ?? []).map((a) => ({
           id: a.id,
           kind: a.kind,
@@ -171,6 +185,69 @@ export function useUpdateAccount(accountId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['account', accountId] })
       queryClient.invalidateQueries({ queryKey: ['accounts'] })
+    },
+  })
+}
+
+export interface ContactInput {
+  name: string
+  role: string
+  email: string
+  phone: string
+  isPrimary: boolean
+}
+
+export function useAddContact(accountId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: ContactInput) => {
+      const { error } = await supabase.from('contacts').insert({
+        account_id: accountId,
+        name: input.name.trim(),
+        role: input.role.trim() || null,
+        email: input.email.trim() || null,
+        phone: input.phone.trim() || null,
+        is_primary: input.isPrimary,
+      })
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['account', accountId] })
+    },
+  })
+}
+
+export function useUpdateContact(accountId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: ContactInput & { id: string }) => {
+      const { error } = await supabase
+        .from('contacts')
+        .update({
+          name: input.name.trim(),
+          role: input.role.trim() || null,
+          email: input.email.trim() || null,
+          phone: input.phone.trim() || null,
+          is_primary: input.isPrimary,
+        })
+        .eq('id', input.id)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['account', accountId] })
+    },
+  })
+}
+
+export function useDeleteContact(accountId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (contactId: string) => {
+      const { error } = await supabase.from('contacts').delete().eq('id', contactId)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['account', accountId] })
     },
   })
 }

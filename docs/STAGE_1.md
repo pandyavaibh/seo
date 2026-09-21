@@ -37,10 +37,11 @@ draft.
   principle Stage 0.4 exists to enforce (no `res.data || []` masking
   what's actually missing). Tiles here show what's real right now:
   engagement count, contact count, hours budget, retainer.
-- **"Add client" and "New engagement" buttons are disabled** with a
-  tooltip explaining why — creating an account needs a real form (not
-  built), and creating an engagement ties into Stage 2's template
-  system. Both are one Stage away, not this one.
+- ~~**"Add client" and "New engagement" buttons are disabled**~~ — no
+  longer true. Both were wired up in a later pass: "Add client" on the
+  Clients list, "New engagement" on the Account record, "Edit client"
+  and full contact add/edit/remove too. See the commit history from
+  `Wire up real "Add client" flow` onward.
 - **The design's "Next report" card is cut entirely** — it's a Stage 7
   (reporting) concept with no backing data yet; there's nothing honest
   to put in it.
