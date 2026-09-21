@@ -26,7 +26,7 @@ export interface ProjectWorkspace {
   linkTarget: number
   billingCycle: string
   renewalDay: number | null
-  team: { id: string; name: string; role: MemberRole }[]
+  team: { assignmentId: string; id: string; name: string; role: MemberRole; weeklyHours: number }[]
   tasks: WorkspaceTask[]
   checklist: { done: number; total: number }
   linksLiveThisMonth: number
@@ -70,7 +70,7 @@ export function useProjectWorkspace(projectId: string | undefined) {
           .single(),
         supabase
           .from('assignments')
-          .select('member_id, team_members(id, name, role)')
+          .select('id, member_id, weekly_hours, team_members(id, name, role)')
           .eq('project_id', projectId!),
         supabase
           .from('tasks')
@@ -132,8 +132,14 @@ export function useProjectWorkspace(projectId: string | undefined) {
         billingCycle: p.billing_cycle,
         renewalDay: p.renewal_day,
         team: (assignmentsRes.data ?? [])
-          .map((a) => a.team_members)
-          .filter((m): m is { id: string; name: string; role: MemberRole } => m != null),
+          .filter((a) => a.team_members != null)
+          .map((a) => ({
+            assignmentId: a.id,
+            id: a.team_members!.id,
+            name: a.team_members!.name,
+            role: a.team_members!.role,
+            weeklyHours: Number(a.weekly_hours),
+          })),
         tasks: (tasksRes.data ?? []).map((t) => ({
           id: t.id,
           label: t.label,
@@ -209,6 +215,36 @@ export function useDeleteProject(projectId: string, accountId: string | null) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       if (accountId) queryClient.invalidateQueries({ queryKey: ['account', accountId] })
+    },
+  })
+}
+
+export function useAddAssignment(projectId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: { memberId: string; weeklyHours: number }) => {
+      const { error } = await supabase.from('assignments').insert({
+        project_id: projectId,
+        member_id: input.memberId,
+        weekly_hours: input.weeklyHours,
+      })
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project-workspace', projectId] })
+    },
+  })
+}
+
+export function useRemoveAssignment(projectId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (assignmentId: string) => {
+      const { error } = await supabase.from('assignments').delete().eq('id', assignmentId)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project-workspace', projectId] })
     },
   })
 }

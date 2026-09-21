@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProgressBar } from '@/components/ui/progress-bar'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useTeamMembers } from '@/features/accounts/use-account'
 import { useCurrentMember } from '@/features/team/use-current-member'
 import {
   useAddKeywords,
@@ -16,10 +17,12 @@ import {
   type KeywordRow,
 } from '@/features/projects/use-keywords'
 import {
+  useAddAssignment,
   useAddTask,
   useDeleteProject,
   useProjectWorkspace,
   useQuickLogHour,
+  useRemoveAssignment,
   useToggleTask,
   type WorkspaceTask,
 } from '@/features/projects/use-project-workspace'
@@ -177,6 +180,118 @@ function AddTaskForm({ projectId }: { projectId: string }) {
       >
         Cancel
       </button>
+    </div>
+  )
+}
+
+function TeamRow({
+  member,
+  tint,
+  projectId,
+}: {
+  member: { assignmentId: string; id: string; name: string; role: string; weeklyHours: number }
+  tint: string
+  projectId: string
+}) {
+  const removeAssignment = useRemoveAssignment(projectId)
+
+  return (
+    <div className="flex items-center gap-[10px]">
+      <span
+        className="w-7 h-7 flex-none rounded-full grid place-items-center font-mono text-[10px] font-semibold"
+        style={{ background: tint }}
+      >
+        {initials(member.name)}
+      </span>
+      <div className="flex flex-col gap-[1px] flex-1 min-w-0">
+        <span className="text-[13px] font-medium">{member.name}</span>
+        <span className="text-[11px] text-ink-muted capitalize">
+          {member.role} · {member.weeklyHours}h/wk
+        </span>
+      </div>
+      <button
+        onClick={() => removeAssignment.mutate(member.assignmentId)}
+        disabled={removeAssignment.isPending}
+        className="border-none bg-transparent font-mono text-[10.5px] text-ink-muted hover:text-signal-red cursor-pointer p-0"
+      >
+        Remove
+      </button>
+    </div>
+  )
+}
+
+function AssignTeamForm({
+  projectId,
+  alreadyAssignedIds,
+}: {
+  projectId: string
+  alreadyAssignedIds: string[]
+}) {
+  const [open, setOpen] = React.useState(false)
+  const [memberId, setMemberId] = React.useState('')
+  const [weeklyHours, setWeeklyHours] = React.useState('')
+  const { data: teamMembers } = useTeamMembers()
+  const addAssignment = useAddAssignment(projectId)
+
+  const available = (teamMembers ?? []).filter((m) => !alreadyAssignedIds.includes(m.id))
+
+  if (!open) {
+    return (
+      <Button onClick={() => setOpen(true)} size="sm" variant="secondary">
+        Staff someone
+      </Button>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2 p-[10px] border border-border-light rounded-[10px] bg-surface-sunken-2">
+      <select
+        value={memberId}
+        onChange={(e) => setMemberId(e.target.value)}
+        className="text-[13px] rounded-[8px] border border-border px-2 py-[6px] bg-surface w-full"
+      >
+        <option value="">Choose a team member…</option>
+        {available.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.name}
+          </option>
+        ))}
+      </select>
+      <input
+        value={weeklyHours}
+        onChange={(e) => setWeeklyHours(e.target.value)}
+        placeholder="Weekly hours (drives their Capacity booking)"
+        inputMode="decimal"
+        className="text-[13px] rounded-[8px] border border-border px-2 py-[6px] bg-surface w-full"
+      />
+      {addAssignment.isError && (
+        <p className="m-0 text-[12px] text-signal-red">
+          {addAssignment.error instanceof Error ? addAssignment.error.message : 'Failed to staff'}
+        </p>
+      )}
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          disabled={!memberId || !weeklyHours.trim() || addAssignment.isPending}
+          onClick={() =>
+            addAssignment.mutate(
+              { memberId, weeklyHours: Number(weeklyHours) },
+              {
+                onSuccess: () => {
+                  setMemberId('')
+                  setWeeklyHours('')
+                  setOpen(false)
+                },
+              },
+            )
+          }
+        >
+          {addAssignment.isPending ? 'Staffing…' : 'Add to project'}
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
     </div>
   )
 }
@@ -604,21 +719,12 @@ export function ProjectWorkspacePage() {
                 </p>
               )}
               {ws.team.map((m, i) => (
-                <div key={m.id} className="flex items-center gap-[10px]">
-                  <span
-                    className="w-7 h-7 flex-none rounded-full grid place-items-center font-mono text-[10px] font-semibold"
-                    style={{ background: tintFor(i) }}
-                  >
-                    {initials(m.name)}
-                  </span>
-                  <div className="flex flex-col gap-[1px] flex-1 min-w-0">
-                    <span className="text-[13px] font-medium">{m.name}</span>
-                    <span className="text-[11px] text-ink-muted capitalize">
-                      {m.role}
-                    </span>
-                  </div>
-                </div>
+                <TeamRow key={m.assignmentId} member={m} tint={tintFor(i)} projectId={ws.id} />
               ))}
+              <AssignTeamForm
+                projectId={ws.id}
+                alreadyAssignedIds={ws.team.map((m) => m.id)}
+              />
             </CardContent>
           </Card>
 
