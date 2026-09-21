@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type { MemberRole } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
@@ -103,6 +103,29 @@ export function useCapacity() {
         totalCapacity: rows.reduce((s, r) => s + r.capacity, 0),
         singlePointsOfFailure,
       }
+    },
+  })
+}
+
+// The allocation planner: staffing someone from the Capacity page rather
+// than from a project's own workspace. Same underlying `assignments`
+// insert as useAddAssignment in use-project-workspace.ts, just not
+// pinned to one project — this one takes the project per call instead
+// of per hook, since the planner picks a project fresh each time.
+export function useAssignFromPlanner() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: { projectId: string; memberId: string; weeklyHours: number }) => {
+      const { error } = await supabase.from('assignments').insert({
+        project_id: input.projectId,
+        member_id: input.memberId,
+        weekly_hours: input.weeklyHours,
+      })
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['capacity'] })
+      queryClient.invalidateQueries({ queryKey: ['project-workspace', variables.projectId] })
     },
   })
 }

@@ -18,6 +18,7 @@ import {
   type AccountDetail,
   type ContactInput,
 } from '@/features/accounts/use-account'
+import { useAccountPerformance } from '@/features/accounts/use-account-performance'
 import {
   ProjectHoursPanel,
   ProjectHoursSummary,
@@ -58,7 +59,7 @@ function formatMoney(cents: number | null, currency: string) {
   }).format(cents / 100)
 }
 
-function StatTile({ label, value }: { label: string; value: string }) {
+function StatTile({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div className="bg-surface border border-border rounded-[12px] p-[14px_16px] flex flex-col gap-[6px]">
       <span className="font-mono text-[10px] tracking-[0.12em] uppercase text-ink-muted">
@@ -67,7 +68,51 @@ function StatTile({ label, value }: { label: string; value: string }) {
       <span className="text-[23px] font-semibold tracking-[-0.02em] leading-none">
         {value}
       </span>
+      {note && <span className="text-[11.5px] text-ink-muted">{note}</span>}
     </div>
+  )
+}
+
+function PerformanceTiles({ accountId }: { accountId: string }) {
+  const navigate = useNavigate()
+  const { data: perf, isLoading } = useAccountPerformance(accountId)
+
+  if (isLoading || !perf) {
+    return <Skeleton className="h-[76px] w-full" />
+  }
+
+  const anyConnected = perf.gscConnected || perf.ga4Connected
+
+  return (
+    <section className="flex flex-col gap-2">
+      <section className="grid gap-[10px]" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(168px, 1fr))' }}>
+        <StatTile
+          label="Organic clicks (28d)"
+          value={perf.gscConnected ? (perf.organicClicks28d ?? 0).toLocaleString() : '—'}
+          note={perf.gscConnected ? undefined : 'Search Console not connected'}
+        />
+        <StatTile
+          label="Conversions (28d)"
+          value={perf.ga4Connected ? (perf.conversions28d ?? 0).toLocaleString() : '—'}
+          note={perf.ga4Connected ? undefined : 'GA4 not connected'}
+        />
+        <StatTile
+          label="Keywords top 10"
+          value={perf.keywordsTop10 != null ? String(perf.keywordsTop10) : '—'}
+          note={perf.keywordsTop10 == null ? 'No keywords tracked yet' : undefined}
+        />
+        <StatTile label="Links live (this month)" value={String(perf.linksLiveThisMonth)} />
+        <StatTile label="Hours logged (this month)" value={String(perf.hoursLoggedThisMonth)} />
+      </section>
+      {!anyConnected && (
+        <button
+          onClick={() => navigate(`/clients/${accountId}/search`)}
+          className="self-start border-none bg-transparent font-mono text-[11px] text-brand hover:underline cursor-pointer p-0"
+        >
+          Connect Search Console / GA4 for real search performance →
+        </button>
+      )}
+    </section>
   )
 }
 
@@ -753,6 +798,8 @@ export function AccountRecordPage() {
               value={formatMoney(acc.retainerCents, acc.currency)}
             />
           </section>
+
+          {accountId && <PerformanceTiles accountId={accountId} />}
 
           <section className="flex flex-wrap gap-3 items-start">
             <div className="flex-[1_1_420px] min-w-0 flex flex-col gap-3">
