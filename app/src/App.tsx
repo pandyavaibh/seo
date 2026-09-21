@@ -4,6 +4,7 @@ import { AppShell } from '@/components/layout/app-shell'
 import { AccountRecordPage } from '@/features/accounts/account-record-page'
 import { ClientsListPage } from '@/features/accounts/clients-list-page'
 import { CapacityPage } from '@/features/capacity/capacity-page'
+import { DealsListPage } from '@/features/deals/deals-list-page'
 import { ProjectsListPage } from '@/features/projects/projects-list-page'
 import { ProjectWorkspacePage } from '@/features/projects/project-workspace-page'
 import { SearchPerformancePage } from '@/features/search-performance/search-performance-page'
@@ -23,6 +24,7 @@ export function App() {
             <Route path="/clients" element={<ClientsListPage />} />
             <Route path="/clients/:accountId" element={<AccountRecordPage />} />
             <Route path="/clients/:accountId/search" element={<SearchPerformancePage />} />
+            <Route path="/deals" element={<DealsListPage />} />
             <Route path="/projects" element={<ProjectsListPage />} />
             <Route path="/projects/:projectId" element={<ProjectWorkspacePage />} />
             <Route path="/capacity" element={<CapacityPage />} />

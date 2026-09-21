@@ -24,11 +24,12 @@ draft.
 
 ## Deliberate scope cuts
 
-- **Deals aren't surfaced in the UI yet.** The table and RLS exist
-  (`schema/002_stage1_crm.sql`'s pipeline concept), but no screen uses
-  them yet — the design spec doesn't call for a deals view in Stage 1's
-  two screens (Clients, Account record). Add it when there's an actual
-  pipeline screen to build.
+- ~~**Deals aren't surfaced in the UI yet.**~~ Built later in this
+  session: a `/deals` screen — flat table (not a drag-drop Kanban),
+  stage as a colored pill with an inline select to move it through the
+  pipeline, "New deal" form linking to an account. No design in
+  `docs/DESIGN_HANDOFF.md` covered this, so it follows the app's
+  existing table-page conventions rather than a bespoke layout.
 - **The account record's stat tiles are not the ones in the design
   file.** The design shows Organic clicks / Conversions / Keywords top
   10 / Links live / Hours logged — all of that requires data sources

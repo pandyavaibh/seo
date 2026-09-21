@@ -153,6 +153,13 @@ export interface Database {
             referencedRelation: 'accounts'
             referencedColumns: ['id']
           },
+          {
+            foreignKeyName: 'deals_owner_id_fkey'
+            columns: ['owner_id']
+            isOneToOne: false
+            referencedRelation: 'team_members'
+            referencedColumns: ['id']
+          },
         ]
       }
       activities: {
