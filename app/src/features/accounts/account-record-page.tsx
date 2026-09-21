@@ -196,6 +196,12 @@ export function AccountRecordPage() {
               <Button variant="secondary" disabled title="Log a note below">
                 Log activity
               </Button>
+              <Button
+                variant="secondary"
+                onClick={() => navigate(`/clients/${accountId}/search`)}
+              >
+                Search performance
+              </Button>
               <Button disabled title="Coming in Stage 2">
                 New engagement
               </Button>

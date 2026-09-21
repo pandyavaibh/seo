@@ -11,8 +11,9 @@ verified against the live project),
 **[`docs/STAGE_1.md`](docs/STAGE_1.md)** (Clients + Account record),
 **[`docs/STAGE_2.md`](docs/STAGE_2.md)** (Project workspace, core
 slice), **[`docs/STAGE_3.md`](docs/STAGE_3.md)** (Capacity & strength,
-core slice) — each documents what's actually built versus what's
-deliberately cut for now.
+core slice), **[`docs/STAGE_4.md`](docs/STAGE_4.md)** (Search
+performance: GSC & GA4, core slice) — each documents what's actually
+built versus what's deliberately cut for now.
 
 Live: **Travel Roach** (Supabase project `bmlvurfoksjlckrubehn`),
 deployed at `seo.vrbonkers.workers.dev`.

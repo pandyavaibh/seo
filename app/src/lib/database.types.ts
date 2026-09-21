@@ -17,6 +17,8 @@ export type DealStage =
   | 'lost'
 export type ActivityKind = 'call' | 'meeting' | 'email' | 'note' | 'report' | 'issue'
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done' | 'na'
+export type MetricSource = 'gsc' | 'ga4'
+export type ConnectionStatus = 'needs_access' | 'granted'
 
 export interface Database {
   public: {
@@ -476,6 +478,78 @@ export interface Database {
           },
         ]
       }
+      search_connections: {
+        Row: {
+          id: string
+          account_id: string
+          source: MetricSource
+          property: string
+          status: ConnectionStatus
+          last_checked_at: string | null
+          last_synced_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Partial<
+          Database['public']['Tables']['search_connections']['Row']
+        > & { account_id: string; source: MetricSource; property: string }
+        Update: Partial<Database['public']['Tables']['search_connections']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'search_connections_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      metric_snapshots: {
+        Row: {
+          account_id: string
+          source: MetricSource
+          snapshot_date: string
+          metric_key: string
+          value: number
+        }
+        Insert: Database['public']['Tables']['metric_snapshots']['Row']
+        Update: Partial<Database['public']['Tables']['metric_snapshots']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'metric_snapshots_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      search_queries_daily: {
+        Row: {
+          account_id: string
+          snapshot_date: string
+          query: string
+          clicks: number
+          impressions: number
+          ctr: number
+          avg_position: number
+        }
+        Insert: Partial<
+          Database['public']['Tables']['search_queries_daily']['Row']
+        > & { account_id: string; snapshot_date: string; query: string }
+        Update: Partial<
+          Database['public']['Tables']['search_queries_daily']['Row']
+        >
+        Relationships: [
+          {
+            foreignKeyName: 'search_queries_daily_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       audit_log: {
         Row: {
           id: number
@@ -499,6 +573,8 @@ export interface Database {
       deal_stage: DealStage
       activity_kind: ActivityKind
       task_status: TaskStatus
+      metric_source: MetricSource
+      connection_status: ConnectionStatus
     }
     CompositeTypes: Record<string, never>
   }
