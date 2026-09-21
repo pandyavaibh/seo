@@ -1,4 +1,5 @@
 import { AlertTriangle, FolderOpen } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge, type PillTone } from '@/components/ui/badge'
@@ -22,6 +23,7 @@ const STATUS_TONE: Record<string, PillTone> = {
 }
 
 export function ProjectsListPage() {
+  const navigate = useNavigate()
   const { data, isLoading, isError, error, refetch, isFetching } =
     useProjects()
 
@@ -92,7 +94,11 @@ export function ProjectsListPage() {
             </TableHeader>
             <TableBody>
               {data.map((p) => (
-                <TableRow key={p.id}>
+                <TableRow
+                  key={p.id}
+                  clickable
+                  onClick={() => navigate(`/projects/${p.id}`)}
+                >
                   <TableCell>
                     <div className="flex flex-col gap-[2px]">
                       <span className="font-medium text-[13.5px]">

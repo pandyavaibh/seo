@@ -15,6 +15,7 @@ import {
 } from '@/features/projects/project-hours-panel'
 import { initials, tintFor } from '@/lib/avatar'
 import type { AccountHealth, ActivityKind } from '@/lib/database.types'
+import { STAGE_LABEL, STAGE_TONE } from '@/lib/project-stage'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/providers/auth-provider'
 
@@ -27,19 +28,6 @@ const HEALTH_LABEL: Record<AccountHealth, string> = {
   healthy: 'Healthy',
   watch: 'Watch',
   at_risk: 'At risk',
-}
-
-const STAGE_TONE: Record<string, PillTone> = {
-  discovery: 'blue',
-  in_progress: 'green',
-  client_review: 'amber',
-  shipped: 'neutral',
-}
-const STAGE_LABEL: Record<string, string> = {
-  discovery: 'Discovery',
-  in_progress: 'In progress',
-  client_review: 'Client review',
-  shipped: 'Shipped',
 }
 
 const ACTIVITY_DOT: Record<ActivityKind, string> = {
@@ -247,9 +235,7 @@ export function AccountRecordPage() {
                         className="flex flex-col gap-2 p-[11px_12px] border border-border-light rounded-[10px] bg-surface-sunken-2"
                       >
                         <button
-                          onClick={() =>
-                            setExpandedProjectId(expanded ? null : p.id)
-                          }
+                          onClick={() => navigate(`/projects/${p.id}`)}
                           className="flex items-center gap-3 border-none bg-transparent p-0 cursor-pointer text-left w-full"
                         >
                           <div className="flex flex-col gap-[2px] flex-1 min-w-0">
