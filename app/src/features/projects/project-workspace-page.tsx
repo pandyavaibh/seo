@@ -12,6 +12,13 @@ import { useTeamMembers } from '@/features/accounts/use-account'
 import { useAccountPerformance } from '@/features/accounts/use-account-performance'
 import { useCurrentMember } from '@/features/team/use-current-member'
 import {
+  useAddBacklink,
+  useBacklinks,
+  useDeleteBacklink,
+  useUpdateBacklink,
+  type BacklinkRow,
+} from '@/features/projects/use-backlinks'
+import {
   useAddKeywords,
   useKeywords,
   useLogRank,
@@ -38,6 +45,7 @@ import {
 } from '@/features/projects/use-project-goals'
 import { useApplyTemplate, useTemplates } from '@/features/templates/use-templates'
 import { initials, tintFor } from '@/lib/avatar'
+import { BACKLINK_STATUS_LABEL, BACKLINK_STATUS_TONE, BACKLINK_STATUSES } from '@/lib/backlink-status'
 import { loadColorFor } from '@/lib/load-color'
 import { STAGE_LABEL, STAGE_TONE } from '@/lib/project-stage'
 
@@ -643,6 +651,239 @@ function RankingsSection({ projectId }: { projectId: string }) {
   )
 }
 
+function BacklinkRowView({ link, projectId }: { link: BacklinkRow; projectId: string }) {
+  const update = useUpdateBacklink(projectId)
+  const remove = useDeleteBacklink(projectId)
+  const [sourceUrl, setSourceUrl] = React.useState(link.sourceUrl ?? '')
+  const [cost, setCost] = React.useState(link.costCents != null ? String(link.costCents / 100) : '')
+
+  return (
+    <TableRowLike>
+      <td className="p-[11px_18px]">
+        <div className="flex flex-col gap-[1px]">
+          <span>{link.domain}</span>
+          {link.targetUrl && (
+            <span className="font-mono text-[10.5px] text-ink-muted truncate max-w-[220px]">
+              → {link.targetUrl}
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="p-[11px_12px]">
+        <div className="flex items-center gap-[6px]">
+          <Badge tone={BACKLINK_STATUS_TONE[link.status]}>{BACKLINK_STATUS_LABEL[link.status]}</Badge>
+          <select
+            value={link.status}
+            onChange={(e) => {
+              const status = e.target.value as BacklinkRow['status']
+              const placedOn = status === 'placed' && !link.placedOn ? new Date().toISOString().slice(0, 10) : undefined
+              update.mutate({ id: link.id, status, ...(placedOn ? { placedOn } : {}) })
+            }}
+            disabled={update.isPending}
+            className="font-mono text-[10.5px] border border-border rounded-[6px] px-1 py-[3px] bg-surface"
+          >
+            {BACKLINK_STATUSES.map((s) => (
+              <option key={s} value={s}>{BACKLINK_STATUS_LABEL[s]}</option>
+            ))}
+          </select>
+        </div>
+      </td>
+      <td className="p-[11px_12px] text-[12.5px] text-ink-secondary max-w-[140px] truncate">
+        {link.anchorText ?? '—'}
+      </td>
+      <td className="p-[11px_12px]">
+        <input
+          value={sourceUrl}
+          onChange={(e) => setSourceUrl(e.target.value)}
+          onBlur={() => {
+            if (sourceUrl.trim() !== (link.sourceUrl ?? '')) {
+              update.mutate({ id: link.id, sourceUrl: sourceUrl.trim() || null })
+            }
+          }}
+          placeholder="Live URL once placed"
+          className="w-[150px] text-[11.5px] font-mono border border-border rounded-[6px] px-2 py-1"
+        />
+      </td>
+      <td className="p-[11px_12px]">
+        <input
+          value={cost}
+          onChange={(e) => setCost(e.target.value)}
+          onBlur={() => {
+            const next = cost.trim() ? Math.round(Number(cost) * 100) : null
+            if (next !== link.costCents) {
+              update.mutate({ id: link.id, costCents: next })
+            }
+          }}
+          placeholder="$"
+          inputMode="decimal"
+          className="w-[60px] text-[12px] font-mono border border-border rounded-[6px] px-1 py-1"
+        />
+      </td>
+      <td className="p-[11px_12px] text-[12px] text-ink-muted">{link.ownerName ?? '—'}</td>
+      <td className="p-[11px_18px]">
+        <button
+          onClick={() => remove.mutate(link.id)}
+          disabled={remove.isPending}
+          className="border-none bg-transparent font-mono text-[10.5px] text-ink-muted hover:text-signal-red cursor-pointer p-0"
+        >
+          Remove
+        </button>
+      </td>
+    </TableRowLike>
+  )
+}
+
+function AddBacklinkForm({ projectId }: { projectId: string }) {
+  const [open, setOpen] = React.useState(false)
+  const [domain, setDomain] = React.useState('')
+  const [targetUrl, setTargetUrl] = React.useState('')
+  const [anchorText, setAnchorText] = React.useState('')
+  const [ownerId, setOwnerId] = React.useState('')
+  const { data: teamMembers } = useTeamMembers()
+  const addBacklink = useAddBacklink(projectId)
+
+  if (!open) {
+    return (
+      <Button onClick={() => setOpen(true)} size="sm" variant="secondary">
+        Add prospect
+      </Button>
+    )
+  }
+
+  const fieldClass = 'text-[13px] rounded-[8px] border border-border px-3 py-2 bg-surface w-full'
+
+  return (
+    <div className="flex flex-col gap-2 w-full">
+      <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+        <input
+          autoFocus
+          value={domain}
+          onChange={(e) => setDomain(e.target.value)}
+          placeholder="Prospect domain *"
+          className={fieldClass}
+        />
+        <input
+          value={targetUrl}
+          onChange={(e) => setTargetUrl(e.target.value)}
+          placeholder="Our page to link to"
+          className={fieldClass}
+        />
+        <input
+          value={anchorText}
+          onChange={(e) => setAnchorText(e.target.value)}
+          placeholder="Anchor text"
+          className={fieldClass}
+        />
+        <select value={ownerId} onChange={(e) => setOwnerId(e.target.value)} className={fieldClass}>
+          <option value="">Owner —</option>
+          {(teamMembers ?? []).map((m) => (
+            <option key={m.id} value={m.id}>{m.name}</option>
+          ))}
+        </select>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          disabled={!domain.trim() || addBacklink.isPending}
+          onClick={() =>
+            addBacklink.mutate(
+              { domain, targetUrl, anchorText, ownerId: ownerId || null },
+              {
+                onSuccess: () => {
+                  setDomain('')
+                  setTargetUrl('')
+                  setAnchorText('')
+                  setOwnerId('')
+                  setOpen(false)
+                },
+              },
+            )
+          }
+        >
+          {addBacklink.isPending ? 'Adding…' : 'Add prospect'}
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
+      {addBacklink.isError && (
+        <p className="m-0 text-[12px] text-signal-red">
+          {addBacklink.error instanceof Error ? addBacklink.error.message : 'Failed to add prospect'}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function BacklinksSection({ projectId }: { projectId: string }) {
+  const { data, isLoading } = useBacklinks(projectId)
+
+  return (
+    <div className="bg-surface border border-border rounded-[12px] overflow-hidden">
+      <div className="flex items-baseline justify-between gap-3 p-[14px_18px] border-b border-border-light">
+        <CardTitle>Backlinks</CardTitle>
+        <span className="font-mono text-[11px] text-ink-muted">
+          Manually tracked, no authority-score API connected
+        </span>
+      </div>
+      <div className="p-[16px_18px] flex flex-col gap-3">
+        {isLoading && <Skeleton className="h-[80px] w-full" />}
+        {!isLoading && data && (
+          <>
+            <section
+              className="grid gap-[10px]"
+              style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))' }}
+            >
+              <StatTileSmall label="Prospects" value={String(data.stats.total)} />
+              <StatTileSmall label="In outreach" value={String(data.stats.outreach)} />
+              <StatTileSmall label="Placed" value={String(data.stats.placed)} />
+            </section>
+
+            {data.rows.length === 0 ? (
+              <p className="m-0 text-[13px] text-ink-muted">No prospects logged yet — add one below.</p>
+            ) : (
+              <div className="overflow-x-auto border border-border-light rounded-[10px]">
+                <table className="w-full min-w-[680px] border-collapse text-[13px]">
+                  <thead>
+                    <tr className="text-left bg-surface-sunken">
+                      <th className="p-[9px_18px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
+                        Domain
+                      </th>
+                      <th className="p-[9px_12px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
+                        Status
+                      </th>
+                      <th className="p-[9px_12px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
+                        Anchor
+                      </th>
+                      <th className="p-[9px_12px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
+                        Live URL
+                      </th>
+                      <th className="p-[9px_12px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
+                        Cost
+                      </th>
+                      <th className="p-[9px_12px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
+                        Owner
+                      </th>
+                      <th className="p-[9px_18px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.rows.map((link) => (
+                      <BacklinkRowView key={link.id} link={link} projectId={projectId} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <AddBacklinkForm projectId={projectId} />
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function StatTileSmall({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-surface-sunken border border-border-light rounded-[10px] p-[10px_12px] flex flex-col gap-[3px]">
@@ -1090,6 +1331,8 @@ export function ProjectWorkspacePage() {
       </section>
 
       <RankingsSection projectId={ws.id} />
+
+      <BacklinksSection projectId={ws.id} />
 
       <section className="flex flex-wrap gap-3 items-start">
         <div className="flex-[1_1_420px] min-w-0">

@@ -19,6 +19,7 @@ export type ActivityKind = 'call' | 'meeting' | 'email' | 'note' | 'report' | 'i
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done' | 'na'
 export type MetricSource = 'gsc' | 'ga4'
 export type ConnectionStatus = 'needs_access' | 'granted'
+export type BacklinkStatus = 'prospect' | 'outreach' | 'placed' | 'declined' | 'removed'
 
 export interface Database {
   public: {
@@ -140,6 +141,44 @@ export interface Database {
             columns: ['project_id']
             isOneToOne: false
             referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      backlinks: {
+        Row: {
+          id: string
+          project_id: string
+          domain: string
+          source_url: string | null
+          target_url: string | null
+          anchor_text: string | null
+          status: BacklinkStatus
+          cost_cents: number | null
+          contact_email: string | null
+          notes: string | null
+          owner_id: string | null
+          placed_on: string | null
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['backlinks']['Row']> & {
+          project_id: string
+          domain: string
+        }
+        Update: Partial<Database['public']['Tables']['backlinks']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'backlinks_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'backlinks_owner_id_fkey'
+            columns: ['owner_id']
+            isOneToOne: false
+            referencedRelation: 'team_members'
             referencedColumns: ['id']
           },
         ]
@@ -778,6 +817,7 @@ export interface Database {
       task_status: TaskStatus
       metric_source: MetricSource
       connection_status: ConnectionStatus
+      backlink_status: BacklinkStatus
     }
     CompositeTypes: Record<string, never>
   }
