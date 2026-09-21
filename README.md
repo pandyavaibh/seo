@@ -5,12 +5,13 @@ across 8 accounts. Not a product for sale — infrastructure budget is
 $0/month, free tiers only.
 
 Read **[`docs/DESIGN_HANDOFF.md`](docs/DESIGN_HANDOFF.md)** first — full
-spec, screens, design tokens, stack decision. Then
+spec, screens, design tokens, stack decision. Then, in order:
 **[`docs/STAGE_0.md`](docs/STAGE_0.md)** (done — every exit criterion
-verified against the live project) and
-**[`docs/STAGE_1.md`](docs/STAGE_1.md)** (Clients + Account record, in
-progress) for what's actually built versus what's deliberately cut for
-now.
+verified against the live project),
+**[`docs/STAGE_1.md`](docs/STAGE_1.md)** (Clients + Account record),
+**[`docs/STAGE_2.md`](docs/STAGE_2.md)** (Project workspace, core
+slice) — each documents what's actually built versus what's
+deliberately cut for now.
 
 Live: **Travel Roach** (Supabase project `bmlvurfoksjlckrubehn`),
 deployed at `seo.vrbonkers.workers.dev`.
