@@ -14,6 +14,9 @@
 create type member_role as enum ('admin', 'manager', 'member', 'client');
 
 alter table team_members
+  alter column role drop default;
+
+alter table team_members
   alter column role type member_role using role::member_role;
 
 alter table team_members
