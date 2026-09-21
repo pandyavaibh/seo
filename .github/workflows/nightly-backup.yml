@@ -68,7 +68,11 @@ jobs:
         run: |
           mkdir -p dumps
           stamp=$(date -u +%Y-%m-%dT%H-%M-%SZ)
-          pg_dump "$PROD_DB_URL" --no-owner --no-privileges --format=custom \
+          # Explicit versioned path, not `pg_dump` on PATH — the runner
+          # image ships its own pg_dump 16 ahead of the postgresql-common
+          # version switcher, so an unqualified `pg_dump` keeps resolving
+          # to 16 even after postgresql-client-17 is installed.
+          /usr/lib/postgresql/17/bin/pg_dump "$PROD_DB_URL" --no-owner --no-privileges --format=custom \
             --file="dumps/${stamp}.dump"
           # Keep the last 30 nightly dumps; older ones are pruned so the
           # backups branch doesn't grow without bound.
