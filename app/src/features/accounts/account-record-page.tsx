@@ -13,6 +13,7 @@ import {
   ProjectHoursPanel,
   ProjectHoursSummary,
 } from '@/features/projects/project-hours-panel'
+import { useCreateProject } from '@/features/projects/use-projects'
 import { initials, tintFor } from '@/lib/avatar'
 import type { AccountHealth, ActivityKind } from '@/lib/database.types'
 import { STAGE_LABEL, STAGE_TONE } from '@/lib/project-stage'
@@ -57,6 +58,115 @@ function StatTile({ label, value }: { label: string; value: string }) {
       <span className="text-[23px] font-semibold tracking-[-0.02em] leading-none">
         {value}
       </span>
+    </div>
+  )
+}
+
+const PROJECT_TYPES = ['technical', 'content', 'offpage', 'local', 'migration', 'analytics']
+
+function AddProjectForm({
+  accountId,
+  accountName,
+  onClose,
+}: {
+  accountId: string
+  accountName: string
+  onClose: () => void
+}) {
+  const navigate = useNavigate()
+  const createProject = useCreateProject(accountId, accountName)
+  const [name, setName] = React.useState('')
+  const [projectType, setProjectType] = React.useState('')
+  const [dueOn, setDueOn] = React.useState('')
+  const [weeklyHours, setWeeklyHours] = React.useState('')
+
+  const fieldClass =
+    'text-[13px] rounded-[8px] border border-border px-3 py-2 bg-surface w-full'
+
+  return (
+    <div className="flex flex-col gap-3 p-[12px] border border-border-light rounded-[10px] bg-surface-sunken-2">
+      <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+        <label className="flex flex-col gap-1">
+          <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">
+            Name *
+          </span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Q4 content cluster"
+            className={fieldClass}
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">
+            Type
+          </span>
+          <select
+            value={projectType}
+            onChange={(e) => setProjectType(e.target.value)}
+            className={fieldClass}
+          >
+            <option value="">—</option>
+            {PROJECT_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">
+            Due date
+          </span>
+          <input
+            type="date"
+            value={dueOn}
+            onChange={(e) => setDueOn(e.target.value)}
+            className={fieldClass}
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">
+            Weekly hours
+          </span>
+          <input
+            value={weeklyHours}
+            onChange={(e) => setWeeklyHours(e.target.value)}
+            placeholder="10"
+            inputMode="decimal"
+            className={fieldClass}
+          />
+        </label>
+      </div>
+      {createProject.isError && (
+        <p className="m-0 text-[12px] text-signal-red">
+          {createProject.error instanceof Error
+            ? createProject.error.message
+            : 'Failed to create engagement'}
+        </p>
+      )}
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          disabled={!name.trim() || createProject.isPending}
+          onClick={() =>
+            createProject.mutate(
+              { name, projectType, dueOn, weeklyHours },
+              { onSuccess: (id) => navigate(`/projects/${id}`) },
+            )
+          }
+        >
+          {createProject.isPending ? 'Creating…' : 'Create engagement'}
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={onClose}
+          disabled={createProject.isPending}
+        >
+          Cancel
+        </Button>
+      </div>
     </div>
   )
 }
@@ -137,6 +247,7 @@ export function AccountRecordPage() {
   const [expandedProjectId, setExpandedProjectId] = React.useState<
     string | null
   >(null)
+  const [showAddProject, setShowAddProject] = React.useState(false)
 
   if (isError) {
     return (
@@ -202,9 +313,11 @@ export function AccountRecordPage() {
               >
                 Search performance
               </Button>
-              <Button disabled title="Coming in Stage 2">
-                New engagement
-              </Button>
+              {!showAddProject && (
+                <Button onClick={() => setShowAddProject(true)}>
+                  New engagement
+                </Button>
+              )}
             </div>
           </div>
 
@@ -228,7 +341,14 @@ export function AccountRecordPage() {
                   <CardTitle>Engagements</CardTitle>
                 </CardHeader>
                 <CardContent className="p-[16px_18px] flex flex-col gap-2">
-                  {acc.projects.length === 0 && (
+                  {showAddProject && accountId && (
+                    <AddProjectForm
+                      accountId={accountId}
+                      accountName={acc.name}
+                      onClose={() => setShowAddProject(false)}
+                    />
+                  )}
+                  {acc.projects.length === 0 && !showAddProject && (
                     <p className="m-0 text-[13px] text-ink-muted">
                       No engagements attached to this account yet.
                     </p>

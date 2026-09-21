@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { supabase } from '@/lib/supabase'
 
@@ -38,6 +38,50 @@ export function useProjects() {
           .map((a) => a.team_members)
           .filter((m): m is { id: string; name: string } => m != null),
       }))
+    },
+  })
+}
+
+function slugify(name: string) {
+  const base = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  const suffix = Math.random().toString(16).slice(2, 6)
+  return `${base || 'project'}-${suffix}`
+}
+
+export interface NewProjectInput {
+  name: string
+  projectType: string
+  dueOn: string
+  weeklyHours: string
+}
+
+export function useCreateProject(accountId: string, accountName: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: NewProjectInput) => {
+      const { data, error } = await supabase
+        .from('projects')
+        .insert({
+          id: slugify(input.name),
+          name: input.name.trim(),
+          account_id: accountId,
+          client_name: accountName,
+          status: 'active',
+          project_type: input.projectType || null,
+          due_on: input.dueOn || null,
+          weekly_hours: input.weeklyHours ? Number(input.weeklyHours) : null,
+        })
+        .select('id')
+        .single()
+      if (error) throw new Error(error.message)
+      return data.id as string
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      queryClient.invalidateQueries({ queryKey: ['account', accountId] })
     },
   })
 }
