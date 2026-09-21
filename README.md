@@ -6,9 +6,14 @@ $0/month, free tiers only.
 
 Read **[`docs/DESIGN_HANDOFF.md`](docs/DESIGN_HANDOFF.md)** first — full
 spec, screens, design tokens, stack decision. Then
-**[`docs/STAGE_0.md`](docs/STAGE_0.md)** for exactly what's built in this
-repo right now versus what's still blocked on external setup (a real
-Supabase project, Google OAuth credentials, Cloudflare Pages).
+**[`docs/STAGE_0.md`](docs/STAGE_0.md)** (done — every exit criterion
+verified against the live project) and
+**[`docs/STAGE_1.md`](docs/STAGE_1.md)** (Clients + Account record, in
+progress) for what's actually built versus what's deliberately cut for
+now.
+
+Live: **Travel Roach** (Supabase project `bmlvurfoksjlckrubehn`),
+deployed at `seo.vrbonkers.workers.dev`.
 
 ## Stack
 

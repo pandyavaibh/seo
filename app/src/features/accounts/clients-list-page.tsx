@@ -1,4 +1,5 @@
-import { AlertTriangle, FolderOpen } from 'lucide-react'
+import { AlertTriangle, Building2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge, type PillTone } from '@/components/ui/badge'
@@ -12,40 +13,59 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useProjects } from '@/features/projects/use-projects'
+import { useAccounts } from '@/features/accounts/use-accounts'
 import { initials, tintFor } from '@/lib/avatar'
+import type { AccountHealth } from '@/lib/database.types'
 
-const STATUS_TONE: Record<string, PillTone> = {
-  active: 'green',
-  paused: 'amber',
-  shipped: 'neutral',
+const HEALTH_TONE: Record<AccountHealth, PillTone> = {
+  healthy: 'green',
+  watch: 'amber',
+  at_risk: 'red',
 }
 
-export function ProjectsListPage() {
+const HEALTH_LABEL: Record<AccountHealth, string> = {
+  healthy: 'Healthy',
+  watch: 'Watch',
+  at_risk: 'At risk',
+}
+
+function isRenewalSoon(renewalOn: string | null) {
+  if (!renewalOn) return false
+  const days =
+    (new Date(renewalOn).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+  return days >= 0 && days <= 90
+}
+
+export function ClientsListPage() {
+  const navigate = useNavigate()
   const { data, isLoading, isError, error, refetch, isFetching } =
-    useProjects()
+    useAccounts()
 
   return (
     <div className="flex flex-col gap-[18px]">
       <div className="flex flex-wrap gap-3 items-end justify-between">
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[11px] tracking-[0.14em] uppercase text-ink-muted">
-            {data ? `${data.length} projects` : 'Loading…'}
+            {data ? `${data.length} accounts` : 'Loading…'}
           </span>
           <h1 className="m-0 text-[25px] font-semibold tracking-[-0.02em]">
-            Projects
+            Clients
           </h1>
         </div>
+        <Button disabled title="Coming later in Stage 1">
+          Add client
+        </Button>
       </div>
 
       {isError && (
         <Alert variant="destructive">
           <AlertTitle className="flex items-center gap-2">
-            <AlertTriangle size={14} /> Couldn't load projects
+            <AlertTriangle size={14} /> Couldn't load clients
           </AlertTitle>
           <AlertDescription>
-            {error instanceof Error ? error.message : 'Unknown error'}. This
-            could be a real permissions problem, not an empty table.
+            {error instanceof Error ? error.message : 'Unknown error'}. Only
+            admins and managers can see accounts — this could be a real
+            permissions problem, not an empty table.
           </AlertDescription>
           <div>
             <Button
@@ -70,49 +90,57 @@ export function ProjectsListPage() {
 
       {!isError && !isLoading && data && data.length === 0 && (
         <div className="bg-surface border border-border rounded-[12px] p-[40px] flex flex-col items-center gap-2 text-center">
-          <FolderOpen className="text-ink-faint" size={28} />
-          <p className="m-0 font-medium text-[14px]">No projects yet</p>
+          <Building2 className="text-ink-faint" size={28} />
+          <p className="m-0 font-medium text-[14px]">No clients yet</p>
           <p className="m-0 text-[13px] text-ink-muted max-w-[40ch]">
-            Projects you're staffed on, or all projects if you're an admin
-            or manager, will show up here.
+            Accounts you add will show up here, with their engagements and
+            staffed team members.
           </p>
         </div>
       )}
 
       {!isError && !isLoading && data && data.length > 0 && (
         <div className="bg-surface border border-border rounded-[12px] overflow-hidden">
-          <Table className="min-w-[640px]">
+          <Table className="min-w-[860px]">
             <TableHeader>
               <TableRow>
-                <TableHead>Project</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Account</TableHead>
+                <TableHead>Health</TableHead>
+                <TableHead>Engagements</TableHead>
                 <TableHead>Staffed</TableHead>
-                <TableHead>Link target</TableHead>
+                <TableHead>Renewal</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((p) => (
-                <TableRow key={p.id}>
+              {data.map((a) => (
+                <TableRow
+                  key={a.id}
+                  clickable
+                  onClick={() => navigate(`/clients/${a.id}`)}
+                >
                   <TableCell>
                     <div className="flex flex-col gap-[2px]">
                       <span className="font-medium text-[13.5px]">
-                        {p.name}
+                        {a.name}
                       </span>
-                      {p.clientName && (
+                      {a.website && (
                         <span className="font-mono text-[10.5px] text-ink-muted">
-                          {p.clientName}
+                          {a.website}
                         </span>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge tone={STATUS_TONE[p.status] ?? 'neutral'}>
-                      {p.status}
+                    <Badge tone={HEALTH_TONE[a.health]}>
+                      {HEALTH_LABEL[a.health]}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-ink-secondary">
+                    {a.engagementCount}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-[3px]">
-                      {p.staffed.map((m, i) => (
+                      {a.staffed.map((m, i) => (
                         <span
                           key={m.id}
                           title={m.name}
@@ -124,8 +152,15 @@ export function ProjectsListPage() {
                       ))}
                     </div>
                   </TableCell>
-                  <TableCell className="font-mono text-[12px] text-ink-secondary">
-                    {p.linkTarget}
+                  <TableCell
+                    className={
+                      'font-mono text-[12px] ' +
+                      (isRenewalSoon(a.renewalOn)
+                        ? 'text-signal-amber'
+                        : 'text-ink-secondary')
+                    }
+                  >
+                    {a.renewalOn ?? '—'}
                   </TableCell>
                 </TableRow>
               ))}

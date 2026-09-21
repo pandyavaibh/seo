@@ -7,6 +7,15 @@
 // and delete this comment.
 
 export type MemberRole = 'admin' | 'manager' | 'member' | 'client'
+export type AccountHealth = 'healthy' | 'watch' | 'at_risk'
+export type DealStage =
+  | 'enquiry'
+  | 'qualified'
+  | 'proposal'
+  | 'negotiation'
+  | 'won'
+  | 'lost'
+export type ActivityKind = 'call' | 'meeting' | 'email' | 'note' | 'report' | 'issue'
 
 export interface Database {
   public: {
@@ -34,6 +43,12 @@ export interface Database {
           client_name: string | null
           status: string
           link_target: number
+          account_id: string | null
+          project_type: string | null
+          stage: string | null
+          due_on: string | null
+          weekly_hours: number | null
+          health: string | null
           created_at: string
         }
         Insert: Partial<Database['public']['Tables']['projects']['Row']> & {
@@ -41,7 +56,137 @@ export interface Database {
           name: string
         }
         Update: Partial<Database['public']['Tables']['projects']['Row']>
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'projects_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      accounts: {
+        Row: {
+          id: string
+          name: string
+          website: string | null
+          industry: string | null
+          health: AccountHealth
+          retainer_cents: number | null
+          currency: string
+          hours_budget: number | null
+          started_on: string | null
+          renewal_on: string | null
+          account_manager_id: string | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['accounts']['Row']> & {
+          name: string
+        }
+        Update: Partial<Database['public']['Tables']['accounts']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'accounts_account_manager_id_fkey'
+            columns: ['account_manager_id']
+            isOneToOne: false
+            referencedRelation: 'team_members'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      contacts: {
+        Row: {
+          id: string
+          account_id: string
+          name: string
+          role: string | null
+          email: string | null
+          phone: string | null
+          is_primary: boolean
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['contacts']['Row']> & {
+          account_id: string
+          name: string
+        }
+        Update: Partial<Database['public']['Tables']['contacts']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'contacts_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      deals: {
+        Row: {
+          id: string
+          account_id: string | null
+          name: string
+          stage: DealStage
+          value_cents: number | null
+          source: string | null
+          owner_id: string | null
+          expected_close: string | null
+          lost_reason: string | null
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['deals']['Row']> & {
+          name: string
+        }
+        Update: Partial<Database['public']['Tables']['deals']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'deals_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      activities: {
+        Row: {
+          id: string
+          account_id: string
+          project_id: string | null
+          kind: ActivityKind
+          body: string
+          author_id: string | null
+          occurred_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['activities']['Row']> & {
+          account_id: string
+          body: string
+        }
+        Update: Partial<Database['public']['Tables']['activities']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'activities_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'team_members'
+            referencedColumns: ['id']
+          },
+        ]
       }
       assignments: {
         Row: {
@@ -221,6 +366,9 @@ export interface Database {
     Functions: Record<string, never>
     Enums: {
       member_role: MemberRole
+      account_health: AccountHealth
+      deal_stage: DealStage
+      activity_kind: ActivityKind
     }
     CompositeTypes: Record<string, never>
   }
