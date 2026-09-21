@@ -10,6 +10,12 @@ import { ProgressBar } from '@/components/ui/progress-bar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCurrentMember } from '@/features/team/use-current-member'
 import {
+  useAddKeywords,
+  useKeywords,
+  useLogRank,
+  type KeywordRow,
+} from '@/features/projects/use-keywords'
+import {
   useAddTask,
   useDeleteProject,
   useProjectWorkspace,
@@ -224,6 +230,221 @@ function DeleteProjectConfirm({
             : 'Failed to delete'}
         </p>
       )}
+    </div>
+  )
+}
+
+function rankColor(rank: number | null) {
+  if (rank == null) return 'var(--color-ink-faint)'
+  if (rank <= 3) return 'var(--color-signal-green)'
+  if (rank <= 10) return 'var(--color-signal-amber)'
+  return 'var(--color-ink-secondary)'
+}
+
+function RankKeywordRow({ keyword, projectId }: { keyword: KeywordRow; projectId: string }) {
+  const { data: currentMember } = useCurrentMember()
+  const logRank = useLogRank(projectId)
+  const [rankInput, setRankInput] = React.useState('')
+
+  const delta =
+    keyword.previousRank != null && keyword.latestRank != null
+      ? keyword.previousRank - keyword.latestRank
+      : null
+
+  return (
+    <TableRowLike>
+      <td className="p-[11px_18px]">
+        <div className="flex flex-col gap-[1px]">
+          <span>{keyword.phrase}</span>
+          {keyword.targetUrl && (
+            <span className="font-mono text-[10.5px] text-ink-muted truncate max-w-[220px]">
+              {keyword.targetUrl}
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="p-[11px_12px]">
+        <div className="flex items-center gap-[6px]">
+          <span
+            className="font-mono text-[13px] font-semibold"
+            style={{ color: rankColor(keyword.latestRank) }}
+          >
+            {keyword.latestRank ?? '—'}
+          </span>
+          {delta != null && delta !== 0 && (
+            <span
+              className="font-mono text-[10.5px]"
+              style={{ color: delta > 0 ? 'var(--color-signal-green)' : 'var(--color-signal-red)' }}
+            >
+              {delta > 0 ? `▲${delta}` : `▼${Math.abs(delta)}`}
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="p-[11px_12px] font-mono text-[11px] text-ink-muted">
+        {keyword.latestCheckedOn ?? '—'}
+      </td>
+      <td className="p-[11px_18px]">
+        <div className="flex items-center gap-[6px]">
+          <input
+            value={rankInput}
+            onChange={(e) => setRankInput(e.target.value)}
+            placeholder="Rank"
+            inputMode="numeric"
+            className="w-[56px] text-[12px] font-mono border border-border rounded-[6px] px-2 py-1"
+          />
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={!rankInput.trim() || logRank.isPending}
+            onClick={() =>
+              logRank.mutate(
+                {
+                  keywordId: keyword.id,
+                  rank: Number(rankInput),
+                  checkedBy: currentMember?.id ?? null,
+                },
+                { onSuccess: () => setRankInput('') },
+              )
+            }
+          >
+            Log
+          </Button>
+        </div>
+      </td>
+    </TableRowLike>
+  )
+}
+
+function AddKeywordsBox({ projectId }: { projectId: string }) {
+  const [open, setOpen] = React.useState(false)
+  const [text, setText] = React.useState('')
+  const addKeywords = useAddKeywords(projectId)
+
+  if (!open) {
+    return (
+      <Button onClick={() => setOpen(true)} size="sm" variant="secondary">
+        Add keywords
+      </Button>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2 w-full">
+      <textarea
+        autoFocus
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder={'One keyword per line, e.g.\nlocal seo services\nseo audit checklist'}
+        rows={4}
+        className="text-[13px] rounded-[8px] border border-border px-3 py-2 bg-surface w-full resize-none font-mono"
+      />
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          disabled={!text.trim() || addKeywords.isPending}
+          onClick={() => {
+            const phrases = Array.from(
+              new Set(
+                text
+                  .split('\n')
+                  .map((p) => p.trim())
+                  .filter(Boolean),
+              ),
+            )
+            addKeywords.mutate(phrases, {
+              onSuccess: () => {
+                setText('')
+                setOpen(false)
+              },
+            })
+          }}
+        >
+          {addKeywords.isPending ? 'Adding…' : 'Add keywords'}
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
+      {addKeywords.isError && (
+        <p className="m-0 text-[12px] text-signal-red">
+          {addKeywords.error instanceof Error ? addKeywords.error.message : 'Failed to add keywords'}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function RankingsSection({ projectId }: { projectId: string }) {
+  const { data, isLoading } = useKeywords(projectId)
+
+  return (
+    <div className="bg-surface border border-border rounded-[12px] overflow-hidden">
+      <div className="flex items-baseline justify-between gap-3 p-[14px_18px] border-b border-border-light">
+        <CardTitle>Rankings</CardTitle>
+        <span className="font-mono text-[11px] text-ink-muted">Manually tracked, no rank-check API connected</span>
+      </div>
+      <div className="p-[16px_18px] flex flex-col gap-3">
+        {isLoading && <Skeleton className="h-[80px] w-full" />}
+        {!isLoading && data && (
+          <>
+            <section
+              className="grid gap-[10px]"
+              style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))' }}
+            >
+              <StatTileSmall label="Tracked" value={String(data.stats.tracked)} />
+              <StatTileSmall
+                label="Avg position"
+                value={data.stats.averagePosition != null ? data.stats.averagePosition.toFixed(1) : '—'}
+              />
+              <StatTileSmall label="Top 3" value={String(data.stats.top3)} />
+              <StatTileSmall label="Top 10" value={String(data.stats.top10)} />
+              <StatTileSmall label="Top 30" value={String(data.stats.top30)} />
+            </section>
+
+            {data.rows.length === 0 ? (
+              <p className="m-0 text-[13px] text-ink-muted">No keywords tracked yet — add some below.</p>
+            ) : (
+              <div className="overflow-x-auto border border-border-light rounded-[10px]">
+                <table className="w-full min-w-[480px] border-collapse text-[13px]">
+                  <thead>
+                    <tr className="text-left bg-surface-sunken">
+                      <th className="p-[9px_18px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
+                        Keyword
+                      </th>
+                      <th className="p-[9px_12px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
+                        Rank
+                      </th>
+                      <th className="p-[9px_12px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
+                        Checked
+                      </th>
+                      <th className="p-[9px_18px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
+                        Log a check
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.rows.map((k) => (
+                      <RankKeywordRow key={k.id} keyword={k} projectId={projectId} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <AddKeywordsBox projectId={projectId} />
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function StatTileSmall({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-surface-sunken border border-border-light rounded-[10px] p-[10px_12px] flex flex-col gap-[3px]">
+      <span className="font-mono text-[9.5px] tracking-[0.1em] uppercase text-ink-muted">{label}</span>
+      <span className="text-[18px] font-semibold tracking-[-0.02em] leading-none">{value}</span>
     </div>
   )
 }
@@ -446,6 +667,8 @@ export function ProjectWorkspacePage() {
           </Card>
         </div>
       </section>
+
+      <RankingsSection projectId={ws.id} />
     </div>
   )
 }
