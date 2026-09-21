@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type { AccountHealth, ActivityKind } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
@@ -14,6 +14,7 @@ export interface AccountDetail {
   hoursBudget: number | null
   startedOn: string | null
   renewalOn: string | null
+  accountManagerId: string | null
   accountManagerName: string | null
   notes: string | null
   projects: {
@@ -43,7 +44,7 @@ export function useAccount(accountId: string | undefined) {
           supabase
             .from('accounts')
             .select(
-              'id, name, website, industry, health, retainer_cents, currency, hours_budget, started_on, renewal_on, notes, team_members(name)',
+              'id, name, website, industry, health, retainer_cents, currency, hours_budget, started_on, renewal_on, account_manager_id, notes, team_members(name)',
             )
             .eq('id', accountId!)
             .single(),
@@ -84,6 +85,7 @@ export function useAccount(accountId: string | undefined) {
         hoursBudget: acc.hours_budget,
         startedOn: acc.started_on,
         renewalOn: acc.renewal_on,
+        accountManagerId: acc.account_manager_id,
         accountManagerName: acc.team_members?.name ?? null,
         notes: acc.notes,
         projects: (projectsRes.data ?? []).map((p) => ({
@@ -107,5 +109,68 @@ export function useAccount(accountId: string | undefined) {
       }
     },
     enabled: !!accountId,
+  })
+}
+
+export interface TeamMemberOption {
+  id: string
+  name: string
+}
+
+export function useTeamMembers() {
+  return useQuery({
+    queryKey: ['team-members', 'options'],
+    queryFn: async (): Promise<TeamMemberOption[]> => {
+      const { data, error } = await supabase
+        .from('team_members')
+        .select('id, name')
+        .eq('active', true)
+        .order('name')
+      if (error) throw new Error(error.message)
+      return data ?? []
+    },
+  })
+}
+
+export interface AccountEditInput {
+  name: string
+  website: string
+  industry: string
+  health: AccountHealth
+  retainerDollars: string
+  hoursBudget: string
+  startedOn: string
+  renewalOn: string
+  accountManagerId: string
+  notes: string
+}
+
+export function useUpdateAccount(accountId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: AccountEditInput) => {
+      const { error } = await supabase
+        .from('accounts')
+        .update({
+          name: input.name.trim(),
+          website: input.website.trim() || null,
+          industry: input.industry.trim() || null,
+          health: input.health,
+          retainer_cents: input.retainerDollars
+            ? Math.round(Number(input.retainerDollars) * 100)
+            : null,
+          hours_budget: input.hoursBudget ? Number(input.hoursBudget) : null,
+          started_on: input.startedOn || null,
+          renewal_on: input.renewalOn || null,
+          account_manager_id: input.accountManagerId || null,
+          notes: input.notes.trim() || null,
+        })
+        .eq('id', accountId)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['account', accountId] })
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
+    },
   })
 }
