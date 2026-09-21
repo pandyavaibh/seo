@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { to: '/projects', label: 'Engagements', count: null },
   { to: '/templates', label: 'Templates', count: null },
   { to: '/capacity', label: 'Capacity', count: null },
+  { to: '/utm-builder', label: 'UTM builder', count: null },
 ]
 
 export function Sidebar() {

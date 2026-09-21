@@ -770,6 +770,18 @@ export function AccountRecordPage() {
               >
                 Search performance
               </Button>
+              <Button
+                variant="secondary"
+                onClick={() => navigate(`/clients/${accountId}/social`)}
+              >
+                Social &amp; Ads
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => navigate(`/clients/${accountId}/calendar`)}
+              >
+                Content calendar
+              </Button>
               {!showAddProject && (
                 <Button onClick={() => setShowAddProject(true)}>
                   New engagement

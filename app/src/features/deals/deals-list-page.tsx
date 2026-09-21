@@ -25,6 +25,7 @@ import {
   type NewDealInput,
 } from '@/features/deals/use-deals'
 import { DEAL_STAGE_LABEL, DEAL_STAGE_TONE, DEAL_STAGES } from '@/lib/deal-stage'
+import { LEAD_SOURCES } from '@/lib/lead-source'
 
 function formatMoney(cents: number | null) {
   if (cents == null) return '—'
@@ -43,6 +44,7 @@ function NewDealForm({ onClose }: { onClose: () => void }) {
   const [accountId, setAccountId] = React.useState('')
   const [valueDollars, setValueDollars] = React.useState('')
   const [source, setSource] = React.useState('')
+  const [customSource, setCustomSource] = React.useState('')
   const [ownerId, setOwnerId] = React.useState('')
   const [expectedClose, setExpectedClose] = React.useState('')
 
@@ -74,8 +76,19 @@ function NewDealForm({ onClose }: { onClose: () => void }) {
           </label>
           <label className="flex flex-col gap-1">
             <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">Source</span>
-            <input value={source} onChange={(e) => setSource(e.target.value)} placeholder="Referral, inbound, outreach…" className={fieldClass} />
+            <select value={source} onChange={(e) => setSource(e.target.value)} className={fieldClass}>
+              <option value="">—</option>
+              {LEAD_SOURCES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
           </label>
+          {source === 'Other' && (
+            <label className="flex flex-col gap-1">
+              <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">Other source</span>
+              <input value={customSource} onChange={(e) => setCustomSource(e.target.value)} placeholder="Describe it" className={fieldClass} />
+            </label>
+          )}
           <label className="flex flex-col gap-1">
             <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">Owner</span>
             <select value={ownerId} onChange={(e) => setOwnerId(e.target.value)} className={fieldClass}>
@@ -99,7 +112,8 @@ function NewDealForm({ onClose }: { onClose: () => void }) {
           <Button
             disabled={!name.trim() || createDeal.isPending}
             onClick={() => {
-              const input: NewDealInput = { name, accountId, valueDollars, source, ownerId, expectedClose }
+              const resolvedSource = source === 'Other' ? customSource : source
+              const input: NewDealInput = { name, accountId, valueDollars, source: resolvedSource, ownerId, expectedClose }
               createDeal.mutate(input, { onSuccess: onClose })
             }}
           >

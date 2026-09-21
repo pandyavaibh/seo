@@ -17,9 +17,12 @@ export type DealStage =
   | 'lost'
 export type ActivityKind = 'call' | 'meeting' | 'email' | 'note' | 'report' | 'issue'
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done' | 'na'
-export type MetricSource = 'gsc' | 'ga4'
+export type MetricSource = 'gsc' | 'ga4' | 'meta'
 export type ConnectionStatus = 'needs_access' | 'granted'
 export type BacklinkStatus = 'prospect' | 'outreach' | 'placed' | 'declined' | 'removed'
+export type MetaSource = 'facebook_page' | 'instagram' | 'ads'
+export type ContentCalendarPlatform = 'facebook' | 'instagram' | 'other'
+export type ContentCalendarStatus = 'draft' | 'scheduled' | 'approved' | 'published'
 
 export interface Database {
   public: {
@@ -792,6 +795,180 @@ export interface Database {
           },
         ]
       }
+      meta_connections: {
+        Row: {
+          id: string
+          account_id: string
+          source: MetaSource
+          property: string
+          status: ConnectionStatus
+          last_checked_at: string | null
+          last_synced_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Partial<
+          Database['public']['Tables']['meta_connections']['Row']
+        > & { account_id: string; source: MetaSource; property: string }
+        Update: Partial<Database['public']['Tables']['meta_connections']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'meta_connections_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      meta_posts_daily: {
+        Row: {
+          account_id: string
+          snapshot_date: string
+          post_id: string
+          platform: 'facebook_page' | 'instagram'
+          permalink: string | null
+          caption: string | null
+          published_at: string | null
+          reach: number
+          engagement: number
+          likes: number
+          comments: number
+          shares: number
+        }
+        Insert: Partial<
+          Database['public']['Tables']['meta_posts_daily']['Row']
+        > & {
+          account_id: string
+          snapshot_date: string
+          post_id: string
+          platform: 'facebook_page' | 'instagram'
+        }
+        Update: Partial<Database['public']['Tables']['meta_posts_daily']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'meta_posts_daily_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      meta_campaigns_daily: {
+        Row: {
+          account_id: string
+          snapshot_date: string
+          campaign_id: string
+          campaign_name: string
+          status: string | null
+          spend_cents: number
+          impressions: number
+          clicks: number
+          leads: number
+        }
+        Insert: Partial<
+          Database['public']['Tables']['meta_campaigns_daily']['Row']
+        > & {
+          account_id: string
+          snapshot_date: string
+          campaign_id: string
+          campaign_name: string
+        }
+        Update: Partial<
+          Database['public']['Tables']['meta_campaigns_daily']['Row']
+        >
+        Relationships: [
+          {
+            foreignKeyName: 'meta_campaigns_daily_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      content_calendar: {
+        Row: {
+          id: string
+          account_id: string
+          project_id: string | null
+          platform: ContentCalendarPlatform
+          caption: string | null
+          scheduled_on: string | null
+          owner_id: string | null
+          status: ContentCalendarStatus
+          permalink: string | null
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['content_calendar']['Row']> & {
+          account_id: string
+          platform: ContentCalendarPlatform
+        }
+        Update: Partial<Database['public']['Tables']['content_calendar']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'content_calendar_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'content_calendar_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'content_calendar_owner_id_fkey'
+            columns: ['owner_id']
+            isOneToOne: false
+            referencedRelation: 'team_members'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      utm_links: {
+        Row: {
+          id: string
+          account_id: string | null
+          base_url: string
+          source: string
+          medium: string
+          campaign: string
+          term: string | null
+          content: string | null
+          built_url: string
+          created_by: string | null
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['utm_links']['Row']> & {
+          base_url: string
+          source: string
+          medium: string
+          campaign: string
+          built_url: string
+        }
+        Update: Partial<Database['public']['Tables']['utm_links']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'utm_links_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'utm_links_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'team_members'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       audit_log: {
         Row: {
           id: number
@@ -818,6 +995,9 @@ export interface Database {
       metric_source: MetricSource
       connection_status: ConnectionStatus
       backlink_status: BacklinkStatus
+      meta_source: MetaSource
+      content_calendar_platform: ContentCalendarPlatform
+      content_calendar_status: ContentCalendarStatus
     }
     CompositeTypes: Record<string, never>
   }
