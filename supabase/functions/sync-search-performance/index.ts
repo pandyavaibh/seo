@@ -27,6 +27,17 @@ const GSC_SCOPE = 'https://www.googleapis.com/auth/webmasters.readonly'
 const GA4_SCOPE = 'https://www.googleapis.com/auth/analytics.readonly'
 const WINDOW_DAYS = 28
 
+// The app calls this from the browser (supabase.functions.invoke), which
+// preflights with an OPTIONS request. Without these headers the browser
+// blocks the real request before it's even sent — surfaces client-side as
+// a generic "Failed to send a request to the Edge Function", not the
+// function's own error, which made this fail silently the first time.
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
 function isoDaysAgo(n: number) {
   const d = new Date()
   d.setUTCDate(d.getUTCDate() - n)
@@ -123,10 +134,17 @@ async function syncGA4(accessToken: string, property: string) {
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: CORS_HEADERS })
+  }
+
   try {
     const { accountId } = await req.json()
     if (!accountId) {
-      return new Response(JSON.stringify({ error: 'accountId is required' }), { status: 400 })
+      return new Response(JSON.stringify({ error: 'accountId is required' }), {
+        status: 400,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      })
     }
 
     const authHeader = req.headers.get('Authorization') ?? ''
@@ -139,7 +157,10 @@ Deno.serve(async (req) => {
       data: { user },
     } = await asUser.auth.getUser()
     if (!user?.email) {
-      return new Response(JSON.stringify({ error: 'Not signed in' }), { status: 401 })
+      return new Response(JSON.stringify({ error: 'Not signed in' }), {
+        status: 401,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      })
     }
 
     const admin = createClient(
@@ -153,7 +174,10 @@ Deno.serve(async (req) => {
       .eq('email', user.email.toLowerCase())
       .maybeSingle()
     if (!member || !['admin', 'manager'].includes(member.role)) {
-      return new Response(JSON.stringify({ error: 'Admin or manager role required' }), { status: 403 })
+      return new Response(JSON.stringify({ error: 'Admin or manager role required' }), {
+        status: 403,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      })
     }
 
     const { data: connections, error: connErr } = await admin
@@ -170,7 +194,10 @@ Deno.serve(async (req) => {
       accessToken = await getAccessToken()
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e)
-      return new Response(JSON.stringify({ error: message }), { status: 500 })
+      return new Response(JSON.stringify({ error: message }), {
+        status: 500,
+        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+      })
     }
 
     for (const conn of connections ?? []) {
@@ -230,10 +257,13 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ results }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
     })
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
-    return new Response(JSON.stringify({ error: message }), { status: 500 })
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    })
   }
 })
