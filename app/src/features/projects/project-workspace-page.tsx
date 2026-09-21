@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useCurrentMember } from '@/features/team/use-current-member'
 import {
   useAddTask,
+  useDeleteProject,
   useProjectWorkspace,
   useQuickLogHour,
   useToggleTask,
@@ -168,11 +169,68 @@ function AddTaskForm({ projectId }: { projectId: string }) {
   )
 }
 
+function DeleteProjectConfirm({
+  projectId,
+  projectName,
+  accountId,
+  onCancel,
+}: {
+  projectId: string
+  projectName: string
+  accountId: string | null
+  onCancel: () => void
+}) {
+  const navigate = useNavigate()
+  const deleteProject = useDeleteProject(projectId, accountId)
+
+  return (
+    <div className="w-full bg-pill-red-bg border border-signal-red rounded-[10px] p-[14px_16px] flex flex-wrap items-center gap-3">
+      <p className="m-0 text-[13px] text-pill-red-fg flex-1 min-w-[240px]">
+        Permanently delete <strong>{projectName}</strong>? This removes all its
+        tasks, logged hours, checklist history and keyword tracking — there's
+        no undo.
+      </p>
+      <div className="flex items-center gap-2">
+        <Button
+          disabled={deleteProject.isPending}
+          onClick={() =>
+            deleteProject.mutate(undefined, {
+              onSuccess: () =>
+                navigate(accountId ? `/clients/${accountId}` : '/projects'),
+            })
+          }
+          className="!bg-signal-red !border-signal-red hover:!bg-[#8E3C10]"
+        >
+          {deleteProject.isPending ? 'Deleting…' : 'Yes, delete permanently'}
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={onCancel}
+          disabled={deleteProject.isPending}
+        >
+          Cancel
+        </Button>
+      </div>
+      {deleteProject.isError && (
+        <p className="m-0 w-full text-[12px] text-signal-red">
+          {deleteProject.error instanceof Error
+            ? deleteProject.error.message
+            : 'Failed to delete'}
+        </p>
+      )}
+    </div>
+  )
+}
+
 export function ProjectWorkspacePage() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
   const { data: ws, isLoading, isError, error, refetch, isFetching } =
     useProjectWorkspace(projectId)
+  const { data: currentMember } = useCurrentMember()
+  const [confirmingDelete, setConfirmingDelete] = React.useState(false)
+  const canDelete =
+    currentMember?.role === 'admin' || currentMember?.role === 'manager'
 
   if (isError) {
     return (
@@ -241,8 +299,22 @@ export function ProjectWorkspacePage() {
             </Badge>
           )}
           <AddTaskForm projectId={ws.id} />
+          {canDelete && !confirmingDelete && (
+            <Button variant="secondary" onClick={() => setConfirmingDelete(true)}>
+              Delete project
+            </Button>
+          )}
         </div>
       </div>
+
+      {confirmingDelete && (
+        <DeleteProjectConfirm
+          projectId={ws.id}
+          projectName={ws.name}
+          accountId={ws.accountId}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
 
       <section className="flex flex-wrap gap-3 items-start">
         <div className="flex-[1_1_460px] min-w-0 bg-surface border border-border rounded-[12px] overflow-hidden">

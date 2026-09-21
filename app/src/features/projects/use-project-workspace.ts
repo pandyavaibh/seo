@@ -195,6 +195,20 @@ export function useToggleTask(projectId: string) {
   })
 }
 
+export function useDeleteProject(projectId: string, accountId: string | null) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('projects').delete().eq('id', projectId)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      if (accountId) queryClient.invalidateQueries({ queryKey: ['account', accountId] })
+    },
+  })
+}
+
 export function useQuickLogHour(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
