@@ -99,6 +99,12 @@ function TaskRow({
   )
 }
 
+function ordinal(n: number) {
+  const s = ['th', 'st', 'nd', 'rd']
+  const v = n % 100
+  return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`
+}
+
 function TableRowLike({ children }: { children: React.ReactNode }) {
   return <tr className="border-b border-border-light-2">{children}</tr>
 }
@@ -284,7 +290,13 @@ export function ProjectWorkspacePage() {
       <div className="flex flex-wrap gap-3 items-end justify-between">
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[11px] tracking-[0.14em] uppercase text-ink-muted">
-            {[ws.projectType, ws.dueOn ? `due ${ws.dueOn}` : null]
+            {[
+              ws.projectType,
+              ws.billingCycle === 'monthly'
+                ? `renews ${ws.renewalDay ? `on the ${ordinal(ws.renewalDay)}` : 'monthly'}`
+                : 'one-time project',
+              ws.dueOn ? `due ${ws.dueOn}` : null,
+            ]
               .filter(Boolean)
               .join(' · ') || '—'}
           </span>

@@ -24,6 +24,8 @@ export interface ProjectWorkspace {
   dueOn: string | null
   weeklyHours: number | null
   linkTarget: number
+  billingCycle: string
+  renewalDay: number | null
   team: { id: string; name: string; role: MemberRole }[]
   tasks: WorkspaceTask[]
   checklist: { done: number; total: number }
@@ -62,7 +64,7 @@ export function useProjectWorkspace(projectId: string | undefined) {
         supabase
           .from('projects')
           .select(
-            'id, name, account_id, project_type, stage, due_on, weekly_hours, link_target, accounts(name)',
+            'id, name, account_id, project_type, stage, due_on, weekly_hours, link_target, billing_cycle, renewal_day, accounts(name)',
           )
           .eq('id', projectId!)
           .single(),
@@ -127,6 +129,8 @@ export function useProjectWorkspace(projectId: string | undefined) {
         dueOn: p.due_on,
         weeklyHours: p.weekly_hours,
         linkTarget: p.link_target,
+        billingCycle: p.billing_cycle,
+        renewalDay: p.renewal_day,
         team: (assignmentsRes.data ?? [])
           .map((a) => a.team_members)
           .filter((m): m is { id: string; name: string; role: MemberRole } => m != null),

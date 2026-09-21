@@ -53,6 +53,8 @@ export interface Database {
           due_on: string | null
           weekly_hours: number | null
           health: string | null
+          billing_cycle: string
+          renewal_day: number | null
           created_at: string
         }
         Insert: Partial<Database['public']['Tables']['projects']['Row']> & {

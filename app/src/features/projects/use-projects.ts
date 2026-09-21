@@ -56,6 +56,9 @@ export interface NewProjectInput {
   projectType: string
   dueOn: string
   weeklyHours: string
+  billingCycle: 'monthly' | 'one_time'
+  renewalDay: string
+  linkTarget: string
 }
 
 export function useCreateProject(accountId: string, accountName: string) {
@@ -73,6 +76,12 @@ export function useCreateProject(accountId: string, accountName: string) {
           project_type: input.projectType || null,
           due_on: input.dueOn || null,
           weekly_hours: input.weeklyHours ? Number(input.weeklyHours) : null,
+          billing_cycle: input.billingCycle,
+          renewal_day:
+            input.billingCycle === 'monthly' && input.renewalDay
+              ? Number(input.renewalDay)
+              : null,
+          link_target: input.linkTarget ? Number(input.linkTarget) : 200,
         })
         .select('id')
         .single()

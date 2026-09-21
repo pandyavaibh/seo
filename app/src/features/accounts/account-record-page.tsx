@@ -221,25 +221,42 @@ const PROJECT_TYPES = ['technical', 'content', 'offpage', 'local', 'migration', 
 
 function AddProjectForm({
   accountId,
-  accountName,
+  acc,
   onClose,
 }: {
   accountId: string
-  accountName: string
+  acc: AccountDetail
   onClose: () => void
 }) {
   const navigate = useNavigate()
-  const createProject = useCreateProject(accountId, accountName)
+  const createProject = useCreateProject(accountId, acc.name)
   const [name, setName] = React.useState('')
   const [projectType, setProjectType] = React.useState('')
   const [dueOn, setDueOn] = React.useState('')
   const [weeklyHours, setWeeklyHours] = React.useState('')
+  const [billingCycle, setBillingCycle] = React.useState<'monthly' | 'one_time'>('monthly')
+  const [renewalDay, setRenewalDay] = React.useState('')
+  const [linkTarget, setLinkTarget] = React.useState('200')
 
   const fieldClass =
     'text-[13px] rounded-[8px] border border-border px-3 py-2 bg-surface w-full'
 
   return (
     <div className="flex flex-col gap-3 p-[12px] border border-border-light rounded-[10px] bg-surface-sunken-2">
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 p-[10px_12px] rounded-[8px] bg-surface border border-border-light text-[12px]">
+        <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">
+          Client
+        </span>
+        <span className="font-medium">{acc.name}</span>
+        {acc.website && <span className="text-ink-muted">{acc.website}</span>}
+        <span className="text-ink-muted">
+          Account retainer: {formatMoney(acc.retainerCents, acc.currency)}/mo
+        </span>
+        {acc.renewalOn && (
+          <span className="text-ink-muted">Contract renews {acc.renewalOn}</span>
+        )}
+      </div>
+
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
         <label className="flex flex-col gap-1">
           <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">
@@ -271,7 +288,34 @@ function AddProjectForm({
         </label>
         <label className="flex flex-col gap-1">
           <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">
-            Due date
+            Billing cycle
+          </span>
+          <select
+            value={billingCycle}
+            onChange={(e) => setBillingCycle(e.target.value as 'monthly' | 'one_time')}
+            className={fieldClass}
+          >
+            <option value="monthly">Monthly retainer</option>
+            <option value="one_time">One-time project</option>
+          </select>
+        </label>
+        {billingCycle === 'monthly' && (
+          <label className="flex flex-col gap-1">
+            <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">
+              Renews on (day of month)
+            </span>
+            <input
+              value={renewalDay}
+              onChange={(e) => setRenewalDay(e.target.value)}
+              placeholder="1"
+              inputMode="numeric"
+              className={fieldClass}
+            />
+          </label>
+        )}
+        <label className="flex flex-col gap-1">
+          <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">
+            {billingCycle === 'monthly' ? 'Next due date' : 'Due date'}
           </span>
           <input
             type="date"
@@ -292,6 +336,18 @@ function AddProjectForm({
             className={fieldClass}
           />
         </label>
+        <label className="flex flex-col gap-1">
+          <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">
+            Monthly link target
+          </span>
+          <input
+            value={linkTarget}
+            onChange={(e) => setLinkTarget(e.target.value)}
+            placeholder="200"
+            inputMode="numeric"
+            className={fieldClass}
+          />
+        </label>
       </div>
       {createProject.isError && (
         <p className="m-0 text-[12px] text-signal-red">
@@ -306,7 +362,7 @@ function AddProjectForm({
           disabled={!name.trim() || createProject.isPending}
           onClick={() =>
             createProject.mutate(
-              { name, projectType, dueOn, weeklyHours },
+              { name, projectType, dueOn, weeklyHours, billingCycle, renewalDay, linkTarget },
               { onSuccess: (id) => navigate(`/projects/${id}`) },
             )
           }
@@ -513,7 +569,7 @@ export function AccountRecordPage() {
                   {showAddProject && accountId && (
                     <AddProjectForm
                       accountId={accountId}
-                      accountName={acc.name}
+                      acc={acc}
                       onClose={() => setShowAddProject(false)}
                     />
                   )}
