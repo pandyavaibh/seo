@@ -26,6 +26,8 @@ export interface ProjectWorkspace {
   linkTarget: number
   billingCycle: string
   renewalDay: number | null
+  trafficGoalClicks: number | null
+  conversionsGoal: number | null
   team: { assignmentId: string; id: string; name: string; role: MemberRole; weeklyHours: number }[]
   tasks: WorkspaceTask[]
   checklist: { done: number; total: number }
@@ -64,7 +66,7 @@ export function useProjectWorkspace(projectId: string | undefined) {
         supabase
           .from('projects')
           .select(
-            'id, name, account_id, project_type, stage, due_on, weekly_hours, link_target, billing_cycle, renewal_day, accounts(name)',
+            'id, name, account_id, project_type, stage, due_on, weekly_hours, link_target, billing_cycle, renewal_day, traffic_goal_clicks, conversions_goal, accounts(name)',
           )
           .eq('id', projectId!)
           .single(),
@@ -131,6 +133,8 @@ export function useProjectWorkspace(projectId: string | undefined) {
         linkTarget: p.link_target,
         billingCycle: p.billing_cycle,
         renewalDay: p.renewal_day,
+        trafficGoalClicks: p.traffic_goal_clicks,
+        conversionsGoal: p.conversions_goal,
         team: (assignmentsRes.data ?? [])
           .filter((a) => a.team_members != null)
           .map((a) => ({

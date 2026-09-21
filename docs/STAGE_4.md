@@ -136,8 +136,19 @@ Contacts and engagements still have no add-UI (see above).
 
 Stage 0 (foundation), Stage 1 (Clients + Account record), Stage 2 core
 slice (Project workspace), Stage 3 core slice (Capacity & strength),
-and Stage 4 (Search performance, full GSC/GA4 detail) are all live and
-cross-linked. The real gaps: deals/lead pipeline (Stage 1, no UI),
-template library + allocation planner (Stage 2/3, no UI), contacts/
-engagements have no add-UI, and the project-level KPI report described
-above is scoped but not started.
+and Stage 4 (Search performance, full GSC/GA4 detail, nightly sync
+wired) are all live and cross-linked. Every gap this file used to list
+here is closed: deals/lead pipeline (`/deals`), contacts (add/edit/
+remove on the Account record), staffing (both per-project and the
+Capacity page's allocation planner), template library + apply-to-
+project + recurring monthly generation (`/templates`), leave/
+availability (Capacity page), account record's stat tiles (real
+Stage 4 numbers), and the project-level KPI/OKR report (keyword
+targets in Rankings, traffic/conversions vs goal, custom KPIs) —
+see each feature's own commit message for the reasoning behind it.
+
+What's still actually open: the Google Cloud service account itself
+(nothing Stage 4 does is real until that exists — every account
+correctly shows "Needs access" until then), and the nightly cron sync
+is unverified end-to-end (this sandbox's network policy blocks a
+direct test of the deployed function; verified by code review only).

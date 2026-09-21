@@ -9,11 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProgressBar } from '@/components/ui/progress-bar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useTeamMembers } from '@/features/accounts/use-account'
+import { useAccountPerformance } from '@/features/accounts/use-account-performance'
 import { useCurrentMember } from '@/features/team/use-current-member'
 import {
   useAddKeywords,
   useKeywords,
   useLogRank,
+  useSetKeywordTarget,
   type KeywordRow,
 } from '@/features/projects/use-keywords'
 import {
@@ -26,6 +28,14 @@ import {
   useToggleTask,
   type WorkspaceTask,
 } from '@/features/projects/use-project-workspace'
+import {
+  useCreateGoal,
+  useDeleteGoal,
+  useProjectGoals,
+  useUpdateGoalProgress,
+  useUpdateTrafficGoals,
+  type CustomGoal,
+} from '@/features/projects/use-project-goals'
 import { useApplyTemplate, useTemplates } from '@/features/templates/use-templates'
 import { initials, tintFor } from '@/lib/avatar'
 import { loadColorFor } from '@/lib/load-color'
@@ -410,7 +420,13 @@ function rankColor(rank: number | null) {
 function RankKeywordRow({ keyword, projectId }: { keyword: KeywordRow; projectId: string }) {
   const { data: currentMember } = useCurrentMember()
   const logRank = useLogRank(projectId)
+  const setTarget = useSetKeywordTarget(projectId)
   const [rankInput, setRankInput] = React.useState('')
+  const [targetInput, setTargetInput] = React.useState(
+    keyword.targetRank != null ? String(keyword.targetRank) : '',
+  )
+
+  const hitTarget = keyword.targetRank != null && keyword.latestRank != null && keyword.latestRank <= keyword.targetRank
 
   const delta =
     keyword.previousRank != null && keyword.latestRank != null
@@ -449,6 +465,24 @@ function RankKeywordRow({ keyword, projectId }: { keyword: KeywordRow; projectId
       </td>
       <td className="p-[11px_12px] font-mono text-[11px] text-ink-muted">
         {keyword.latestCheckedOn ?? '—'}
+      </td>
+      <td className="p-[11px_12px]">
+        <div className="flex items-center gap-[4px]">
+          <input
+            value={targetInput}
+            onChange={(e) => setTargetInput(e.target.value)}
+            onBlur={() => {
+              const next = targetInput.trim() ? Number(targetInput) : null
+              if (next !== keyword.targetRank) {
+                setTarget.mutate({ keywordId: keyword.id, targetRank: next })
+              }
+            }}
+            placeholder="—"
+            inputMode="numeric"
+            className="w-[44px] text-[12px] font-mono border border-border rounded-[6px] px-1 py-1"
+          />
+          {hitTarget && <span className="text-[11px] text-signal-green">✓</span>}
+        </div>
       </td>
       <td className="p-[11px_18px]">
         <div className="flex items-center gap-[6px]">
@@ -584,6 +618,9 @@ function RankingsSection({ projectId }: { projectId: string }) {
                       <th className="p-[9px_12px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
                         Checked
                       </th>
+                      <th className="p-[9px_12px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
+                        Target
+                      </th>
                       <th className="p-[9px_18px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
                         Log a check
                       </th>
@@ -612,6 +649,232 @@ function StatTileSmall({ label, value }: { label: string; value: string }) {
       <span className="font-mono text-[9.5px] tracking-[0.1em] uppercase text-ink-muted">{label}</span>
       <span className="text-[18px] font-semibold tracking-[-0.02em] leading-none">{value}</span>
     </div>
+  )
+}
+
+function TrafficGoalCard({
+  projectId,
+  accountId,
+  trafficGoalClicks,
+  conversionsGoal,
+}: {
+  projectId: string
+  accountId: string | null
+  trafficGoalClicks: number | null
+  conversionsGoal: number | null
+}) {
+  const { data: perf } = useAccountPerformance(accountId ?? undefined)
+  const updateGoals = useUpdateTrafficGoals(projectId)
+  const [editing, setEditing] = React.useState(false)
+  const [trafficInput, setTrafficInput] = React.useState(
+    trafficGoalClicks != null ? String(trafficGoalClicks) : '',
+  )
+  const [conversionsInput, setConversionsInput] = React.useState(
+    conversionsGoal != null ? String(conversionsGoal) : '',
+  )
+
+  if (!accountId) return null
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Traffic &amp; conversions vs goal</CardTitle>
+        {!editing && (
+          <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>
+            Set goals
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent className="p-[16px_18px] flex flex-col gap-[10px]">
+        <p className="m-0 text-[11.5px] text-ink-muted">
+          Account-wide (Stage 4 tracks one Search Console/GA4 property per client, not per
+          engagement) — not attributable to just this project if the account runs others.
+        </p>
+        {editing ? (
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="flex flex-col gap-1">
+              <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted">
+                Clicks goal (28d)
+              </span>
+              <input
+                value={trafficInput}
+                onChange={(e) => setTrafficInput(e.target.value)}
+                inputMode="numeric"
+                className="w-[100px] text-[13px] border border-border rounded-[6px] px-2 py-1"
+              />
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted">
+                Conversions goal (28d)
+              </span>
+              <input
+                value={conversionsInput}
+                onChange={(e) => setConversionsInput(e.target.value)}
+                inputMode="numeric"
+                className="w-[100px] text-[13px] border border-border rounded-[6px] px-2 py-1"
+              />
+            </label>
+            <Button
+              size="sm"
+              disabled={updateGoals.isPending}
+              onClick={() =>
+                updateGoals.mutate(
+                  {
+                    trafficGoalClicks: trafficInput.trim() ? Number(trafficInput) : null,
+                    conversionsGoal: conversionsInput.trim() ? Number(conversionsInput) : null,
+                  },
+                  { onSuccess: () => setEditing(false) },
+                )
+              }
+            >
+              Save
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-[20px]">
+            <div className="flex flex-col gap-[4px]">
+              <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted">
+                Organic clicks (28d)
+              </span>
+              <span className="text-[18px] font-semibold">
+                {perf?.gscConnected ? (perf.organicClicks28d ?? 0).toLocaleString() : '—'}
+                {trafficGoalClicks != null && (
+                  <span className="text-[13px] text-ink-muted"> / {trafficGoalClicks.toLocaleString()}</span>
+                )}
+              </span>
+            </div>
+            <div className="flex flex-col gap-[4px]">
+              <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted">
+                Conversions (28d)
+              </span>
+              <span className="text-[18px] font-semibold">
+                {perf?.ga4Connected ? (perf.conversions28d ?? 0).toLocaleString() : '—'}
+                {conversionsGoal != null && (
+                  <span className="text-[13px] text-ink-muted"> / {conversionsGoal.toLocaleString()}</span>
+                )}
+              </span>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function CustomGoalRow({ goal, projectId }: { goal: CustomGoal; projectId: string }) {
+  const updateProgress = useUpdateGoalProgress(projectId)
+  const deleteGoal = useDeleteGoal(projectId)
+  const [value, setValue] = React.useState(goal.currentValue != null ? String(goal.currentValue) : '')
+
+  const pct =
+    goal.targetValue != null && goal.targetValue !== 0 && goal.currentValue != null
+      ? Math.min(100, Math.round((goal.currentValue / goal.targetValue) * 100))
+      : null
+
+  return (
+    <div className="flex flex-col gap-[6px]">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[13px] font-medium">{goal.label}</span>
+        <button
+          onClick={() => deleteGoal.mutate(goal.id)}
+          disabled={deleteGoal.isPending}
+          className="border-none bg-transparent font-mono text-[10.5px] text-ink-muted hover:text-signal-red cursor-pointer p-0"
+        >
+          Remove
+        </button>
+      </div>
+      {pct != null && <ProgressBar pct={pct} color={loadColorFor(pct / 100 >= 1 ? 1 : pct / 200)} />}
+      <div className="flex items-center gap-2">
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={() => {
+            const next = value.trim() ? Number(value) : null
+            if (next !== goal.currentValue) updateProgress.mutate({ id: goal.id, currentValue: next })
+          }}
+          inputMode="decimal"
+          className="w-[80px] text-[12px] font-mono border border-border rounded-[6px] px-2 py-1"
+        />
+        <span className="font-mono text-[11px] text-ink-muted">
+          {goal.unit ?? ''} of {goal.targetValue ?? '—'} {goal.unit ?? ''} target
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function AddCustomGoalForm({ projectId }: { projectId: string }) {
+  const [open, setOpen] = React.useState(false)
+  const [label, setLabel] = React.useState('')
+  const [targetValue, setTargetValue] = React.useState('')
+  const [currentValue, setCurrentValue] = React.useState('')
+  const [unit, setUnit] = React.useState('')
+  const createGoal = useCreateGoal(projectId)
+
+  if (!open) {
+    return (
+      <Button onClick={() => setOpen(true)} size="sm" variant="secondary">
+        Add custom goal
+      </Button>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-2 p-[10px] border border-border-light rounded-[10px] bg-surface-sunken-2">
+      <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))' }}>
+        <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Domain Rating" className="text-[13px] border border-border rounded-[6px] px-2 py-1" />
+        <input value={currentValue} onChange={(e) => setCurrentValue(e.target.value)} placeholder="Current (45)" inputMode="decimal" className="text-[13px] border border-border rounded-[6px] px-2 py-1" />
+        <input value={targetValue} onChange={(e) => setTargetValue(e.target.value)} placeholder="Target (55)" inputMode="decimal" className="text-[13px] border border-border rounded-[6px] px-2 py-1" />
+        <input value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Unit (optional)" className="text-[13px] border border-border rounded-[6px] px-2 py-1" />
+      </div>
+      {createGoal.isError && (
+        <p className="m-0 text-[12px] text-signal-red">
+          {createGoal.error instanceof Error ? createGoal.error.message : 'Failed to add goal'}
+        </p>
+      )}
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          disabled={!label.trim() || createGoal.isPending}
+          onClick={() =>
+            createGoal.mutate(
+              { label, targetValue, currentValue, unit },
+              { onSuccess: () => { setLabel(''); setTargetValue(''); setCurrentValue(''); setUnit(''); setOpen(false) } },
+            )
+          }
+        >
+          {createGoal.isPending ? 'Adding…' : 'Add'}
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>
+          Cancel
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function CustomGoalsCard({ projectId }: { projectId: string }) {
+  const { data: goals, isLoading } = useProjectGoals(projectId)
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Custom KPIs</CardTitle>
+      </CardHeader>
+      <CardContent className="p-[16px_18px] flex flex-col gap-3">
+        {isLoading && <Skeleton className="h-[60px] w-full" />}
+        {!isLoading && (goals ?? []).length === 0 && (
+          <p className="m-0 text-[13px] text-ink-muted">No custom KPIs tracked yet.</p>
+        )}
+        {(goals ?? []).map((g) => (
+          <CustomGoalRow key={g.id} goal={g} projectId={projectId} />
+        ))}
+        <AddCustomGoalForm projectId={projectId} />
+      </CardContent>
+    </Card>
   )
 }
 
@@ -827,6 +1090,20 @@ export function ProjectWorkspacePage() {
       </section>
 
       <RankingsSection projectId={ws.id} />
+
+      <section className="flex flex-wrap gap-3 items-start">
+        <div className="flex-[1_1_420px] min-w-0">
+          <TrafficGoalCard
+            projectId={ws.id}
+            accountId={ws.accountId}
+            trafficGoalClicks={ws.trafficGoalClicks}
+            conversionsGoal={ws.conversionsGoal}
+          />
+        </div>
+        <div className="flex-[1_1_280px] max-w-[340px]">
+          <CustomGoalsCard projectId={ws.id} />
+        </div>
+      </section>
     </div>
   )
 }

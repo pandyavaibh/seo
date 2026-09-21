@@ -57,6 +57,8 @@ export interface Database {
           renewal_day: number | null
           applied_template_id: string | null
           tasks_generated_through: string | null
+          traffic_goal_clicks: number | null
+          conversions_goal: number | null
           created_at: string
         }
         Insert: Partial<Database['public']['Tables']['projects']['Row']> & {
@@ -113,6 +115,31 @@ export interface Database {
             columns: ['template_id']
             isOneToOne: false
             referencedRelation: 'project_templates'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      project_goals: {
+        Row: {
+          id: string
+          project_id: string
+          label: string
+          target_value: number | null
+          current_value: number | null
+          unit: string | null
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['project_goals']['Row']> & {
+          project_id: string
+          label: string
+        }
+        Update: Partial<Database['public']['Tables']['project_goals']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'project_goals_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
             referencedColumns: ['id']
           },
         ]
@@ -359,6 +386,7 @@ export interface Database {
           project_id: string
           phrase: string
           target_url: string | null
+          target_rank: number | null
           archived: boolean
           created_at: string
         }
