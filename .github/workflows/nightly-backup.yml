@@ -50,9 +50,16 @@ jobs:
           git checkout --orphan backups
           git rm -rf . 2>/dev/null || true
 
-      - name: Install postgresql-client
+      - name: Install postgresql-client 17
         if: steps.check.outputs.configured == 'true'
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+        # Ubuntu's default apt repo only ships postgresql-client 16, but
+        # Supabase runs Postgres 17 — pg_dump refuses to dump from a newer
+        # server than itself ("aborting because of server version
+        # mismatch"). Add the official PGDG apt repo for a matching client.
+        run: |
+          sudo apt-get install -y postgresql-common
+          yes | sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+          sudo apt-get install -y postgresql-client-17
 
       - name: Dump production database
         if: steps.check.outputs.configured == 'true'
