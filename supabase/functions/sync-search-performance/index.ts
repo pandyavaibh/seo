@@ -112,7 +112,11 @@ async function syncSearchConsole(
 }
 
 async function syncGA4(accessToken: string, property: string) {
-  const endpoint = `https://analyticsdata.googleapis.com/v1beta/${property}:runReport`
+  // GA4's own Admin UI shows the property ID as a bare number (e.g.
+  // "536339517"), but the Data API needs it prefixed — accept either so a
+  // value copy-pasted straight from Google still works.
+  const propertyPath = property.startsWith('properties/') ? property : `properties/${property}`
+  const endpoint = `https://analyticsdata.googleapis.com/v1beta/${propertyPath}:runReport`
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
