@@ -1,5 +1,5 @@
-// Stage 4 — pulls Search Console and GA4 numbers for one account using the
-// shared Google Cloud service account (see supabase/migrations/
+// Stage 4 — pulls Search Console and GA4 numbers using the shared
+// Google Cloud service account (see supabase/migrations/
 // 20260921150000_stage4_search_performance.sql for why a service account
 // instead of per-account OAuth) and writes them into metric_snapshots and
 // the dimensional tables added in
@@ -9,16 +9,21 @@
 // Vitals, index coverage/manual actions, GA4 "assisted conversions") and
 // why — none of it is available through these APIs.
 //
-// Invoked from the app (Search performance page's "Sync now" / "Check
-// access" buttons) via supabase.functions.invoke, which attaches the
-// caller's session JWT — default JWT verification (no verify_jwt=false)
-// covers auth; the role check below covers authorization.
+// Two call modes:
+// - User mode: the app (Search performance page's "Sync now" / "Check
+//   access" buttons) calls supabase.functions.invoke, which attaches the
+//   caller's session JWT. Body: { accountId }. Syncs just that account.
+// - Cron mode: 20260921190000_nightly_search_sync.sql's pg_cron job
+//   calls this nightly via pg_net with an `x-cron-secret` header
+//   checked against the internal_config table (see that migration for
+//   why a locked-down table instead of an env var). No accountId in the
+//   body — syncs every account that has a search_connections row.
 //
-// Not yet wired to a nightly schedule: pg_cron calling this per-account
-// needs a service-role invocation path this function doesn't implement
-// yet, deliberately deferred until GOOGLE_SERVICE_ACCOUNT_KEY actually
-// exists (see docs/STAGE_4.md) — no point building and testing a cron
-// path against a secret nobody has created.
+// verify_jwt is OFF for this function (set at deploy time) because the
+// cron path has no Supabase-issued JWT at all — auth is handled
+// entirely in code below, either the user-JWT + role check (user mode)
+// or the cron-secret check (cron mode). A request with neither is
+// rejected before any Google or database call happens.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { JWT } from 'npm:google-auth-library@9'
@@ -34,7 +39,7 @@ const WINDOW_DAYS = 28
 // function's own error.
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
@@ -183,48 +188,175 @@ async function syncGA4(accessToken: string, property: string) {
   }
 }
 
+// deno-lint-ignore no-explicit-any
+type SupabaseAdmin = any
+
+async function syncAccount(admin: SupabaseAdmin, accessToken: string, accountId: string) {
+  const { data: connections, error: connErr } = await admin
+    .from('search_connections')
+    .select('id, source, property')
+    .eq('account_id', accountId)
+  if (connErr) throw new Error(connErr.message)
+
+  const results: Record<string, { status: string; error?: string }> = {}
+  const today = isoDaysAgo(0)
+
+  for (const conn of connections ?? []) {
+    try {
+      if (conn.source === 'gsc') {
+        const { dailyRows, queryRows, pageRows, countryRows, deviceRows } = await syncSearchConsole(
+          accessToken,
+          conn.property,
+        )
+
+        const dailySnapshots = dailyRows.flatMap((r) => [
+          { account_id: accountId, source: 'gsc', snapshot_date: r.date, metric_key: 'clicks', value: r.clicks },
+          { account_id: accountId, source: 'gsc', snapshot_date: r.date, metric_key: 'impressions', value: r.impressions },
+          { account_id: accountId, source: 'gsc', snapshot_date: r.date, metric_key: 'ctr', value: r.ctr },
+          { account_id: accountId, source: 'gsc', snapshot_date: r.date, metric_key: 'avg_position', value: r.position },
+        ])
+        if (dailySnapshots.length > 0) {
+          const { error } = await admin.from('metric_snapshots').upsert(dailySnapshots)
+          if (error) throw new Error(error.message)
+        }
+
+        const dimensionTable = async (table: string, keyCol: string, rows: typeof queryRows) => {
+          if (rows.length === 0) return
+          const { error } = await admin.from(table).upsert(
+            rows.map((r) => ({
+              account_id: accountId,
+              snapshot_date: today,
+              [keyCol]: r.key,
+              clicks: r.clicks,
+              impressions: r.impressions,
+              ctr: r.ctr,
+              avg_position: r.position,
+            })),
+          )
+          if (error) throw new Error(error.message)
+        }
+        await dimensionTable('search_queries_daily', 'query', queryRows)
+        await dimensionTable('search_pages_daily', 'page', pageRows)
+        await dimensionTable('search_countries_daily', 'country', countryRows)
+        await dimensionTable('search_devices_daily', 'device', deviceRows)
+      } else if (conn.source === 'ga4') {
+        const { dailyRows, channelRows, landingPageRows } = await syncGA4(accessToken, conn.property)
+
+        const dailySnapshots = dailyRows.flatMap((r) => [
+          { account_id: accountId, source: 'ga4', snapshot_date: r.date, metric_key: 'sessions', value: r.sessions },
+          { account_id: accountId, source: 'ga4', snapshot_date: r.date, metric_key: 'conversions', value: r.conversions },
+          { account_id: accountId, source: 'ga4', snapshot_date: r.date, metric_key: 'engagement_rate', value: r.engagementRate },
+        ])
+        if (dailySnapshots.length > 0) {
+          const { error } = await admin.from('metric_snapshots').upsert(dailySnapshots)
+          if (error) throw new Error(error.message)
+        }
+
+        if (channelRows.length > 0) {
+          const { error } = await admin.from('ga4_channels_daily').upsert(
+            channelRows.map((r) => ({
+              account_id: accountId,
+              snapshot_date: r.date,
+              channel: r.channel,
+              sessions: r.sessions,
+              conversions: r.conversions,
+            })),
+          )
+          if (error) throw new Error(error.message)
+        }
+
+        if (landingPageRows.length > 0) {
+          const { error } = await admin.from('ga4_landing_pages_daily').upsert(
+            landingPageRows.map((r) => ({
+              account_id: accountId,
+              snapshot_date: today,
+              landing_page: r.landingPage,
+              sessions: r.sessions,
+              engaged_sessions: r.engagedSessions,
+              conversions: r.conversions,
+            })),
+          )
+          if (error) throw new Error(error.message)
+        }
+      }
+
+      await admin
+        .from('search_connections')
+        .update({
+          status: 'granted',
+          last_checked_at: new Date().toISOString(),
+          last_synced_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', conn.id)
+      results[conn.source] = { status: 'granted' }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
+      await admin
+        .from('search_connections')
+        .update({ status: 'needs_access', last_checked_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq('id', conn.id)
+      results[conn.source] = { status: 'needs_access', error: message }
+    }
+  }
+
+  return results
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS })
   }
 
   try {
-    const { accountId } = await req.json()
-    if (!accountId) return json({ error: 'accountId is required' }, 400)
-
-    const authHeader = req.headers.get('Authorization') ?? ''
-    const asUser = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } },
-    )
-    const {
-      data: { user },
-    } = await asUser.auth.getUser()
-    if (!user?.email) return json({ error: 'Not signed in' }, 401)
-
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    const { data: member } = await admin
-      .from('team_members')
-      .select('role')
-      .eq('email', user.email.toLowerCase())
-      .maybeSingle()
-    if (!member || !['admin', 'manager'].includes(member.role)) {
-      return json({ error: 'Admin or manager role required' }, 403)
+    const cronSecretHeader = req.headers.get('x-cron-secret')
+    let accountIds: string[]
+    let isCron = false
+
+    if (cronSecretHeader) {
+      const { data: cfg } = await admin
+        .from('internal_config')
+        .select('value')
+        .eq('key', 'cron_sync_secret')
+        .maybeSingle()
+      if (!cfg || cfg.value !== cronSecretHeader) {
+        return json({ error: 'Invalid cron secret' }, 401)
+      }
+      isCron = true
+      const { data: conns, error: connsErr } = await admin.from('search_connections').select('account_id')
+      if (connsErr) throw new Error(connsErr.message)
+      accountIds = Array.from(new Set((conns ?? []).map((c: { account_id: string }) => c.account_id)))
+    } else {
+      const body = await req.json().catch(() => ({}))
+      if (!body.accountId) return json({ error: 'accountId is required' }, 400)
+
+      const authHeader = req.headers.get('Authorization') ?? ''
+      const asUser = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!,
+        { global: { headers: { Authorization: authHeader } } },
+      )
+      const {
+        data: { user },
+      } = await asUser.auth.getUser()
+      if (!user?.email) return json({ error: 'Not signed in' }, 401)
+
+      const { data: member } = await admin
+        .from('team_members')
+        .select('role')
+        .eq('email', user.email.toLowerCase())
+        .maybeSingle()
+      if (!member || !['admin', 'manager'].includes(member.role)) {
+        return json({ error: 'Admin or manager role required' }, 403)
+      }
+
+      accountIds = [body.accountId]
     }
-
-    const { data: connections, error: connErr } = await admin
-      .from('search_connections')
-      .select('id, source, property')
-      .eq('account_id', accountId)
-    if (connErr) throw new Error(connErr.message)
-
-    const results: Record<string, { status: string; error?: string }> = {}
-    const today = isoDaysAgo(0)
 
     let accessToken: string
     try {
@@ -233,106 +365,12 @@ Deno.serve(async (req) => {
       return json({ error: e instanceof Error ? e.message : String(e) }, 500)
     }
 
-    for (const conn of connections ?? []) {
-      try {
-        if (conn.source === 'gsc') {
-          const { dailyRows, queryRows, pageRows, countryRows, deviceRows } = await syncSearchConsole(
-            accessToken,
-            conn.property,
-          )
-
-          const dailySnapshots = dailyRows.flatMap((r) => [
-            { account_id: accountId, source: 'gsc', snapshot_date: r.date, metric_key: 'clicks', value: r.clicks },
-            { account_id: accountId, source: 'gsc', snapshot_date: r.date, metric_key: 'impressions', value: r.impressions },
-            { account_id: accountId, source: 'gsc', snapshot_date: r.date, metric_key: 'ctr', value: r.ctr },
-            { account_id: accountId, source: 'gsc', snapshot_date: r.date, metric_key: 'avg_position', value: r.position },
-          ])
-          if (dailySnapshots.length > 0) {
-            const { error } = await admin.from('metric_snapshots').upsert(dailySnapshots)
-            if (error) throw new Error(error.message)
-          }
-
-          const dimensionTable = async (table: string, keyCol: string, rows: typeof queryRows) => {
-            if (rows.length === 0) return
-            const { error } = await admin.from(table).upsert(
-              rows.map((r) => ({
-                account_id: accountId,
-                snapshot_date: today,
-                [keyCol]: r.key,
-                clicks: r.clicks,
-                impressions: r.impressions,
-                ctr: r.ctr,
-                avg_position: r.position,
-              })),
-            )
-            if (error) throw new Error(error.message)
-          }
-          await dimensionTable('search_queries_daily', 'query', queryRows)
-          await dimensionTable('search_pages_daily', 'page', pageRows)
-          await dimensionTable('search_countries_daily', 'country', countryRows)
-          await dimensionTable('search_devices_daily', 'device', deviceRows)
-        } else if (conn.source === 'ga4') {
-          const { dailyRows, channelRows, landingPageRows } = await syncGA4(accessToken, conn.property)
-
-          const dailySnapshots = dailyRows.flatMap((r) => [
-            { account_id: accountId, source: 'ga4', snapshot_date: r.date, metric_key: 'sessions', value: r.sessions },
-            { account_id: accountId, source: 'ga4', snapshot_date: r.date, metric_key: 'conversions', value: r.conversions },
-            { account_id: accountId, source: 'ga4', snapshot_date: r.date, metric_key: 'engagement_rate', value: r.engagementRate },
-          ])
-          if (dailySnapshots.length > 0) {
-            const { error } = await admin.from('metric_snapshots').upsert(dailySnapshots)
-            if (error) throw new Error(error.message)
-          }
-
-          if (channelRows.length > 0) {
-            const { error } = await admin.from('ga4_channels_daily').upsert(
-              channelRows.map((r) => ({
-                account_id: accountId,
-                snapshot_date: r.date,
-                channel: r.channel,
-                sessions: r.sessions,
-                conversions: r.conversions,
-              })),
-            )
-            if (error) throw new Error(error.message)
-          }
-
-          if (landingPageRows.length > 0) {
-            const { error } = await admin.from('ga4_landing_pages_daily').upsert(
-              landingPageRows.map((r) => ({
-                account_id: accountId,
-                snapshot_date: today,
-                landing_page: r.landingPage,
-                sessions: r.sessions,
-                engaged_sessions: r.engagedSessions,
-                conversions: r.conversions,
-              })),
-            )
-            if (error) throw new Error(error.message)
-          }
-        }
-
-        await admin
-          .from('search_connections')
-          .update({
-            status: 'granted',
-            last_checked_at: new Date().toISOString(),
-            last_synced_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', conn.id)
-        results[conn.source] = { status: 'granted' }
-      } catch (e) {
-        const message = e instanceof Error ? e.message : String(e)
-        await admin
-          .from('search_connections')
-          .update({ status: 'needs_access', last_checked_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-          .eq('id', conn.id)
-        results[conn.source] = { status: 'needs_access', error: message }
-      }
+    const perAccount: Record<string, Record<string, { status: string; error?: string }>> = {}
+    for (const accountId of accountIds) {
+      perAccount[accountId] = await syncAccount(admin, accessToken, accountId)
     }
 
-    return json({ results })
+    return json(isCron ? { accounts: perAccount } : { results: perAccount[accountIds[0]] })
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500)
   }

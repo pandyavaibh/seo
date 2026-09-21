@@ -80,11 +80,23 @@ client-self-service.
   Edge Function) and added to at least one client's properties. Until
   then every account correctly shows "Needs access" — that's the real
   state, not a bug.
-- **No nightly schedule.** The Edge Function only runs when a staff
-  member clicks "Sync now" / "Check access". Wiring pg_cron to call it
-  automatically needs a service-role invocation path the function
-  doesn't implement yet — deliberately deferred rather than building
-  and testing a cron job against a secret that doesn't exist.
+- ~~**No nightly schedule.**~~ Built:
+  `20260921190000_nightly_search_sync.sql` adds an `internal_config`
+  table (RLS enabled, zero policies — deny-all except service role;
+  holds a random secret the migration generates itself, not a Google
+  credential, so no dashboard access was needed for this part) and a
+  pg_cron job that calls the Edge Function nightly at 03:00 UTC via
+  pg_net with that secret in an `x-cron-secret` header. The function
+  now has two modes — user (one account, JWT + role checked) and cron
+  (every account with a connection, secret checked) — and is deployed
+  with `verify_jwt=false` since the cron path carries no Supabase JWT
+  at all; both paths are fully authenticated in the function's own
+  code before touching Google or the database. **Unverified
+  end-to-end** — this sandbox's outbound network policy blocks a
+  direct curl test of the deployed function, so this is verified by
+  code review, not a live run. It fails harmlessly and identically to
+  the manual path (the same "GOOGLE_SERVICE_ACCOUNT_KEY is not set"
+  error) until that secret exists.
 - **Core Web Vitals, index coverage, manual actions, GA4 "assisted
   conversions"** — not gaps to fill later, genuinely unavailable
   through the APIs this integration uses. See the detail migration's
