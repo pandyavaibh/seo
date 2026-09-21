@@ -132,13 +132,14 @@ it disabled) — name, website, industry, retainer, hours budget, renewal
 date, straight into `accounts` via the RLS policy that already existed.
 Contacts and engagements still have no add-UI (see above).
 
-## Where things stand across all six stages
+## Where things stand across all seven stages
 
 Stage 0 (foundation), Stage 1 (Clients + Account record), Stage 2 core
 slice (Project workspace), Stage 3 core slice (Capacity & strength),
 Stage 4 (Search performance, full GSC/GA4 detail, nightly sync wired),
-Stage 5 (backlink production — see `docs/STAGE_5.md`), and Stage 6
-(social and lead capture — see `docs/STAGE_6.md`) are all live and
+Stage 5 (backlink production — see `docs/STAGE_5.md`), Stage 6 (social
+and lead capture — see `docs/STAGE_6.md`), and Stage 7 (reporting,
+client portal, billing — see `docs/STAGE_7.md`) are all live and
 cross-linked. Every gap this file used to list here is closed:
 deals/lead pipeline (`/deals`), contacts (add/edit/remove on the
 Account record), staffing (both per-project and the Capacity page's
@@ -147,18 +148,24 @@ monthly generation (`/templates`), leave/availability (Capacity page),
 account record's stat tiles (real Stage 4 numbers), the project-level
 KPI/OKR report (keyword targets in Rankings, traffic/conversions vs
 goal, custom KPIs), backlink tracking (prospect → outreach → placed,
-manual, on the project workspace), and social/lead capture (Meta
-connection, content calendar, UTM builder, standardized lead source)
-— see each feature's own commit message for the reasoning behind it.
+manual, on the project workspace), social/lead capture (Meta
+connection, content calendar, UTM builder, standardized lead source),
+and reporting/portal/billing (report builder with PDF export, a real
+client portal, invoices/expenses, admin-only profitability) — see each
+feature's own commit message for the reasoning behind it.
 
 What's still actually open: the Google Cloud service account itself
 (nothing Stage 4 does is real until that exists — every account
 correctly shows "Needs access" until then), the Meta System User +
-access token (same story for Stage 6's Social & Ads screen), and both
-nightly cron syncs are unverified end-to-end (this sandbox's network
-policy blocks a direct test of the deployed functions; verified by
-code review only). Stage 5 deliberately has no authority-score data
-(Domain Rating, DA) — that needs a paid API, cut per the user's
-no-paid-plan decision; see `docs/STAGE_5.md`. Stage 6 deliberately has
-no automated Meta Lead Ads webhook ingestion — that needs Meta App
-Review, an external approval gate; see `docs/STAGE_6.md`.
+access token (same story for Stage 6's Social & Ads screen), a Resend
+account + API key for Stage 7's "send report by email" button, and all
+three nightly/manual sync paths are unverified end-to-end against a
+real external call (this sandbox's network policy blocks a direct test
+of the deployed functions; verified by code review only). Stage 5
+deliberately has no authority-score data (Domain Rating, DA) — that
+needs a paid API, cut per the user's no-paid-plan decision; see
+`docs/STAGE_5.md`. Stage 6 deliberately has no automated Meta Lead Ads
+webhook ingestion — that needs Meta App Review, an external approval
+gate; see `docs/STAGE_6.md`. Stage 7 deliberately has no payment
+processor and no recurring auto-scheduled report email — see
+`docs/STAGE_7.md`.

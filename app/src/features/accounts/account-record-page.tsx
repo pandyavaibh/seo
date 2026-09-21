@@ -11,7 +11,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import {
   useAccount,
   useAddContact,
+  useAddPortalUser,
   useDeleteContact,
+  usePortalUsers,
+  useRemovePortalUser,
   useTeamMembers,
   useUpdateAccount,
   useUpdateContact,
@@ -19,11 +22,18 @@ import {
   type ContactInput,
 } from '@/features/accounts/use-account'
 import { useAccountPerformance } from '@/features/accounts/use-account-performance'
+import { PortalCommentsThread } from '@/features/portal/portal-comments-thread'
+import {
+  useAddDeliverable,
+  useDeleteDeliverable,
+  useDeliverables,
+} from '@/features/portal/use-deliverables'
 import {
   ProjectHoursPanel,
   ProjectHoursSummary,
 } from '@/features/projects/project-hours-panel'
 import { useCreateProject } from '@/features/projects/use-projects'
+import { useCurrentMember } from '@/features/team/use-current-member'
 import { initials, tintFor } from '@/lib/avatar'
 import type { AccountHealth, ActivityKind } from '@/lib/database.types'
 import { STAGE_LABEL, STAGE_TONE } from '@/lib/project-stage'
@@ -344,6 +354,167 @@ function ContactForm({
         </Button>
       </div>
     </div>
+  )
+}
+
+function PortalUsersCard({ accountId }: { accountId: string }) {
+  const { data: users, isLoading } = usePortalUsers(accountId)
+  const addUser = useAddPortalUser(accountId)
+  const removeUser = useRemovePortalUser(accountId)
+  const [showForm, setShowForm] = React.useState(false)
+  const [email, setEmail] = React.useState('')
+  const [name, setName] = React.useState('')
+
+  const fieldClass = 'text-[13px] rounded-[8px] border border-border px-3 py-2 bg-surface w-full'
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Portal users</CardTitle>
+        {!showForm && (
+          <Button variant="secondary" size="sm" onClick={() => setShowForm(true)}>
+            Grant access
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent className="p-[16px_18px] flex flex-col gap-3">
+        <p className="m-0 text-[12px] text-ink-muted">
+          Anyone listed here signs in with the same Google button and sees only this client's
+          portal — no internal data. Their Google account's email must match exactly.
+        </p>
+        {showForm && (
+          <div className="flex flex-col gap-2">
+            <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" className={fieldClass} />
+              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="client@company.com" className={fieldClass} />
+            </div>
+            {addUser.isError && (
+              <p className="m-0 text-[12px] text-signal-red">
+                {addUser.error instanceof Error ? addUser.error.message : 'Failed to grant access'}
+              </p>
+            )}
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                disabled={!name.trim() || !email.trim() || addUser.isPending}
+                onClick={() =>
+                  addUser.mutate({ email, name }, { onSuccess: () => { setEmail(''); setName(''); setShowForm(false) } })
+                }
+              >
+                {addUser.isPending ? 'Granting…' : 'Grant access'}
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowForm(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+        {isLoading && <Skeleton className="h-[40px] w-full" />}
+        {!isLoading && (users ?? []).length === 0 && (
+          <p className="m-0 text-[13px] text-ink-muted">Nobody has portal access yet.</p>
+        )}
+        {!isLoading &&
+          (users ?? []).map((u) => (
+            <div key={u.id} className="flex items-center justify-between gap-2">
+              <div className="flex flex-col gap-[1px] min-w-0">
+                <span className="text-[13px] truncate">{u.name}</span>
+                <span className="font-mono text-[10.5px] text-ink-muted truncate">{u.email}</span>
+              </div>
+              <button
+                onClick={() => removeUser.mutate(u.id)}
+                disabled={removeUser.isPending}
+                className="border-none bg-transparent font-mono text-[10.5px] text-ink-muted hover:text-signal-red cursor-pointer p-0 flex-none"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+      </CardContent>
+    </Card>
+  )
+}
+
+function DeliverablesCard({ accountId }: { accountId: string }) {
+  const { data: deliverables, isLoading } = useDeliverables(accountId)
+  const addDeliverable = useAddDeliverable(accountId)
+  const removeDeliverable = useDeleteDeliverable(accountId)
+  const [showForm, setShowForm] = React.useState(false)
+  const [title, setTitle] = React.useState('')
+  const [url, setUrl] = React.useState('')
+  const [deliveredOn, setDeliveredOn] = React.useState(new Date().toISOString().slice(0, 10))
+
+  const fieldClass = 'text-[13px] rounded-[8px] border border-border px-3 py-2 bg-surface w-full'
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Deliverables</CardTitle>
+        {!showForm && (
+          <Button variant="secondary" size="sm" onClick={() => setShowForm(true)}>
+            Add
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent className="p-[16px_18px] flex flex-col gap-3">
+        {showForm && (
+          <div className="flex flex-col gap-2">
+            <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))' }}>
+              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className={fieldClass} />
+              <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Link (optional)" className={fieldClass} />
+              <input type="date" value={deliveredOn} onChange={(e) => setDeliveredOn(e.target.value)} className={fieldClass} />
+            </div>
+            {addDeliverable.isError && (
+              <p className="m-0 text-[12px] text-signal-red">
+                {addDeliverable.error instanceof Error ? addDeliverable.error.message : 'Failed to add'}
+              </p>
+            )}
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                disabled={!title.trim() || addDeliverable.isPending}
+                onClick={() =>
+                  addDeliverable.mutate(
+                    { title, url, deliveredOn },
+                    { onSuccess: () => { setTitle(''); setUrl(''); setShowForm(false) } },
+                  )
+                }
+              >
+                {addDeliverable.isPending ? 'Adding…' : 'Add'}
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowForm(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+        {isLoading && <Skeleton className="h-[60px] w-full" />}
+        {!isLoading && (deliverables ?? []).length === 0 && (
+          <p className="m-0 text-[13px] text-ink-muted">Nothing delivered yet.</p>
+        )}
+        {!isLoading &&
+          (deliverables ?? []).map((d) => (
+            <div key={d.id} className="flex items-center justify-between gap-2">
+              <div className="flex flex-col gap-[1px] min-w-0">
+                {d.url ? (
+                  <a href={d.url} target="_blank" rel="noreferrer" className="text-[13px] text-brand hover:underline truncate">
+                    {d.title}
+                  </a>
+                ) : (
+                  <span className="text-[13px] truncate">{d.title}</span>
+                )}
+                <span className="font-mono text-[10.5px] text-ink-muted">{d.deliveredOn}</span>
+              </div>
+              <button
+                onClick={() => removeDeliverable.mutate(d.id)}
+                disabled={removeDeliverable.isPending}
+                className="border-none bg-transparent font-mono text-[10.5px] text-ink-muted hover:text-signal-red cursor-pointer p-0 flex-none"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+      </CardContent>
+    </Card>
   )
 }
 
@@ -695,6 +866,7 @@ export function AccountRecordPage() {
   const navigate = useNavigate()
   const { data: acc, isLoading, isError, error, refetch, isFetching } =
     useAccount(accountId)
+  const { data: currentMember } = useCurrentMember()
   const [expandedProjectId, setExpandedProjectId] = React.useState<
     string | null
   >(null)
@@ -781,6 +953,18 @@ export function AccountRecordPage() {
                 onClick={() => navigate(`/clients/${accountId}/calendar`)}
               >
                 Content calendar
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => navigate(`/clients/${accountId}/reports`)}
+              >
+                Reports
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => navigate(`/clients/${accountId}/billing`)}
+              >
+                Billing
               </Button>
               {!showAddProject && (
                 <Button onClick={() => setShowAddProject(true)}>
@@ -960,6 +1144,20 @@ export function AccountRecordPage() {
 
               {accountId && <ContactsCard accountId={accountId} contacts={acc.contacts} />}
             </div>
+          </section>
+
+          <section className="flex flex-wrap gap-3 items-start">
+            <div className="flex-[1_1_360px] min-w-0">
+              {accountId && <DeliverablesCard accountId={accountId} />}
+            </div>
+            <div className="flex-[1_1_360px] min-w-0">
+              {accountId && <PortalCommentsThread accountId={accountId} canModerate />}
+            </div>
+            {currentMember?.role === 'admin' && (
+              <div className="flex-[1_1_360px] min-w-0">
+                {accountId && <PortalUsersCard accountId={accountId} />}
+              </div>
+            )}
           </section>
         </>
       )}

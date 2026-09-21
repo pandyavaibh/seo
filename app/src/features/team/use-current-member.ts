@@ -14,7 +14,7 @@ export function useCurrentMember() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('team_members')
-        .select('id, email, name, role, active')
+        .select('id, email, name, role, active, account_id')
         .eq('email', session!.user.email!.toLowerCase())
         .maybeSingle()
       if (error) throw new Error(error.message)

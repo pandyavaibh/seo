@@ -23,6 +23,10 @@ export type BacklinkStatus = 'prospect' | 'outreach' | 'placed' | 'declined' | '
 export type MetaSource = 'facebook_page' | 'instagram' | 'ads'
 export type ContentCalendarPlatform = 'facebook' | 'instagram' | 'other'
 export type ContentCalendarStatus = 'draft' | 'scheduled' | 'approved' | 'published'
+export type ExpenseCategory = 'link_cost' | 'tool' | 'other'
+export type InvoiceKind = 'retainer' | 'project'
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue'
+export type ReportStatus = 'draft' | 'sent'
 
 export interface Database {
   public: {
@@ -35,6 +39,7 @@ export interface Database {
           role: MemberRole
           active: boolean
           weekly_capacity: number
+          account_id: string | null
           created_at: string
         }
         Insert: Partial<Database['public']['Tables']['team_members']['Row']> & {
@@ -42,7 +47,15 @@ export interface Database {
           name: string
         }
         Update: Partial<Database['public']['Tables']['team_members']['Row']>
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'team_members_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
       }
       projects: {
         Row: {
@@ -969,6 +982,207 @@ export interface Database {
           },
         ]
       }
+      member_rates: {
+        Row: {
+          member_id: string
+          cost_rate_cents: number
+          updated_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['member_rates']['Row']> & {
+          member_id: string
+          cost_rate_cents: number
+        }
+        Update: Partial<Database['public']['Tables']['member_rates']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'member_rates_member_id_fkey'
+            columns: ['member_id']
+            isOneToOne: true
+            referencedRelation: 'team_members'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          id: string
+          account_id: string
+          project_id: string | null
+          category: ExpenseCategory
+          description: string
+          amount_cents: number
+          incurred_on: string
+          created_by: string | null
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['expenses']['Row']> & {
+          account_id: string
+          category: ExpenseCategory
+          description: string
+          amount_cents: number
+        }
+        Update: Partial<Database['public']['Tables']['expenses']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'expenses_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'expenses_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          id: string
+          account_id: string
+          kind: InvoiceKind
+          period_start: string | null
+          period_end: string | null
+          amount_cents: number
+          status: InvoiceStatus
+          issued_on: string | null
+          due_on: string | null
+          paid_on: string | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['invoices']['Row']> & {
+          account_id: string
+        }
+        Update: Partial<Database['public']['Tables']['invoices']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'invoices_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      invoice_line_items: {
+        Row: {
+          id: string
+          invoice_id: string
+          description: string
+          amount_cents: number
+        }
+        Insert: Partial<Database['public']['Tables']['invoice_line_items']['Row']> & {
+          invoice_id: string
+          description: string
+          amount_cents: number
+        }
+        Update: Partial<Database['public']['Tables']['invoice_line_items']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'invoice_line_items_invoice_id_fkey'
+            columns: ['invoice_id']
+            isOneToOne: false
+            referencedRelation: 'invoices'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      deliverables: {
+        Row: {
+          id: string
+          account_id: string
+          project_id: string | null
+          title: string
+          url: string | null
+          delivered_on: string
+          created_by: string | null
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['deliverables']['Row']> & {
+          account_id: string
+          title: string
+        }
+        Update: Partial<Database['public']['Tables']['deliverables']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'deliverables_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deliverables_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          id: string
+          account_id: string
+          period_start: string
+          period_end: string
+          status: ReportStatus
+          next_month_plan: string | null
+          snapshot: Record<string, unknown>
+          generated_by: string | null
+          generated_at: string
+          sent_at: string | null
+        }
+        Insert: Partial<Database['public']['Tables']['reports']['Row']> & {
+          account_id: string
+          period_start: string
+          period_end: string
+        }
+        Update: Partial<Database['public']['Tables']['reports']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'reports_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      portal_comments: {
+        Row: {
+          id: string
+          account_id: string
+          body: string
+          author_id: string | null
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['portal_comments']['Row']> & {
+          account_id: string
+          body: string
+        }
+        Update: Partial<Database['public']['Tables']['portal_comments']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'portal_comments_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'portal_comments_author_id_fkey'
+            columns: ['author_id']
+            isOneToOne: false
+            referencedRelation: 'team_members'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       audit_log: {
         Row: {
           id: number
@@ -998,6 +1212,10 @@ export interface Database {
       meta_source: MetaSource
       content_calendar_platform: ContentCalendarPlatform
       content_calendar_status: ContentCalendarStatus
+      expense_category: ExpenseCategory
+      invoice_kind: InvoiceKind
+      invoice_status: InvoiceStatus
+      report_status: ReportStatus
     }
     CompositeTypes: Record<string, never>
   }

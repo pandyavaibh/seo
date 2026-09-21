@@ -23,3 +23,23 @@ export function RequireMember() {
   }
   return <Outlet />
 }
+
+// Stage 7: a client-role member is a valid, active team_members row —
+// RequireMember lets them through — but the staff app (accounts,
+// deals, capacity, rates) is never theirs to see. Wrapped around the
+// staff route tree, inside RequireMember.
+export function RequireStaff() {
+  const { data: member, isLoading } = useCurrentMember()
+  if (isLoading) return null
+  if (member?.role === 'client') return <Navigate to="/portal" replace />
+  return <Outlet />
+}
+
+// The inverse: the client portal is only for role='client'. A staff
+// member hitting /portal goes back to the staff app instead.
+export function RequirePortal() {
+  const { data: member, isLoading } = useCurrentMember()
+  if (isLoading) return null
+  if (member?.role !== 'client') return <Navigate to="/clients" replace />
+  return <Outlet />
+}

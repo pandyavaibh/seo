@@ -251,3 +251,63 @@ export function useDeleteContact(accountId: string) {
     },
   })
 }
+
+export interface PortalUser {
+  id: string
+  email: string
+  name: string
+  active: boolean
+}
+
+export function usePortalUsers(accountId: string | undefined) {
+  return useQuery({
+    queryKey: ['portal-users', accountId],
+    queryFn: async (): Promise<PortalUser[]> => {
+      const { data, error } = await supabase
+        .from('team_members')
+        .select('id, email, name, active')
+        .eq('account_id', accountId!)
+        .eq('role', 'client')
+        .order('name')
+      if (error) throw new Error(error.message)
+      return data ?? []
+    },
+    enabled: !!accountId,
+  })
+}
+
+// Grants portal access: a team_members row with role='client', scoped
+// to this account via account_id. The person signs in the same way
+// every staff member does (Google OAuth) — being a row here with this
+// role and account_id is what makes them a client instead of staff,
+// enforced entirely by RLS (see 20260921240000_stage7_billing_portal_reports.sql).
+export function useAddPortalUser(accountId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: { email: string; name: string }) => {
+      const { error } = await supabase.from('team_members').insert({
+        email: input.email.trim().toLowerCase(),
+        name: input.name.trim(),
+        role: 'client',
+        account_id: accountId,
+      })
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['portal-users', accountId] })
+    },
+  })
+}
+
+export function useRemovePortalUser(accountId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('team_members').delete().eq('id', id)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['portal-users', accountId] })
+    },
+  })
+}

@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { useMemberRates, useSetMemberRate } from '@/features/billing/use-billing'
 import {
   DISCIPLINES,
   useAssignFromPlanner,
@@ -170,6 +171,52 @@ function StaffRow({ member, tint }: { member: CapacityRow; tint: string }) {
   )
 }
 
+function CostRatesCard() {
+  const { data: rates, isLoading } = useMemberRates()
+  const setRate = useSetMemberRate()
+  const [drafts, setDrafts] = React.useState<Record<string, string>>({})
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Cost rates (admin only)</CardTitle>
+      </CardHeader>
+      <CardContent className="p-[16px_18px] flex flex-col gap-2">
+        <p className="m-0 text-[12px] text-ink-muted max-w-[62ch]">
+          Hourly cost rate per person, used only for the profitability calculation on each
+          client's Billing page — never shown to managers or the client portal.
+        </p>
+        {isLoading && <Skeleton className="h-[120px] w-full" />}
+        {!isLoading && (rates ?? []).map((r) => (
+          <div key={r.memberId} className="flex items-center gap-2">
+            <span className="text-[13px] flex-1 min-w-0">{r.name}</span>
+            <input
+              value={drafts[r.memberId] ?? (r.costRateCents != null ? String(r.costRateCents / 100) : '')}
+              onChange={(e) => setDrafts({ ...drafts, [r.memberId]: e.target.value })}
+              placeholder="$/hr"
+              inputMode="decimal"
+              className="w-[80px] text-[12px] font-mono border border-border rounded-[6px] px-2 py-1"
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={!drafts[r.memberId]?.trim() || setRate.isPending}
+              onClick={() =>
+                setRate.mutate(
+                  { memberId: r.memberId, costRateCents: Math.round(Number(drafts[r.memberId]) * 100) },
+                  { onSuccess: () => setDrafts({ ...drafts, [r.memberId]: '' }) },
+                )
+              }
+            >
+              Save
+            </Button>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
 function LeaveCard() {
   const { data: leave, isLoading } = useLeave()
   const { data: currentMember } = useCurrentMember()
@@ -291,6 +338,7 @@ function LeaveCard() {
 
 export function CapacityPage() {
   const { data, isLoading, isError, error, refetch, isFetching } = useCapacity()
+  const { data: currentMember } = useCurrentMember()
 
   return (
     <div className="flex flex-col gap-[18px]">
@@ -381,6 +429,8 @@ export function CapacityPage() {
       )}
 
       <LeaveCard />
+
+      {currentMember?.role === 'admin' && <CostRatesCard />}
     </div>
   )
 }
