@@ -28,6 +28,7 @@ export interface Database {
           name: string
           role: MemberRole
           active: boolean
+          weekly_capacity: number
           created_at: string
         }
         Insert: Partial<Database['public']['Tables']['team_members']['Row']> & {
@@ -194,6 +195,9 @@ export interface Database {
           id: string
           project_id: string
           member_id: string
+          weekly_hours: number
+          starts_on: string | null
+          ends_on: string | null
           created_at: string
         }
         Insert: Partial<Database['public']['Tables']['assignments']['Row']> & {
@@ -419,6 +423,53 @@ export interface Database {
           {
             foreignKeyName: 'tasks_owner_id_fkey'
             columns: ['owner_id']
+            isOneToOne: false
+            referencedRelation: 'team_members'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      member_skills: {
+        Row: {
+          member_id: string
+          discipline: string
+          level: number
+        }
+        Insert: Partial<Database['public']['Tables']['member_skills']['Row']> & {
+          member_id: string
+          discipline: string
+          level: number
+        }
+        Update: Partial<Database['public']['Tables']['member_skills']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'member_skills_member_id_fkey'
+            columns: ['member_id']
+            isOneToOne: false
+            referencedRelation: 'team_members'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      member_leave: {
+        Row: {
+          id: string
+          member_id: string
+          starts_on: string
+          ends_on: string
+          kind: string | null
+          note: string | null
+        }
+        Insert: Partial<Database['public']['Tables']['member_leave']['Row']> & {
+          member_id: string
+          starts_on: string
+          ends_on: string
+        }
+        Update: Partial<Database['public']['Tables']['member_leave']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'member_leave_member_id_fkey'
+            columns: ['member_id']
             isOneToOne: false
             referencedRelation: 'team_members'
             referencedColumns: ['id']

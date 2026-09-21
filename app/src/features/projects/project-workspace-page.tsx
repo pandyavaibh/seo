@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ProgressBar } from '@/components/ui/progress-bar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCurrentMember } from '@/features/team/use-current-member'
 import {
@@ -16,24 +17,8 @@ import {
   type WorkspaceTask,
 } from '@/features/projects/use-project-workspace'
 import { initials, tintFor } from '@/lib/avatar'
+import { loadColorFor } from '@/lib/load-color'
 import { STAGE_LABEL, STAGE_TONE } from '@/lib/project-stage'
-
-function ProgressBar({ pct, color }: { pct: number; color: string }) {
-  return (
-    <div className="h-[6px] rounded-[3px] bg-track overflow-hidden">
-      <div
-        className="h-full rounded-[3px]"
-        style={{ width: `${Math.min(100, pct)}%`, background: color }}
-      />
-    </div>
-  )
-}
-
-function loadColorFor(ratio: number) {
-  if (ratio > 1) return 'var(--color-signal-red)'
-  if (ratio > 0.88) return 'var(--color-signal-amber)'
-  return 'var(--color-signal-green)'
-}
 
 function TaskRow({
   task,

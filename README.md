@@ -10,7 +10,8 @@ spec, screens, design tokens, stack decision. Then, in order:
 verified against the live project),
 **[`docs/STAGE_1.md`](docs/STAGE_1.md)** (Clients + Account record),
 **[`docs/STAGE_2.md`](docs/STAGE_2.md)** (Project workspace, core
-slice) — each documents what's actually built versus what's
+slice), **[`docs/STAGE_3.md`](docs/STAGE_3.md)** (Capacity & strength,
+core slice) — each documents what's actually built versus what's
 deliberately cut for now.
 
 Live: **Travel Roach** (Supabase project `bmlvurfoksjlckrubehn`),
