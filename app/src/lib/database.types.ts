@@ -347,6 +347,40 @@ export interface Database {
           },
         ]
       }
+      time_entries: {
+        Row: {
+          id: string
+          project_id: string
+          member_id: string
+          hours: number
+          worked_on: string
+          note: string
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['time_entries']['Row']> & {
+          project_id: string
+          member_id: string
+          hours: number
+          note: string
+        }
+        Update: Partial<Database['public']['Tables']['time_entries']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'time_entries_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'time_entries_member_id_fkey'
+            columns: ['member_id']
+            isOneToOne: false
+            referencedRelation: 'team_members'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       audit_log: {
         Row: {
           id: number

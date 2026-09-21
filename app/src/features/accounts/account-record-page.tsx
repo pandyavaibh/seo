@@ -9,6 +9,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAccount } from '@/features/accounts/use-account'
+import {
+  ProjectHoursPanel,
+  ProjectHoursSummary,
+} from '@/features/projects/project-hours-panel'
 import { initials, tintFor } from '@/lib/avatar'
 import type { AccountHealth, ActivityKind } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
@@ -142,6 +146,9 @@ export function AccountRecordPage() {
   const navigate = useNavigate()
   const { data: acc, isLoading, isError, error, refetch, isFetching } =
     useAccount(accountId)
+  const [expandedProjectId, setExpandedProjectId] = React.useState<
+    string | null
+  >(null)
 
   if (isError) {
     return (
@@ -232,41 +239,70 @@ export function AccountRecordPage() {
                       No engagements attached to this account yet.
                     </p>
                   )}
-                  {acc.projects.map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center gap-3 p-[11px_12px] border border-border-light rounded-[10px] bg-surface-sunken-2"
-                    >
-                      <div className="flex flex-col gap-[2px] flex-1 min-w-0">
-                        <span className="text-[13.5px] font-medium">{p.name}</span>
-                        {p.projectType && (
-                          <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-ink-muted">
-                            {p.projectType}
+                  {acc.projects.map((p) => {
+                    const expanded = expandedProjectId === p.id
+                    return (
+                      <div
+                        key={p.id}
+                        className="flex flex-col gap-2 p-[11px_12px] border border-border-light rounded-[10px] bg-surface-sunken-2"
+                      >
+                        <button
+                          onClick={() =>
+                            setExpandedProjectId(expanded ? null : p.id)
+                          }
+                          className="flex items-center gap-3 border-none bg-transparent p-0 cursor-pointer text-left w-full"
+                        >
+                          <div className="flex flex-col gap-[2px] flex-1 min-w-0">
+                            <span className="text-[13.5px] font-medium">
+                              {p.name}
+                            </span>
+                            {p.projectType && (
+                              <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-ink-muted">
+                                {p.projectType}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex gap-[3px]">
+                            {p.staffed.map((m, i) => (
+                              <span
+                                key={m.id}
+                                title={m.name}
+                                className="w-[22px] h-[22px] rounded-full grid place-items-center font-mono text-[9.5px] font-semibold"
+                                style={{ background: tintFor(i) }}
+                              >
+                                {initials(m.name)}
+                              </span>
+                            ))}
+                          </div>
+                          {p.stage && (
+                            <Badge tone={STAGE_TONE[p.stage] ?? 'neutral'}>
+                              {STAGE_LABEL[p.stage] ?? p.stage}
+                            </Badge>
+                          )}
+                          <span className="font-mono text-[11.5px] text-ink-muted min-w-[52px] text-right">
+                            {p.dueOn ?? '—'}
                           </span>
+                        </button>
+                        <div className="flex items-center justify-between gap-2 pl-0">
+                          <ProjectHoursSummary projectId={p.id} />
+                          <button
+                            onClick={() =>
+                              setExpandedProjectId(expanded ? null : p.id)
+                            }
+                            className="border-none bg-transparent font-mono text-[11px] text-ink-muted hover:text-ink cursor-pointer p-0"
+                          >
+                            {expanded ? 'Hide log ▴' : 'Log hours ▾'}
+                          </button>
+                        </div>
+                        {expanded && (
+                          <ProjectHoursPanel
+                            projectId={p.id}
+                            staffed={p.staffed}
+                          />
                         )}
                       </div>
-                      <div className="flex gap-[3px]">
-                        {p.staffed.map((m, i) => (
-                          <span
-                            key={m.id}
-                            title={m.name}
-                            className="w-[22px] h-[22px] rounded-full grid place-items-center font-mono text-[9.5px] font-semibold"
-                            style={{ background: tintFor(i) }}
-                          >
-                            {initials(m.name)}
-                          </span>
-                        ))}
-                      </div>
-                      {p.stage && (
-                        <Badge tone={STAGE_TONE[p.stage] ?? 'neutral'}>
-                          {STAGE_LABEL[p.stage] ?? p.stage}
-                        </Badge>
-                      )}
-                      <span className="font-mono text-[11.5px] text-ink-muted min-w-[52px] text-right">
-                        {p.dueOn ?? '—'}
-                      </span>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </CardContent>
               </Card>
 
