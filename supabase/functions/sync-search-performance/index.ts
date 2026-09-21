@@ -1,8 +1,13 @@
 // Stage 4 — pulls Search Console and GA4 numbers for one account using the
 // shared Google Cloud service account (see supabase/migrations/
 // 20260921150000_stage4_search_performance.sql for why a service account
-// instead of per-account OAuth) and writes them into metric_snapshots /
-// search_queries_daily.
+// instead of per-account OAuth) and writes them into metric_snapshots and
+// the dimensional tables added in
+// 20260921160000_stage4_gsc_ga4_detail.sql (queries, pages, countries,
+// devices from GSC; channels, landing pages from GA4). See that
+// migration's header for what's deliberately NOT pulled (Core Web
+// Vitals, index coverage/manual actions, GA4 "assisted conversions") and
+// why — none of it is available through these APIs.
 //
 // Invoked from the app (Search performance page's "Sync now" / "Check
 // access" buttons) via supabase.functions.invoke, which attaches the
@@ -14,11 +19,6 @@
 // yet, deliberately deferred until GOOGLE_SERVICE_ACCOUNT_KEY actually
 // exists (see docs/STAGE_4.md) — no point building and testing a cron
 // path against a secret nobody has created.
-//
-// Unverified end-to-end: there is no real service account key in this
-// environment to test against yet. Written to fail loudly and specifically
-// (which Google API, which HTTP status) rather than silently, so the first
-// real run is easy to debug from its own error message.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { JWT } from 'npm:google-auth-library@9'
@@ -31,11 +31,18 @@ const WINDOW_DAYS = 28
 // preflights with an OPTIONS request. Without these headers the browser
 // blocks the real request before it's even sent — surfaces client-side as
 // a generic "Failed to send a request to the Edge Function", not the
-// function's own error, which made this fail silently the first time.
+// function's own error.
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+  })
 }
 
 function isoDaysAgo(n: number) {
@@ -62,79 +69,118 @@ async function getAccessToken() {
   return token
 }
 
-async function syncSearchConsole(
-  accessToken: string,
-  siteUrl: string,
-): Promise<{ dailyRows: Record<string, number>[]; queryRows: Record<string, unknown>[] }> {
-  const endpoint = `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`
-  const startDate = isoDaysAgo(WINDOW_DAYS)
-  const endDate = isoDaysAgo(1)
-
-  const [dailyRes, queryRes] = await Promise.all([
-    fetch(endpoint, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ startDate, endDate, dimensions: ['date'], rowLimit: WINDOW_DAYS }),
-    }),
-    fetch(endpoint, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ startDate, endDate, dimensions: ['query'], rowLimit: 25 }),
-    }),
-  ])
-
-  if (!dailyRes.ok) {
-    throw new Error(`Search Console daily query failed: ${dailyRes.status} ${await dailyRes.text()}`)
-  }
-  if (!queryRes.ok) {
-    throw new Error(`Search Console query-level query failed: ${queryRes.status} ${await queryRes.text()}`)
-  }
-
-  const daily = await dailyRes.json()
-  const byQuery = await queryRes.json()
-
-  return {
-    dailyRows: (daily.rows ?? []).map((r: { keys: string[]; clicks: number; impressions: number; ctr: number; position: number }) => ({
-      date: r.keys[0],
-      clicks: r.clicks,
-      impressions: r.impressions,
-      ctr: r.ctr,
-      position: r.position,
-    })),
-    queryRows: (byQuery.rows ?? []).map((r: { keys: string[]; clicks: number; impressions: number; ctr: number; position: number }) => ({
-      query: r.keys[0],
-      clicks: r.clicks,
-      impressions: r.impressions,
-      ctr: r.ctr,
-      position: r.position,
-    })),
-  }
+interface GscMetricRow {
+  keys: string[]
+  clicks: number
+  impressions: number
+  ctr: number
+  position: number
 }
 
-async function syncGA4(accessToken: string, property: string) {
-  // GA4's own Admin UI shows the property ID as a bare number (e.g.
-  // "536339517"), but the Data API needs it prefixed — accept either so a
-  // value copy-pasted straight from Google still works.
-  const propertyPath = property.startsWith('properties/') ? property : `properties/${property}`
-  const endpoint = `https://analyticsdata.googleapis.com/v1beta/${propertyPath}:runReport`
+async function gscQuery(
+  accessToken: string,
+  siteUrl: string,
+  dimensions: string[],
+  rowLimit: number,
+): Promise<GscMetricRow[]> {
+  const endpoint = `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      dateRanges: [{ startDate: `${WINDOW_DAYS}daysAgo`, endDate: 'yesterday' }],
-      dimensions: [{ name: 'date' }],
-      metrics: [{ name: 'sessions' }, { name: 'conversions' }],
+      startDate: isoDaysAgo(WINDOW_DAYS),
+      endDate: isoDaysAgo(1),
+      dimensions,
+      rowLimit,
     }),
+  })
+  if (!res.ok) {
+    throw new Error(`Search Console query (${dimensions.join(',')}) failed: ${res.status} ${await res.text()}`)
+  }
+  const body = await res.json()
+  return body.rows ?? []
+}
+
+async function syncSearchConsole(accessToken: string, siteUrl: string) {
+  const [daily, byQuery, byPage, byCountry, byDevice] = await Promise.all([
+    gscQuery(accessToken, siteUrl, ['date'], WINDOW_DAYS),
+    gscQuery(accessToken, siteUrl, ['query'], 25),
+    gscQuery(accessToken, siteUrl, ['page'], 25),
+    gscQuery(accessToken, siteUrl, ['country'], 25),
+    gscQuery(accessToken, siteUrl, ['device'], 10),
+  ])
+  return {
+    dailyRows: daily.map((r) => ({ date: r.keys[0], clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position })),
+    queryRows: byQuery.map((r) => ({ key: r.keys[0], clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position })),
+    pageRows: byPage.map((r) => ({ key: r.keys[0], clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position })),
+    countryRows: byCountry.map((r) => ({ key: r.keys[0], clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position })),
+    deviceRows: byDevice.map((r) => ({ key: r.keys[0], clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position })),
+  }
+}
+
+async function ga4Report(accessToken: string, propertyPath: string, body: Record<string, unknown>) {
+  const endpoint = `https://analyticsdata.googleapis.com/v1beta/${propertyPath}:runReport`
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   })
   if (!res.ok) {
     throw new Error(`GA4 runReport failed: ${res.status} ${await res.text()}`)
   }
-  const json = await res.json()
-  return (json.rows ?? []).map((r: { dimensionValues: { value: string }[]; metricValues: { value: string }[] }) => ({
-    date: `${r.dimensionValues[0].value.slice(0, 4)}-${r.dimensionValues[0].value.slice(4, 6)}-${r.dimensionValues[0].value.slice(6, 8)}`,
-    sessions: Number(r.metricValues[0].value),
-    conversions: Number(r.metricValues[1].value),
-  }))
+  const data = await res.json()
+  return (data.rows ?? []) as { dimensionValues: { value: string }[]; metricValues: { value: string }[] }[]
+}
+
+function ga4Date(raw: string) {
+  return `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`
+}
+
+async function syncGA4(accessToken: string, property: string) {
+  // GA4's own Admin UI shows the property ID as a bare number, but the
+  // Data API needs it prefixed — accept either.
+  const propertyPath = property.startsWith('properties/') ? property : `properties/${property}`
+
+  const [daily, byChannel, byLandingPage] = await Promise.all([
+    ga4Report(accessToken, propertyPath, {
+      dateRanges: [{ startDate: `${WINDOW_DAYS}daysAgo`, endDate: 'yesterday' }],
+      dimensions: [{ name: 'date' }],
+      metrics: [{ name: 'sessions' }, { name: 'conversions' }, { name: 'engagementRate' }],
+    }),
+    ga4Report(accessToken, propertyPath, {
+      dateRanges: [{ startDate: `${WINDOW_DAYS}daysAgo`, endDate: 'yesterday' }],
+      dimensions: [{ name: 'date' }, { name: 'sessionDefaultChannelGroup' }],
+      metrics: [{ name: 'sessions' }, { name: 'conversions' }],
+    }),
+    ga4Report(accessToken, propertyPath, {
+      dateRanges: [{ startDate: `${WINDOW_DAYS}daysAgo`, endDate: 'yesterday' }],
+      dimensions: [{ name: 'landingPage' }],
+      metrics: [{ name: 'sessions' }, { name: 'engagedSessions' }, { name: 'conversions' }],
+      limit: 25,
+      orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+    }),
+  ])
+
+  return {
+    dailyRows: daily.map((r) => ({
+      date: ga4Date(r.dimensionValues[0].value),
+      sessions: Number(r.metricValues[0].value),
+      conversions: Number(r.metricValues[1].value),
+      engagementRate: Number(r.metricValues[2].value),
+    })),
+    channelRows: byChannel.map((r) => ({
+      date: ga4Date(r.dimensionValues[0].value),
+      channel: r.dimensionValues[1].value,
+      sessions: Number(r.metricValues[0].value),
+      conversions: Number(r.metricValues[1].value),
+    })),
+    landingPageRows: byLandingPage.map((r) => ({
+      landingPage: r.dimensionValues[0].value,
+      sessions: Number(r.metricValues[0].value),
+      engagedSessions: Number(r.metricValues[1].value),
+      conversions: Number(r.metricValues[2].value),
+    })),
+  }
 }
 
 Deno.serve(async (req) => {
@@ -144,12 +190,7 @@ Deno.serve(async (req) => {
 
   try {
     const { accountId } = await req.json()
-    if (!accountId) {
-      return new Response(JSON.stringify({ error: 'accountId is required' }), {
-        status: 400,
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-      })
-    }
+    if (!accountId) return json({ error: 'accountId is required' }, 400)
 
     const authHeader = req.headers.get('Authorization') ?? ''
     const asUser = createClient(
@@ -160,12 +201,7 @@ Deno.serve(async (req) => {
     const {
       data: { user },
     } = await asUser.auth.getUser()
-    if (!user?.email) {
-      return new Response(JSON.stringify({ error: 'Not signed in' }), {
-        status: 401,
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-      })
-    }
+    if (!user?.email) return json({ error: 'Not signed in' }, 401)
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -178,10 +214,7 @@ Deno.serve(async (req) => {
       .eq('email', user.email.toLowerCase())
       .maybeSingle()
     if (!member || !['admin', 'manager'].includes(member.role)) {
-      return new Response(JSON.stringify({ error: 'Admin or manager role required' }), {
-        status: 403,
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-      })
+      return json({ error: 'Admin or manager role required' }, 403)
     }
 
     const { data: connections, error: connErr } = await admin
@@ -197,57 +230,96 @@ Deno.serve(async (req) => {
     try {
       accessToken = await getAccessToken()
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e)
-      return new Response(JSON.stringify({ error: message }), {
-        status: 500,
-        headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-      })
+      return json({ error: e instanceof Error ? e.message : String(e) }, 500)
     }
 
     for (const conn of connections ?? []) {
       try {
         if (conn.source === 'gsc') {
-          const { dailyRows, queryRows } = await syncSearchConsole(accessToken, conn.property)
+          const { dailyRows, queryRows, pageRows, countryRows, deviceRows } = await syncSearchConsole(
+            accessToken,
+            conn.property,
+          )
 
-          const snapshotRows = dailyRows.flatMap((r) => [
+          const dailySnapshots = dailyRows.flatMap((r) => [
             { account_id: accountId, source: 'gsc', snapshot_date: r.date, metric_key: 'clicks', value: r.clicks },
             { account_id: accountId, source: 'gsc', snapshot_date: r.date, metric_key: 'impressions', value: r.impressions },
             { account_id: accountId, source: 'gsc', snapshot_date: r.date, metric_key: 'ctr', value: r.ctr },
             { account_id: accountId, source: 'gsc', snapshot_date: r.date, metric_key: 'avg_position', value: r.position },
           ])
-          if (snapshotRows.length > 0) {
-            const { error } = await admin.from('metric_snapshots').upsert(snapshotRows)
+          if (dailySnapshots.length > 0) {
+            const { error } = await admin.from('metric_snapshots').upsert(dailySnapshots)
             if (error) throw new Error(error.message)
           }
 
-          const queryRowsForDb = queryRows.map((r: any) => ({
-            account_id: accountId,
-            snapshot_date: today,
-            query: r.query,
-            clicks: r.clicks,
-            impressions: r.impressions,
-            ctr: r.ctr,
-            avg_position: r.position,
-          }))
-          if (queryRowsForDb.length > 0) {
-            const { error } = await admin.from('search_queries_daily').upsert(queryRowsForDb)
+          const dimensionTable = async (table: string, keyCol: string, rows: typeof queryRows) => {
+            if (rows.length === 0) return
+            const { error } = await admin.from(table).upsert(
+              rows.map((r) => ({
+                account_id: accountId,
+                snapshot_date: today,
+                [keyCol]: r.key,
+                clicks: r.clicks,
+                impressions: r.impressions,
+                ctr: r.ctr,
+                avg_position: r.position,
+              })),
+            )
             if (error) throw new Error(error.message)
           }
+          await dimensionTable('search_queries_daily', 'query', queryRows)
+          await dimensionTable('search_pages_daily', 'page', pageRows)
+          await dimensionTable('search_countries_daily', 'country', countryRows)
+          await dimensionTable('search_devices_daily', 'device', deviceRows)
         } else if (conn.source === 'ga4') {
-          const rows = await syncGA4(accessToken, conn.property)
-          const snapshotRows = rows.flatMap((r) => [
+          const { dailyRows, channelRows, landingPageRows } = await syncGA4(accessToken, conn.property)
+
+          const dailySnapshots = dailyRows.flatMap((r) => [
             { account_id: accountId, source: 'ga4', snapshot_date: r.date, metric_key: 'sessions', value: r.sessions },
             { account_id: accountId, source: 'ga4', snapshot_date: r.date, metric_key: 'conversions', value: r.conversions },
+            { account_id: accountId, source: 'ga4', snapshot_date: r.date, metric_key: 'engagement_rate', value: r.engagementRate },
           ])
-          if (snapshotRows.length > 0) {
-            const { error } = await admin.from('metric_snapshots').upsert(snapshotRows)
+          if (dailySnapshots.length > 0) {
+            const { error } = await admin.from('metric_snapshots').upsert(dailySnapshots)
+            if (error) throw new Error(error.message)
+          }
+
+          if (channelRows.length > 0) {
+            const { error } = await admin.from('ga4_channels_daily').upsert(
+              channelRows.map((r) => ({
+                account_id: accountId,
+                snapshot_date: r.date,
+                channel: r.channel,
+                sessions: r.sessions,
+                conversions: r.conversions,
+              })),
+            )
+            if (error) throw new Error(error.message)
+          }
+
+          if (landingPageRows.length > 0) {
+            const { error } = await admin.from('ga4_landing_pages_daily').upsert(
+              landingPageRows.map((r) => ({
+                account_id: accountId,
+                snapshot_date: today,
+                landing_page: r.landingPage,
+                sessions: r.sessions,
+                engaged_sessions: r.engagedSessions,
+                conversions: r.conversions,
+              })),
+            )
             if (error) throw new Error(error.message)
           }
         }
 
         await admin
           .from('search_connections')
-          .update({ status: 'granted', last_checked_at: new Date().toISOString(), last_synced_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+          .update({
+            status: 'granted',
+            last_checked_at: new Date().toISOString(),
+            last_synced_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
           .eq('id', conn.id)
         results[conn.source] = { status: 'granted' }
       } catch (e) {
@@ -260,14 +332,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ results }), {
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-    })
+    return json({ results })
   } catch (e) {
-    const message = e instanceof Error ? e.message : String(e)
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
-    })
+    return json({ error: e instanceof Error ? e.message : String(e) }, 500)
   }
 })

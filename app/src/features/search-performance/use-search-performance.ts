@@ -18,8 +18,8 @@ export interface DailyPoint {
   avgPosition: number
 }
 
-export interface QueryRow {
-  query: string
+export interface DimensionRow {
+  key: string
   clicks: number
   impressions: number
   ctr: number
@@ -30,14 +30,33 @@ export interface Ga4Point {
   date: string
   sessions: number
   conversions: number
+  engagementRate: number
+}
+
+export interface Ga4ChannelRow {
+  channel: string
+  sessions: number
+  conversions: number
+}
+
+export interface Ga4LandingPageRow {
+  landingPage: string
+  sessions: number
+  engagedSessions: number
+  conversions: number
 }
 
 export interface SearchPerformanceData {
   gsc: ConnectionInfo
   ga4: ConnectionInfo
   gscDaily: DailyPoint[]
-  queries: QueryRow[]
+  queries: DimensionRow[]
+  pages: DimensionRow[]
+  countries: DimensionRow[]
+  devices: DimensionRow[]
   ga4Daily: Ga4Point[]
+  ga4Channels: Ga4ChannelRow[]
+  ga4LandingPages: Ga4LandingPageRow[]
 }
 
 const EMPTY_CONNECTION: ConnectionInfo = {
@@ -47,11 +66,38 @@ const EMPTY_CONNECTION: ConnectionInfo = {
   lastSyncedAt: null,
 }
 
+// queries/pages/countries/devices/landing pages are all synced as a
+// single "as of today" snapshot each sync (see the Edge Function) —
+// this picks the latest snapshot_date's rows out of a table that may
+// hold several days of history, sorted by whatever ranks rows for that
+// dimension (clicks for GSC tables, sessions for GA4).
+function latestSnapshot<T extends { snapshot_date: string }>(
+  rows: T[],
+  rank: (row: T) => number,
+  limit: number,
+): T[] {
+  if (rows.length === 0) return []
+  const latestDate = rows.reduce((max, r) => (r.snapshot_date > max ? r.snapshot_date : max), rows[0].snapshot_date)
+  return rows
+    .filter((r) => r.snapshot_date === latestDate)
+    .sort((a, b) => rank(b) - rank(a))
+    .slice(0, limit)
+}
+
 export function useSearchPerformance(accountId: string | undefined) {
   return useQuery({
     queryKey: ['search-performance', accountId],
     queryFn: async (): Promise<SearchPerformanceData> => {
-      const [connRes, snapshotRes, queryRes] = await Promise.all([
+      const [
+        connRes,
+        snapshotRes,
+        queryRes,
+        pageRes,
+        countryRes,
+        deviceRes,
+        channelRes,
+        landingPageRes,
+      ] = await Promise.all([
         supabase
           .from('search_connections')
           .select('id, source, property, status, last_synced_at')
@@ -66,13 +112,40 @@ export function useSearchPerformance(accountId: string | undefined) {
           .select('snapshot_date, query, clicks, impressions, ctr, avg_position')
           .eq('account_id', accountId!)
           .order('snapshot_date', { ascending: false })
-          .order('clicks', { ascending: false })
+          .limit(200),
+        supabase
+          .from('search_pages_daily')
+          .select('snapshot_date, page, clicks, impressions, ctr, avg_position')
+          .eq('account_id', accountId!)
+          .order('snapshot_date', { ascending: false })
+          .limit(200),
+        supabase
+          .from('search_countries_daily')
+          .select('snapshot_date, country, clicks, impressions, ctr, avg_position')
+          .eq('account_id', accountId!)
+          .order('snapshot_date', { ascending: false })
+          .limit(200),
+        supabase
+          .from('search_devices_daily')
+          .select('snapshot_date, device, clicks, impressions, ctr, avg_position')
+          .eq('account_id', accountId!)
+          .order('snapshot_date', { ascending: false })
+          .limit(50),
+        supabase
+          .from('ga4_channels_daily')
+          .select('snapshot_date, channel, sessions, conversions')
+          .eq('account_id', accountId!),
+        supabase
+          .from('ga4_landing_pages_daily')
+          .select('snapshot_date, landing_page, sessions, engaged_sessions, conversions')
+          .eq('account_id', accountId!)
+          .order('snapshot_date', { ascending: false })
           .limit(200),
       ])
 
-      if (connRes.error) throw new Error(connRes.error.message)
-      if (snapshotRes.error) throw new Error(snapshotRes.error.message)
-      if (queryRes.error) throw new Error(queryRes.error.message)
+      for (const res of [connRes, snapshotRes, queryRes, pageRes, countryRes, deviceRes, channelRes, landingPageRes]) {
+        if (res.error) throw new Error(res.error.message)
+      }
 
       const gscRow = connRes.data?.find((c) => c.source === 'gsc')
       const ga4Row = connRes.data?.find((c) => c.source === 'ga4')
@@ -98,6 +171,7 @@ export function useSearchPerformance(accountId: string | undefined) {
           const entry = ga4ByDate.get(row.snapshot_date) ?? { date: row.snapshot_date }
           if (row.metric_key === 'sessions') entry.sessions = row.value
           if (row.metric_key === 'conversions') entry.conversions = row.value
+          if (row.metric_key === 'engagement_rate') entry.engagementRate = row.value
           ga4ByDate.set(row.snapshot_date, entry)
         }
       }
@@ -113,21 +187,57 @@ export function useSearchPerformance(accountId: string | undefined) {
         date: d.date!,
         sessions: d.sessions ?? 0,
         conversions: d.conversions ?? 0,
+        engagementRate: d.engagementRate ?? 0,
       }))
 
-      const latestQueryDate = queryRes.data?.[0]?.snapshot_date
-      const queries: QueryRow[] = (queryRes.data ?? [])
-        .filter((q) => q.snapshot_date === latestQueryDate)
-        .slice(0, 10)
-        .map((q) => ({
-          query: q.query,
-          clicks: q.clicks,
-          impressions: q.impressions,
-          ctr: q.ctr,
-          avgPosition: q.avg_position,
-        }))
+      const queries = latestSnapshot(queryRes.data ?? [], (r) => r.clicks, 10).map((q) => ({
+        key: q.query,
+        clicks: q.clicks,
+        impressions: q.impressions,
+        ctr: q.ctr,
+        avgPosition: q.avg_position,
+      }))
+      const pages = latestSnapshot(pageRes.data ?? [], (r) => r.clicks, 10).map((p) => ({
+        key: p.page,
+        clicks: p.clicks,
+        impressions: p.impressions,
+        ctr: p.ctr,
+        avgPosition: p.avg_position,
+      }))
+      const countries = latestSnapshot(countryRes.data ?? [], (r) => r.clicks, 10).map((c) => ({
+        key: c.country,
+        clicks: c.clicks,
+        impressions: c.impressions,
+        ctr: c.ctr,
+        avgPosition: c.avg_position,
+      }))
+      const devices = latestSnapshot(deviceRes.data ?? [], (r) => r.clicks, 10).map((d) => ({
+        key: d.device,
+        clicks: d.clicks,
+        impressions: d.impressions,
+        ctr: d.ctr,
+        avgPosition: d.avg_position,
+      }))
 
-      return { gsc, ga4, gscDaily, queries, ga4Daily }
+      const channelTotals = new Map<string, { sessions: number; conversions: number }>()
+      for (const row of channelRes.data ?? []) {
+        const entry = channelTotals.get(row.channel) ?? { sessions: 0, conversions: 0 }
+        entry.sessions += row.sessions
+        entry.conversions += row.conversions
+        channelTotals.set(row.channel, entry)
+      }
+      const ga4Channels = Array.from(channelTotals, ([channel, v]) => ({ channel, ...v })).sort(
+        (a, b) => b.sessions - a.sessions,
+      )
+
+      const ga4LandingPages = latestSnapshot(landingPageRes.data ?? [], (r) => r.sessions, 10).map((p) => ({
+        landingPage: p.landing_page,
+        sessions: p.sessions,
+        engagedSessions: p.engaged_sessions,
+        conversions: p.conversions,
+      }))
+
+      return { gsc, ga4, gscDaily, queries, pages, countries, devices, ga4Daily, ga4Channels, ga4LandingPages }
     },
     enabled: !!accountId,
   })

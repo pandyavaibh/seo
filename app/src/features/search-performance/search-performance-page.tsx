@@ -21,10 +21,132 @@ import {
   useSetSearchConnection,
   useSyncSearchPerformance,
   type ConnectionInfo,
+  type DimensionRow,
+  type Ga4ChannelRow,
+  type Ga4LandingPageRow,
 } from '@/features/search-performance/use-search-performance'
 
 function windowTotal(values: number[]) {
   return values.reduce((s, v) => s + v, 0)
+}
+
+function DimensionTable({
+  title,
+  columnLabel,
+  rows,
+  emptyText,
+}: {
+  title: string
+  columnLabel: string
+  rows: DimensionRow[]
+  emptyText: string
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        {rows.length === 0 ? (
+          <p className="m-0 p-[16px_18px] text-[13px] text-ink-muted">{emptyText}</p>
+        ) : (
+          <Table className="min-w-[420px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead>{columnLabel}</TableHead>
+                <TableHead>Clicks</TableHead>
+                <TableHead>CTR</TableHead>
+                <TableHead>Avg pos</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r) => (
+                <TableRow key={r.key}>
+                  <TableCell className="max-w-[320px] truncate">{r.key}</TableCell>
+                  <TableCell className="font-mono text-[12px]">{r.clicks}</TableCell>
+                  <TableCell className="font-mono text-[12px] text-ink-muted">
+                    {(r.ctr * 100).toFixed(1)}%
+                  </TableCell>
+                  <TableCell className="font-mono text-[12px] text-ink-muted">
+                    {r.avgPosition.toFixed(1)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function Ga4ChannelsCard({ channels }: { channels: Ga4ChannelRow[] }) {
+  const total = windowTotal(channels.map((c) => c.sessions)) || 1
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Channels</CardTitle>
+      </CardHeader>
+      <CardContent className="p-[16px_18px] flex flex-col gap-[10px]">
+        {channels.length === 0 ? (
+          <p className="m-0 text-[13px] text-ink-muted">No channel data yet.</p>
+        ) : (
+          channels.map((c) => {
+            const pct = Math.round((c.sessions / total) * 100)
+            return (
+              <div key={c.channel} className="flex flex-col gap-[4px]">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-[12.5px]">{c.channel}</span>
+                  <span className="font-mono text-[11px] text-ink-muted">
+                    {c.sessions.toLocaleString()} sessions · {c.conversions} conv
+                  </span>
+                </div>
+                <div className="h-[5px] rounded-[3px] bg-track overflow-hidden">
+                  <div className="h-full rounded-[3px] bg-brand" style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            )
+          })
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function Ga4LandingPagesCard({ rows }: { rows: Ga4LandingPageRow[] }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Top landing pages</CardTitle>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        {rows.length === 0 ? (
+          <p className="m-0 p-[16px_18px] text-[13px] text-ink-muted">No landing page data yet.</p>
+        ) : (
+          <Table className="min-w-[420px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Landing page</TableHead>
+                <TableHead>Sessions</TableHead>
+                <TableHead>Engaged</TableHead>
+                <TableHead>Conversions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((r) => (
+                <TableRow key={r.landingPage}>
+                  <TableCell className="max-w-[320px] truncate">{r.landingPage}</TableCell>
+                  <TableCell className="font-mono text-[12px]">{r.sessions}</TableCell>
+                  <TableCell className="font-mono text-[12px] text-ink-muted">{r.engagedSessions}</TableCell>
+                  <TableCell className="font-mono text-[12px] text-ink-muted">{r.conversions}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  )
 }
 
 function StatTile({ label, value, note }: { label: string; value: string; note?: string }) {
@@ -224,43 +346,38 @@ export function SearchPerformancePage() {
                 <StatTile label="Average position" value={avgPosition.toFixed(1)} />
               </section>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Top queries</CardTitle>
-                </CardHeader>
-                <CardContent className="overflow-x-auto">
-                  {data.queries.length === 0 ? (
-                    <p className="m-0 p-[16px_18px] text-[13px] text-ink-muted">
-                      No query data yet — appears after the first sync.
-                    </p>
-                  ) : (
-                    <Table className="min-w-[480px]">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Query</TableHead>
-                          <TableHead>Clicks</TableHead>
-                          <TableHead>CTR</TableHead>
-                          <TableHead>Avg pos</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {data.queries.map((q) => (
-                          <TableRow key={q.query}>
-                            <TableCell>{q.query}</TableCell>
-                            <TableCell className="font-mono text-[12px]">{q.clicks}</TableCell>
-                            <TableCell className="font-mono text-[12px] text-ink-muted">
-                              {(q.ctr * 100).toFixed(1)}%
-                            </TableCell>
-                            <TableCell className="font-mono text-[12px] text-ink-muted">
-                              {q.avgPosition.toFixed(1)}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
+              <DimensionTable
+                title="Top queries"
+                columnLabel="Query"
+                rows={data.queries}
+                emptyText="No query data yet — appears after the first sync."
+              />
+
+              <section className="flex flex-wrap gap-3 items-start">
+                <div className="flex-[1_1_320px] min-w-0">
+                  <DimensionTable
+                    title="Top pages"
+                    columnLabel="Page"
+                    rows={data.pages}
+                    emptyText="No page data yet."
+                  />
+                </div>
+                <div className="flex-[1_1_320px] min-w-0">
+                  <DimensionTable
+                    title="Top countries"
+                    columnLabel="Country"
+                    rows={data.countries}
+                    emptyText="No country data yet."
+                  />
+                </div>
+              </section>
+
+              <DimensionTable
+                title="Device split"
+                columnLabel="Device"
+                rows={data.devices}
+                emptyText="No device data yet."
+              />
             </div>
           ) : (
             <ConnectionSetupCard
@@ -274,12 +391,35 @@ export function SearchPerformancePage() {
           )}
 
           {data.ga4.status === 'granted' && last28Ga4.length > 0 ? (
-            <div className="bg-brand rounded-[12px] p-[18px_20px] flex flex-wrap gap-6 items-center text-white">
-              <div className="flex flex-col gap-1 min-w-[160px]">
-                <h2 className="m-0 text-[14.5px] font-semibold">GA4 — sessions</h2>
-                <span className="text-[26px] font-semibold">{sessions.toLocaleString()}</span>
-                <span className="text-[11px] opacity-80">{conversions.toLocaleString()} conversions · 28 days</span>
-              </div>
+            <div className="flex flex-col gap-4">
+              {data.ga4.lastSyncedAt && (
+                <span className="font-mono text-[10.5px] text-ink-faint">
+                  Synced {new Date(data.ga4.lastSyncedAt).toLocaleString()} · nightly refresh, free GA4 Data API
+                </span>
+              )}
+              <section
+                className="grid gap-[10px]"
+                style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(168px, 1fr))' }}
+              >
+                <StatTile label="Sessions (28d)" value={sessions.toLocaleString()} />
+                <StatTile label="Conversions (28d)" value={conversions.toLocaleString()} />
+                <StatTile
+                  label="Engagement rate"
+                  value={
+                    last28Ga4.length > 0
+                      ? `${((windowTotal(last28Ga4.map((d) => d.engagementRate)) / last28Ga4.length) * 100).toFixed(1)}%`
+                      : '—'
+                  }
+                />
+              </section>
+              <section className="flex flex-wrap gap-3 items-start">
+                <div className="flex-[1_1_280px] min-w-0">
+                  <Ga4ChannelsCard channels={data.ga4Channels} />
+                </div>
+                <div className="flex-[1_1_320px] min-w-0">
+                  <Ga4LandingPagesCard rows={data.ga4LandingPages} />
+                </div>
+              </section>
             </div>
           ) : (
             <ConnectionSetupCard

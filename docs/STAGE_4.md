@@ -1,4 +1,4 @@
-# Stage 4 (core slice) — Search performance: GSC and GA4
+# Stage 4 — Search performance: GSC and GA4
 
 Live on Travel Roach. Built from `docs/DESIGN_HANDOFF.md`'s spec, with one
 deliberate deviation from `designs/SEO CRM Development Plan.dc.html`'s
@@ -6,7 +6,7 @@ Stage 4 section — see below.
 
 ## What's built
 
-- **Migration**
+- **Core migration**
   (`supabase/migrations/20260921150000_stage4_search_performance.sql`):
   `search_connections` (one row per account per source — `gsc`/`ga4` —
   holding the Google property and whether the sync service account
@@ -15,31 +15,48 @@ Stage 4 section — see below.
   doc's `metric_snapshot` entity describes, so Stage 5's Meta numbers
   can land in it later without a schema change), and
   `search_queries_daily` (one row per query per day, Search Console
-  only). RLS: staff can read all three; only admin/manager can write
-  `search_connections` (config); nobody has a direct write policy on
-  the other two — only the sync job writes them, using the service
-  role key, which bypasses RLS entirely. `search_connections` is
-  audit-logged; the ingested tables aren't (bulk nightly writes, not
-  user edits).
+  only).
+- **Detail migration**
+  (`supabase/migrations/20260921160000_stage4_gsc_ga4_detail.sql`):
+  `search_pages_daily`, `search_countries_daily`, `search_devices_daily`
+  (same shape as `search_queries_daily`, different GSC dimension) and
+  `ga4_channels_daily` / `ga4_landing_pages_daily` for GA4. See that
+  file's header for what's deliberately still not pulled — Core Web
+  Vitals, index coverage, manual actions, GA4 "assisted conversions" —
+  and why (mostly: not available through these APIs at all, not a
+  scoping choice).
+- RLS across every table above: staff can read; only admin/manager can
+  write `search_connections` (config, audit-logged); nobody has a
+  direct write policy on any of the ingested tables — only the sync job
+  writes them, using the service role key, which bypasses RLS entirely.
 - **Search performance screen** (`/clients/:accountId/search`, linked
   from the Account record page): once a property is configured and the
-  service account has access, shows the last-28-days stat tiles
-  (clicks, impressions, average CTR, average position), a top-queries
-  table, and a GA4 sessions/conversions card — built from real
-  `metric_snapshots` / `search_queries_daily` rows, not mock data.
-  Before that, each source shows a setup card: enter the property
-  (Search Console site URL, or `properties/<id>` for GA4), save it,
-  and check access.
+  service account has access —
+  - **Search Console**: clicks/impressions/CTR/average position stat
+    tiles (28d), top queries, top pages, top countries, device split —
+    all real, all from Search Console's own dimension breakdowns.
+  - **GA4**: sessions/conversions/engagement-rate stat tiles (28d),
+    channel breakdown, top landing pages.
+  Before a source has access, it shows a setup card instead: enter the
+  property (Search Console site URL, or `properties/<id>`/bare numeric
+  ID for GA4 — the function accepts either), save it, check access.
 - **`sync-search-performance` Edge Function**
   (`supabase/functions/sync-search-performance/`): authenticates to
   Google as the shared service account (JWT Bearer flow via
-  `google-auth-library`), pulls the last 28 days of Search Console
-  daily totals + top 25 queries and/or GA4 daily sessions/conversions
-  for one account, upserts them, and flips that connection's `status`
-  to `granted` on success or back to `needs_access` with the API's own
-  error message on failure. Invoked from the page's "Check access" /
-  "Sync now" buttons via `supabase.functions.invoke`, which attaches
-  the caller's session JWT; the function itself checks the caller is
+  `google-auth-library`), and per account with a connection:
+  - GSC: 5 parallel `searchAnalytics.query` calls (date; query; page;
+    country; device — all over the trailing 28 days) into
+    `metric_snapshots` + the four dimension tables.
+  - GA4: 3 parallel `runReport` calls (date totals incl.
+    engagement rate; date × channel; landing page) into
+    `metric_snapshots` + `ga4_channels_daily` + `ga4_landing_pages_daily`.
+  Flips that connection's `status` to `granted` on success or back to
+  `needs_access` with the API's own error message on failure (this is
+  how the CORS-preflight bug and the GA4 property-ID format mismatch
+  were actually found and fixed against a real Google account — the
+  function surfaces exactly what Google rejected, not a generic
+  failure). Invoked from the page's "Check access" / "Sync now"
+  buttons via `supabase.functions.invoke`; checks the caller is
   admin/manager before touching anything.
 
 ## The service-account decision
@@ -68,24 +85,47 @@ client-self-service.
   automatically needs a service-role invocation path the function
   doesn't implement yet — deliberately deferred rather than building
   and testing a cron job against a secret that doesn't exist.
-- **Core Web Vitals, device split, and GA4 channel breakdown** were in
-  the design mock but are cut from this core slice: CWV is a different
-  Google API (CrUX/PageSpeed Insights, not Search Analytics) with its
-  own auth story, and device/channel breakdowns are additional
-  dimensional pulls not worth bundling into the first real sync.
+- **Core Web Vitals, index coverage, manual actions, GA4 "assisted
+  conversions"** — not gaps to fill later, genuinely unavailable
+  through the APIs this integration uses. See the detail migration's
+  header for the specifics on each.
 - **The account record's original stat tiles** (organic clicks,
   keywords, links live) are still the Stage 1 substitutes — Stage 1
   deliberately didn't fabricate GSC/GA4 numbers before this stage
   existed to source them for real, and wiring the account record card
   itself to `metric_snapshots` is follow-up work, not done here.
+- **No "add contact" or "new engagement" UI** — pre-existing Stage 1/2
+  gaps, unrelated to this stage, still open.
+- **Project-level KPI/OKR reporting** — a distinct, larger piece
+  (rankings vs. targets, traffic/conversions vs. goals, hours vs.
+  budget, custom KPIs) requested alongside this expansion; not started,
+  needs its own design pass since nothing like it exists in the schema
+  yet.
+
+## Real-world fixes made against a live Google account
+
+Once a real service account and a real client's GSC/GA4 properties were
+connected, two bugs only a live call could surface: the Edge Function
+didn't handle the browser's CORS preflight (every call 500'd on
+`OPTIONS` before reaching the function's own logic — found via
+`query_logs`, not guesswork), and GA4's Admin UI shows the property ID
+as a bare number while the Data API requires it prefixed with
+`properties/` — the function now accepts either. Both are fixed in the
+current deployed version.
+
+## Adding a real client
+
+`Add client` on the Clients list is wired up for real (Stage 1 shipped
+it disabled) — name, website, industry, retainer, hours budget, renewal
+date, straight into `accounts` via the RLS policy that already existed.
+Contacts and engagements still have no add-UI (see above).
 
 ## Where things stand across all four stages
 
 Stage 0 (foundation), Stage 1 (Clients + Account record), Stage 2 core
 slice (Project workspace), Stage 3 core slice (Capacity & strength),
-and now Stage 4 core slice (Search performance) are all live and
+and Stage 4 (Search performance, full GSC/GA4 detail) are all live and
 cross-linked. The real gaps: deals/lead pipeline (Stage 1, no UI),
-template library + allocation planner (Stage 2/3, no UI), and — new
-this stage — no Google service account configured, so Search
-performance shows real empty states everywhere until that's set up and
-at least one client's properties are granted.
+template library + allocation planner (Stage 2/3, no UI), contacts/
+engagements have no add-UI, and the project-level KPI report described
+above is scoped but not started.

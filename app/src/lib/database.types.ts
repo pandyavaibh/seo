@@ -550,6 +550,127 @@ export interface Database {
           },
         ]
       }
+      search_pages_daily: {
+        Row: {
+          account_id: string
+          snapshot_date: string
+          page: string
+          clicks: number
+          impressions: number
+          ctr: number
+          avg_position: number
+        }
+        Insert: Partial<
+          Database['public']['Tables']['search_pages_daily']['Row']
+        > & { account_id: string; snapshot_date: string; page: string }
+        Update: Partial<Database['public']['Tables']['search_pages_daily']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'search_pages_daily_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      search_countries_daily: {
+        Row: {
+          account_id: string
+          snapshot_date: string
+          country: string
+          clicks: number
+          impressions: number
+          ctr: number
+          avg_position: number
+        }
+        Insert: Partial<
+          Database['public']['Tables']['search_countries_daily']['Row']
+        > & { account_id: string; snapshot_date: string; country: string }
+        Update: Partial<
+          Database['public']['Tables']['search_countries_daily']['Row']
+        >
+        Relationships: [
+          {
+            foreignKeyName: 'search_countries_daily_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      search_devices_daily: {
+        Row: {
+          account_id: string
+          snapshot_date: string
+          device: string
+          clicks: number
+          impressions: number
+          ctr: number
+          avg_position: number
+        }
+        Insert: Partial<
+          Database['public']['Tables']['search_devices_daily']['Row']
+        > & { account_id: string; snapshot_date: string; device: string }
+        Update: Partial<Database['public']['Tables']['search_devices_daily']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'search_devices_daily_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ga4_channels_daily: {
+        Row: {
+          account_id: string
+          snapshot_date: string
+          channel: string
+          sessions: number
+          conversions: number
+        }
+        Insert: Partial<
+          Database['public']['Tables']['ga4_channels_daily']['Row']
+        > & { account_id: string; snapshot_date: string; channel: string }
+        Update: Partial<Database['public']['Tables']['ga4_channels_daily']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'ga4_channels_daily_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ga4_landing_pages_daily: {
+        Row: {
+          account_id: string
+          snapshot_date: string
+          landing_page: string
+          sessions: number
+          engaged_sessions: number
+          conversions: number
+        }
+        Insert: Partial<
+          Database['public']['Tables']['ga4_landing_pages_daily']['Row']
+        > & { account_id: string; snapshot_date: string; landing_page: string }
+        Update: Partial<
+          Database['public']['Tables']['ga4_landing_pages_daily']['Row']
+        >
+        Relationships: [
+          {
+            foreignKeyName: 'ga4_landing_pages_daily_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       audit_log: {
         Row: {
           id: number
