@@ -55,6 +55,8 @@ export interface Database {
           health: string | null
           billing_cycle: string
           renewal_day: number | null
+          applied_template_id: string | null
+          tasks_generated_through: string | null
           created_at: string
         }
         Insert: Partial<Database['public']['Tables']['projects']['Row']> & {
@@ -68,6 +70,49 @@ export interface Database {
             columns: ['account_id']
             isOneToOne: false
             referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'projects_applied_template_id_fkey'
+            columns: ['applied_template_id']
+            isOneToOne: false
+            referencedRelation: 'project_templates'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      project_templates: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['project_templates']['Row']> & {
+          name: string
+        }
+        Update: Partial<Database['public']['Tables']['project_templates']['Row']>
+        Relationships: []
+      }
+      template_tasks: {
+        Row: {
+          id: string
+          template_id: string
+          label: string
+          estimate_hours: number | null
+          sort_order: number
+        }
+        Insert: Partial<Database['public']['Tables']['template_tasks']['Row']> & {
+          template_id: string
+          label: string
+        }
+        Update: Partial<Database['public']['Tables']['template_tasks']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'template_tasks_template_id_fkey'
+            columns: ['template_id']
+            isOneToOne: false
+            referencedRelation: 'project_templates'
             referencedColumns: ['id']
           },
         ]
