@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import type { AccountHealth } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
@@ -64,6 +64,42 @@ export function useAccounts() {
             : [],
         }
       })
+    },
+  })
+}
+
+export interface NewAccountInput {
+  name: string
+  website: string
+  industry: string
+  retainerDollars: string
+  hoursBudget: string
+  renewalOn: string
+}
+
+export function useCreateAccount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: NewAccountInput) => {
+      const { data, error } = await supabase
+        .from('accounts')
+        .insert({
+          name: input.name.trim(),
+          website: input.website.trim() || null,
+          industry: input.industry.trim() || null,
+          retainer_cents: input.retainerDollars
+            ? Math.round(Number(input.retainerDollars) * 100)
+            : null,
+          hours_budget: input.hoursBudget ? Number(input.hoursBudget) : null,
+          renewal_on: input.renewalOn || null,
+        })
+        .select('id')
+        .single()
+      if (error) throw new Error(error.message)
+      return data.id as string
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] })
     },
   })
 }

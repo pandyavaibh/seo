@@ -1,9 +1,11 @@
 import { AlertTriangle, Building2 } from 'lucide-react'
+import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge, type PillTone } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -13,9 +15,126 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useAccounts } from '@/features/accounts/use-accounts'
+import { useAccounts, useCreateAccount } from '@/features/accounts/use-accounts'
 import { initials, tintFor } from '@/lib/avatar'
 import type { AccountHealth } from '@/lib/database.types'
+
+function AddClientForm({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate()
+  const createAccount = useCreateAccount()
+  const [name, setName] = React.useState('')
+  const [website, setWebsite] = React.useState('')
+  const [industry, setIndustry] = React.useState('')
+  const [retainerDollars, setRetainerDollars] = React.useState('')
+  const [hoursBudget, setHoursBudget] = React.useState('')
+  const [renewalOn, setRenewalOn] = React.useState('')
+
+  const fieldClass =
+    'text-[13px] rounded-[8px] border border-border px-3 py-2 bg-surface w-full'
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Add client</CardTitle>
+      </CardHeader>
+      <CardContent className="p-[16px_18px] flex flex-col gap-3">
+        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+          <label className="flex flex-col gap-1">
+            <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">
+              Name *
+            </span>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Acme Corp"
+              className={fieldClass}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">
+              Website
+            </span>
+            <input
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              placeholder="acmecorp.com"
+              className={fieldClass}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">
+              Industry
+            </span>
+            <input
+              value={industry}
+              onChange={(e) => setIndustry(e.target.value)}
+              placeholder="E-commerce"
+              className={fieldClass}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">
+              Retainer ($/mo)
+            </span>
+            <input
+              value={retainerDollars}
+              onChange={(e) => setRetainerDollars(e.target.value)}
+              placeholder="8000"
+              inputMode="decimal"
+              className={fieldClass}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">
+              Hours budget / mo
+            </span>
+            <input
+              value={hoursBudget}
+              onChange={(e) => setHoursBudget(e.target.value)}
+              placeholder="80"
+              inputMode="decimal"
+              className={fieldClass}
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">
+              Renewal date
+            </span>
+            <input
+              type="date"
+              value={renewalOn}
+              onChange={(e) => setRenewalOn(e.target.value)}
+              className={fieldClass}
+            />
+          </label>
+        </div>
+        {createAccount.isError && (
+          <p className="m-0 text-[12px] text-signal-red">
+            {createAccount.error instanceof Error
+              ? createAccount.error.message
+              : 'Failed to create client'}
+          </p>
+        )}
+        <div className="flex items-center gap-2">
+          <Button
+            disabled={!name.trim() || createAccount.isPending}
+            onClick={() =>
+              createAccount.mutate(
+                { name, website, industry, retainerDollars, hoursBudget, renewalOn },
+                { onSuccess: (id) => navigate(`/clients/${id}`) },
+              )
+            }
+          >
+            {createAccount.isPending ? 'Creating…' : 'Create client'}
+          </Button>
+          <Button variant="secondary" onClick={onClose} disabled={createAccount.isPending}>
+            Cancel
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 const HEALTH_TONE: Record<AccountHealth, PillTone> = {
   healthy: 'green',
@@ -40,6 +159,7 @@ export function ClientsListPage() {
   const navigate = useNavigate()
   const { data, isLoading, isError, error, refetch, isFetching } =
     useAccounts()
+  const [showAddForm, setShowAddForm] = React.useState(false)
 
   return (
     <div className="flex flex-col gap-[18px]">
@@ -52,10 +172,12 @@ export function ClientsListPage() {
             Clients
           </h1>
         </div>
-        <Button disabled title="Coming later in Stage 1">
-          Add client
-        </Button>
+        {!showAddForm && (
+          <Button onClick={() => setShowAddForm(true)}>Add client</Button>
+        )}
       </div>
+
+      {showAddForm && <AddClientForm onClose={() => setShowAddForm(false)} />}
 
       {isError && (
         <Alert variant="destructive">
