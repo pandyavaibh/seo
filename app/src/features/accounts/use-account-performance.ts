@@ -12,10 +12,6 @@ export interface AccountPerformance {
   hoursLoggedThisMonth: number
 }
 
-function currentMonthKey() {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-}
 function currentMonthRange() {
   const now = new Date()
   const start = new Date(now.getFullYear(), now.getMonth(), 1)
@@ -28,7 +24,6 @@ export function useAccountPerformance(accountId: string | undefined) {
   return useQuery({
     queryKey: ['account-performance', accountId],
     queryFn: async (): Promise<AccountPerformance> => {
-      const month = currentMonthKey()
       const { start, end } = currentMonthRange()
 
       const [connRes, snapshotRes, projectsRes] = await Promise.all([
@@ -80,10 +75,11 @@ export function useAccountPerformance(accountId: string | undefined) {
             .in('project_id', projectIds)
             .order('checked_on', { ascending: false }),
           supabase
-            .from('offpage_runs')
+            .from('offpage_activity_entries')
             .select('count')
             .in('project_id', projectIds)
-            .eq('month', month),
+            .gte('entry_date', start)
+            .lt('entry_date', end),
           supabase
             .from('time_entries')
             .select('hours, worked_on')

@@ -371,28 +371,37 @@ export interface Database {
           },
         ]
       }
-      offpage_runs: {
+      offpage_activity_entries: {
         Row: {
           id: string
           project_id: string
-          month: string
           activity_type: string
+          entry_date: string
           count: number
-          updated_by: string | null
-          updated_at: string
+          note: string | null
+          created_by: string | null
+          created_at: string
         }
-        Insert: Partial<Database['public']['Tables']['offpage_runs']['Row']> & {
+        Insert: Partial<Database['public']['Tables']['offpage_activity_entries']['Row']> & {
           project_id: string
-          month: string
           activity_type: string
+          entry_date: string
+          count: number
         }
-        Update: Partial<Database['public']['Tables']['offpage_runs']['Row']>
+        Update: Partial<Database['public']['Tables']['offpage_activity_entries']['Row']>
         Relationships: [
           {
-            foreignKeyName: 'offpage_runs_project_id_fkey'
+            foreignKeyName: 'offpage_activity_entries_project_id_fkey'
             columns: ['project_id']
             isOneToOne: false
             referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'offpage_activity_entries_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'team_members'
             referencedColumns: ['id']
           },
         ]

@@ -90,10 +90,11 @@ export function useProjectWorkspace(projectId: string | undefined) {
           .eq('project_id', projectId!)
           .eq('month', month),
         supabase
-          .from('offpage_runs')
+          .from('offpage_activity_entries')
           .select('count')
           .eq('project_id', projectId!)
-          .eq('month', month),
+          .gte('entry_date', start)
+          .lt('entry_date', end),
       ])
 
       if (projectRes.error) throw new Error(projectRes.error.message)

@@ -91,6 +91,27 @@ does not).
   report each month, just doesn't send it, and says so per-account in
   its response rather than failing silently.
 
+## Off-page activity logging — now date-wise
+
+The per-type "Done" count on `/projects/:id/offpage` used to be a single
+editable number per project/month/activity_type (`offpage_runs`), reset
+by overtyping it. Replaced with dated entries
+(`offpage_activity_entries`: project, activity type, date, count, note)
+per the user's own worked example — log a batch as it happens (e.g.
+Guest Post: Sep 2 → +4 → 16 left; Sep 7 → +6 → 10 left; Sep 14 → +6 → 4
+left, against a target of 20) instead of hand-tracking a running total
+and overwriting one number. "Done" and "Remaining" for the month are
+computed by summing that month's entries against the type's target, same
+scope `offpage_runs` had (a fresh count each month); a collapsible
+history under each activity type (mirroring the audit card's "Past
+runs") shows every dated entry with the running total after it, and
+each entry can be deleted. Existing `offpage_runs` rows were migrated
+into one backfill entry each before the old table was dropped
+(`supabase/migrations/20260922220000_offpage_activity_entries.sql`);
+the account-level and project-workspace "links this month" rollups
+(`use-account-performance.ts`, `use-project-workspace.ts`) now sum from
+the same entries table over the same month's date range instead.
+
 ## Removed by request
 
 The Deals Kanban board (above), UTM builder (Stage 6), and Developer page

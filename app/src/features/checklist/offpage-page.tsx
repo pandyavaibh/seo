@@ -2,24 +2,18 @@ import { ArrowLeft } from 'lucide-react'
 import * as React from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
+import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ProgressBar } from '@/components/ui/progress-bar'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { ProjectSubNav } from '@/features/checklist/project-sub-nav'
 import { currentMonthKey } from '@/features/checklist/use-checklist'
 import {
+  useAddOffpageEntry,
+  useDeleteOffpageEntry,
   useOffpageActivity,
   useOffpageNote,
   useRecurringOffpageTasks,
-  useSetOffpageCount,
   useSetOffpageNote,
   useToggleRecurringInstance,
   type OffpageActivityRow,
@@ -28,33 +22,113 @@ import {
 import { useProjectWorkspace } from '@/features/projects/use-project-workspace'
 import { useCurrentMember } from '@/features/team/use-current-member'
 
-function ActivityRow({ row, projectId, month }: { row: OffpageActivityRow; projectId: string; month: string }) {
+function todayKey() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function formatEntryDate(entryDate: string) {
+  return new Date(`${entryDate}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+function ActivityCard({ row, projectId, month }: { row: OffpageActivityRow; projectId: string; month: string }) {
   const { data: currentMember } = useCurrentMember()
-  const setCount = useSetOffpageCount(projectId, month)
-  const [value, setValue] = React.useState(String(row.done))
+  const addEntry = useAddOffpageEntry(projectId, month)
+  const deleteEntry = useDeleteOffpageEntry(projectId, month)
+  const [date, setDate] = React.useState(todayKey())
+  const [count, setCount] = React.useState('')
+  const [note, setNote] = React.useState('')
 
   const targetLabel = row.targetMin === row.targetMax ? `Target ${row.targetMax}` : `Target ${row.targetMin}-${row.targetMax}`
 
+  const submit = () => {
+    const n = Number(count)
+    if (!date || !count.trim() || !Number.isFinite(n) || n <= 0) return
+    addEntry.mutate(
+      { activityType: row.activityType, entryDate: date, count: n, note, createdBy: currentMember?.id ?? null },
+      { onSuccess: () => { setCount(''); setNote('') } },
+    )
+  }
+
   return (
-    <TableRow>
-      <TableCell className="text-[13.5px] font-medium">{row.activityType}</TableCell>
-      <TableCell className="text-[12.5px] text-ink-muted">{targetLabel}</TableCell>
-      <TableCell>
-        <input
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onBlur={() => {
-            const next = value.trim() ? Math.max(0, Number(value)) : 0
-            if (next !== row.done) {
-              setCount.mutate({ activityType: row.activityType, count: next, updatedBy: currentMember?.id ?? null })
-            }
-          }}
-          inputMode="numeric"
-          className="w-[70px] text-[13px] font-mono border border-border rounded-[6px] px-2 py-1"
-        />
-      </TableCell>
-      <TableCell className="text-[12.5px] text-ink-muted">{row.remaining} left</TableCell>
-    </TableRow>
+    <Card>
+      <CardContent className="p-[14px_16px] flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-col gap-[2px]">
+            <span className="text-[13.5px] font-semibold">{row.activityType}</span>
+            <span className="font-mono text-[11px] text-ink-muted">{targetLabel}</span>
+          </div>
+          <div className="flex items-center gap-4 font-mono text-[12px]">
+            <span>{row.done} done</span>
+            <span className="text-ink-muted">{row.remaining} left</span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="flex flex-col gap-1 text-[10.5px] font-mono uppercase tracking-[0.06em] text-ink-muted">
+            Date
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="text-[13px] border border-border rounded-[6px] px-2 py-1"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-[10.5px] font-mono uppercase tracking-[0.06em] text-ink-muted">
+            Count
+            <input
+              value={count}
+              onChange={(e) => setCount(e.target.value)}
+              inputMode="numeric"
+              placeholder="0"
+              className="w-[64px] text-[13px] font-mono border border-border rounded-[6px] px-2 py-1"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-[10.5px] font-mono uppercase tracking-[0.06em] text-ink-muted flex-1 min-w-[140px]">
+            Note (optional)
+            <input
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="text-[13px] border border-border rounded-[6px] px-2 py-1"
+            />
+          </label>
+          <Button size="sm" disabled={addEntry.isPending} onClick={submit}>
+            {addEntry.isPending ? 'Adding…' : 'Log entry'}
+          </Button>
+        </div>
+        {addEntry.isError && (
+          <p className="m-0 text-[11.5px] text-signal-red">
+            {addEntry.error instanceof Error ? addEntry.error.message : 'Failed to log entry'}
+          </p>
+        )}
+
+        {row.entries.length > 0 && (
+          <details className="text-[12.5px]">
+            <summary className="cursor-pointer text-ink-muted">History ({row.entries.length})</summary>
+            <div className="flex flex-col gap-[6px] mt-2">
+              {row.entries.map((e) => (
+                <div key={e.id} className="flex items-center justify-between gap-2 font-mono text-[11.5px]">
+                  <span className="text-ink-secondary">
+                    {formatEntryDate(e.entryDate)} — +{e.count}
+                    {e.note ? ` (${e.note})` : ''}
+                    {e.createdByName ? ` · ${e.createdByName}` : ''}
+                  </span>
+                  <span className="flex items-center gap-2 flex-none text-ink-muted">
+                    <span>{e.cumulativeDone} done, {e.remainingAfter} left</span>
+                    <button
+                      onClick={() => deleteEntry.mutate(e.id)}
+                      disabled={deleteEntry.isPending}
+                      className="text-signal-red border-none bg-transparent cursor-pointer p-0"
+                    >
+                      Delete
+                    </button>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </details>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
@@ -217,30 +291,17 @@ export function OffpagePage() {
         <h2 className="m-0 font-mono text-[12px] tracking-[0.08em] uppercase text-signal-green">Backlink activity</h2>
         <p className="m-0 text-[12px] text-ink-muted">
           Per-type targets and the monthly total are from the Off-Page Activity Plan. Business Listing is shown as a
-          range (15-20) per that source.
+          range (15-20) per that source. Log each batch with its date — Done and Remaining are the running total for
+          this month.
         </p>
-        <Card>
-          <CardContent className="overflow-x-auto p-0">
-            {isLoading && <Skeleton className="h-[300px] w-full" />}
-            {!isLoading && projectId && data && (
-              <Table className="min-w-[520px]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Activity</TableHead>
-                    <TableHead>Target</TableHead>
-                    <TableHead>Done</TableHead>
-                    <TableHead>Remaining</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.activities.map((row) => (
-                    <ActivityRow key={row.activityType} row={row} projectId={projectId} month={month} />
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+        {isLoading && <Skeleton className="h-[300px] w-full" />}
+        {!isLoading && projectId && data && (
+          <div className="flex flex-col gap-2">
+            {data.activities.map((row) => (
+              <ActivityCard key={row.activityType} row={row} projectId={projectId} month={month} />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-2">

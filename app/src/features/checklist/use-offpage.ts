@@ -2,12 +2,23 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { supabase } from '@/lib/supabase'
 
+export interface OffpageEntryRow {
+  id: string
+  entryDate: string
+  count: number
+  note: string | null
+  createdByName: string | null
+  cumulativeDone: number
+  remainingAfter: number
+}
+
 export interface OffpageActivityRow {
   activityType: string
   targetMin: number
   targetMax: number
   done: number
   remaining: number
+  entries: OffpageEntryRow[]
 }
 
 export interface OffpageData {
@@ -16,28 +27,63 @@ export interface OffpageData {
   activities: OffpageActivityRow[]
 }
 
+// 'YYYY-MM' -> the [start, end) date range entry_date is compared
+// against, so a running total only ever sums entries within the
+// month being viewed (matches the old offpage_runs's per-month scope).
+function monthDateRange(month: string) {
+  const [y, m] = month.split('-').map(Number)
+  const iso = (d: Date) => d.toISOString().slice(0, 10)
+  return { start: iso(new Date(y, m - 1, 1)), end: iso(new Date(y, m, 1)) }
+}
+
 export function useOffpageActivity(projectId: string | undefined, month: string) {
   return useQuery({
     queryKey: ['offpage-activity', projectId, month],
     queryFn: async (): Promise<OffpageData> => {
-      const [projectRes, typesRes, runsRes] = await Promise.all([
+      const { start, end } = monthDateRange(month)
+      const [projectRes, typesRes, entriesRes] = await Promise.all([
         supabase.from('projects').select('link_target').eq('id', projectId!).single(),
         supabase.from('offpage_activity_types').select('activity_type, target_min, target_max, sort_order').order('sort_order'),
-        supabase.from('offpage_runs').select('activity_type, count').eq('project_id', projectId!).eq('month', month),
+        supabase
+          .from('offpage_activity_entries')
+          .select('id, activity_type, entry_date, count, note, team_members(name)')
+          .eq('project_id', projectId!)
+          .gte('entry_date', start)
+          .lt('entry_date', end)
+          .order('entry_date', { ascending: true }),
       ])
       if (projectRes.error) throw new Error(projectRes.error.message)
       if (typesRes.error) throw new Error(typesRes.error.message)
-      if (runsRes.error) throw new Error(runsRes.error.message)
+      if (entriesRes.error) throw new Error(entriesRes.error.message)
 
-      const doneByType = new Map((runsRes.data ?? []).map((r) => [r.activity_type, r.count]))
+      const entriesByType = new Map<string, NonNullable<typeof entriesRes.data>>()
+      for (const e of entriesRes.data ?? []) {
+        const list = entriesByType.get(e.activity_type) ?? []
+        list.push(e)
+        entriesByType.set(e.activity_type, list)
+      }
+
       const activities: OffpageActivityRow[] = (typesRes.data ?? []).map((t) => {
-        const done = doneByType.get(t.activity_type) ?? 0
+        let running = 0
+        const entries: OffpageEntryRow[] = (entriesByType.get(t.activity_type) ?? []).map((e) => {
+          running += e.count
+          return {
+            id: e.id,
+            entryDate: e.entry_date,
+            count: e.count,
+            note: e.note,
+            createdByName: e.team_members?.name ?? null,
+            cumulativeDone: running,
+            remainingAfter: Math.max(0, t.target_max - running),
+          }
+        })
         return {
           activityType: t.activity_type,
           targetMin: t.target_min,
           targetMax: t.target_max,
-          done,
-          remaining: Math.max(0, t.target_max - done),
+          done: running,
+          remaining: Math.max(0, t.target_max - running),
+          entries,
         }
       })
 
@@ -51,21 +97,32 @@ export function useOffpageActivity(projectId: string | undefined, month: string)
   })
 }
 
-export function useSetOffpageCount(projectId: string, month: string) {
+export function useAddOffpageEntry(projectId: string, month: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (input: { activityType: string; count: number; updatedBy: string | null }) => {
-      const { error } = await supabase.from('offpage_runs').upsert(
-        {
-          project_id: projectId,
-          month,
-          activity_type: input.activityType,
-          count: input.count,
-          updated_by: input.updatedBy,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'project_id,month,activity_type' },
-      )
+    mutationFn: async (input: { activityType: string; entryDate: string; count: number; note: string; createdBy: string | null }) => {
+      const { error } = await supabase.from('offpage_activity_entries').insert({
+        project_id: projectId,
+        activity_type: input.activityType,
+        entry_date: input.entryDate,
+        count: input.count,
+        note: input.note.trim() || null,
+        created_by: input.createdBy,
+      })
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['offpage-activity', projectId, month] })
+      queryClient.invalidateQueries({ queryKey: ['project-workspace', projectId] })
+    },
+  })
+}
+
+export function useDeleteOffpageEntry(projectId: string, month: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (entryId: string) => {
+      const { error } = await supabase.from('offpage_activity_entries').delete().eq('id', entryId)
       if (error) throw new Error(error.message)
     },
     onSuccess: () => {
