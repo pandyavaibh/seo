@@ -13,7 +13,6 @@ export interface LeadRow {
   message: string | null
   source: string
   status: LeadStatus
-  convertedDealId: string | null
   createdAt: string
 }
 
@@ -23,7 +22,7 @@ export function useLeads() {
     queryFn: async (): Promise<LeadRow[]> => {
       const { data, error } = await supabase
         .from('leads')
-        .select('id, name, email, phone, company, message, source, status, converted_deal_id, created_at')
+        .select('id, name, email, phone, company, message, source, status, created_at')
         .order('created_at', { ascending: false })
       if (error) throw new Error(error.message)
       return (data ?? []).map((r) => ({
@@ -35,7 +34,6 @@ export function useLeads() {
         message: r.message,
         source: r.source,
         status: r.status as LeadStatus,
-        convertedDealId: r.converted_deal_id,
         createdAt: r.created_at,
       }))
     },
@@ -59,27 +57,11 @@ export function useConvertLead() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (lead: LeadRow) => {
-      const { data: deal, error: dealError } = await supabase
-        .from('deals')
-        .insert({
-          name: lead.company ? `${lead.company} — ${lead.name}` : lead.name,
-          source: lead.source,
-        })
-        .select('id')
-        .single()
-      if (dealError) throw new Error(dealError.message)
-
-      const { error: leadError } = await supabase
-        .from('leads')
-        .update({ status: 'converted', converted_deal_id: deal.id })
-        .eq('id', lead.id)
-      if (leadError) throw new Error(leadError.message)
-
-      return deal.id as string
+      const { error } = await supabase.from('leads').update({ status: 'converted' }).eq('id', lead.id)
+      if (error) throw new Error(error.message)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] })
-      queryClient.invalidateQueries({ queryKey: ['deals'] })
     },
   })
 }

@@ -5,11 +5,9 @@ import { useAuth } from '@/providers/auth-provider'
 
 const NAV_ITEMS = [
   { to: '/clients', label: 'Clients', count: null },
-  { to: '/deals', label: 'Deals', count: null },
   { to: '/projects', label: 'Engagements', count: null },
   { to: '/templates', label: 'Templates', count: null },
   { to: '/capacity', label: 'Capacity', count: null },
-  { to: '/utm-builder', label: 'UTM builder', count: null },
 ]
 
 export function Sidebar() {
@@ -25,11 +23,7 @@ export function Sidebar() {
     ]
   }
   if (currentMember?.role === 'admin') {
-    navItems = [
-      ...navItems,
-      { to: '/developer', label: 'Developer', count: null },
-      { to: '/settings', label: 'Settings', count: null },
-    ]
+    navItems = [...navItems, { to: '/settings', label: 'Settings', count: null }]
   }
 
   return (

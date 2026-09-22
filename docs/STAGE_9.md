@@ -91,6 +91,35 @@ does not).
   report each month, just doesn't send it, and says so per-account in
   its response rather than failing silently.
 
+## Removed by request
+
+The Deals Kanban board (above), UTM builder (Stage 6), and Developer page
+— API keys + webhooks (Stage 8) — were all later removed at the user's
+request while browsing the live app, none of them had real data (`deals`:
+0 rows; `utm_links`/`api_keys`/`webhook_subscriptions`: unused), confirmed
+against the live database before dropping anything
+(`supabase/migrations/20260922210000_remove_deals_utm_developer.sql`).
+Dropped: the `deals`, `api_keys`, `webhook_subscriptions`, and
+`utm_links` tables; the `fire_webhooks()`/`create_api_key()` functions
+and the three webhook-firing triggers (`report.sent`, `invoice.paid`,
+`deal.won`) that existed only to serve those tables; the
+`/deals`, `/utm-builder`, and `/developer` routes, pages, and sidebar
+links; and the `public-api` Edge Function's source (it read `api_keys`,
+so it's dead without that table — **the deployed function itself is
+still live on Supabase**, same limitation as `sync-meta-performance` in
+Stage 6: this session's tools can't delete a deployed Edge Function,
+only its source, so delete it manually from the dashboard if you want it
+fully gone).
+
+Leads → Convert previously created a `deals` row; it now just flips the
+lead's status to `converted` with no deal record, since there's no
+pipeline to convert into anymore. `leads.converted_deal_id` was dropped
+along with it.
+
+If a sales pipeline, UTM tracking, or the public API/webhooks are ever
+wanted back, they need to be rebuilt from scratch — the tables and
+Edge Function source are gone, not just hidden.
+
 ## Deliberate scope cuts
 
 - **No keyword research, keyword difficulty, or backlink index** — the

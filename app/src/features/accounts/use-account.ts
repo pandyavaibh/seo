@@ -51,7 +51,7 @@ export function useAccount(accountId: string | undefined) {
           supabase
             .from('accounts')
             .select(
-              'id, name, website, industry, health, retainer_cents, currency, hours_budget, started_on, renewal_on, account_manager_id, notes, team_members(name)',
+              'id, name, website, industry, health, retainer_cents, currency, hours_budget, started_on, renewal_on, account_manager_id, notes, team_members!accounts_account_manager_id_fkey(name)',
             )
             .eq('id', accountId!)
             .single(),

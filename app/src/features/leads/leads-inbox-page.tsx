@@ -1,5 +1,4 @@
 import { Inbox } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 
 import { Badge, type PillTone } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,7 +20,6 @@ const STATUS_LABEL: Record<LeadStatus, string> = {
 }
 
 function LeadCard({ lead }: { lead: LeadRow }) {
-  const navigate = useNavigate()
   const convert = useConvertLead()
   const setStatus = useSetLeadStatus()
 
@@ -45,9 +43,9 @@ function LeadCard({ lead }: { lead: LeadRow }) {
             <Button
               size="sm"
               disabled={convert.isPending}
-              onClick={() => convert.mutate(lead, { onSuccess: () => navigate('/deals') })}
+              onClick={() => convert.mutate(lead)}
             >
-              {convert.isPending ? 'Converting…' : 'Convert to deal'}
+              {convert.isPending ? 'Converting…' : 'Mark converted'}
             </Button>
             <Button
               variant="secondary"
@@ -89,7 +87,7 @@ export function LeadsInboxPage() {
         </span>
         <h1 className="m-0 text-[25px] font-semibold tracking-[-0.02em]">Leads</h1>
         <p className="m-0 text-[13px] text-ink-muted">
-          Submissions from the public lead form. Convert real inquiries to deals; mark spam or
+          Submissions from the public lead form. Mark real inquiries converted, or mark spam or
           archive the rest.
         </p>
       </div>

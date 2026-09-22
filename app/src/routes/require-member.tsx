@@ -26,7 +26,7 @@ export function RequireMember() {
 
 // Stage 7: a client-role member is a valid, active team_members row —
 // RequireMember lets them through — but the staff app (accounts,
-// deals, capacity, rates) is never theirs to see. Wrapped around the
+// projects, capacity, rates) is never theirs to see. Wrapped around the
 // staff route tree, inside RequireMember.
 export function RequireStaff() {
   const { data: member, isLoading } = useCurrentMember()

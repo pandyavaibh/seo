@@ -9,8 +9,6 @@ import { BillingPage } from '@/features/billing/billing-page'
 import { CapacityPage } from '@/features/capacity/capacity-page'
 import { ChecklistPage } from '@/features/checklist/checklist-page'
 import { OffpagePage } from '@/features/checklist/offpage-page'
-import { DeveloperPage } from '@/features/developer/developer-page'
-import { DealsListPage } from '@/features/deals/deals-list-page'
 import { LeadsInboxPage } from '@/features/leads/leads-inbox-page'
 import { PublicLeadFormPage } from '@/features/leads/public-lead-form-page'
 import { PortalDashboardPage } from '@/features/portal/portal-dashboard-page'
@@ -22,7 +20,6 @@ import { ReportsPage } from '@/features/reports/reports-page'
 import { SearchPerformancePage } from '@/features/search-performance/search-performance-page'
 import { AgencySettingsPage } from '@/features/settings/agency-settings-page'
 import { ContentCalendarPage } from '@/features/social/content-calendar-page'
-import { UtmBuilderPage } from '@/features/social/utm-builder-page'
 import { TemplatesListPage } from '@/features/templates/templates-list-page'
 import { RequireAuth, RequireMember, RequirePortal, RequireStaff } from '@/routes/require-member'
 import { SignInPage } from '@/routes/sign-in'
@@ -45,7 +42,6 @@ export function App() {
               <Route path="/clients/:accountId/calendar" element={<ContentCalendarPage />} />
               <Route path="/clients/:accountId/reports" element={<ReportsPage />} />
               <Route path="/clients/:accountId/billing" element={<BillingPage />} />
-              <Route path="/deals" element={<DealsListPage />} />
               <Route path="/leads" element={<LeadsInboxPage />} />
               <Route path="/projects" element={<ProjectsListPage />} />
               <Route path="/projects/:projectId" element={<ProjectWorkspacePage />} />
@@ -54,8 +50,6 @@ export function App() {
               <Route path="/templates" element={<TemplatesListPage />} />
               <Route path="/assignments" element={<AssignmentsPage />} />
               <Route path="/capacity" element={<CapacityPage />} />
-              <Route path="/utm-builder" element={<UtmBuilderPage />} />
-            <Route path="/developer" element={<DeveloperPage />} />
               <Route path="/settings" element={<AgencySettingsPage />} />
               <Route path="/" element={<Navigate to="/clients" replace />} />
             </Route>

@@ -8,13 +8,6 @@
 
 export type MemberRole = 'admin' | 'manager' | 'member' | 'client'
 export type AccountHealth = 'healthy' | 'watch' | 'at_risk'
-export type DealStage =
-  | 'enquiry'
-  | 'qualified'
-  | 'proposal'
-  | 'negotiation'
-  | 'won'
-  | 'lost'
 export type ActivityKind = 'call' | 'meeting' | 'email' | 'note' | 'report' | 'issue'
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done' | 'na'
 export type MetricSource = 'gsc' | 'ga4'
@@ -26,7 +19,6 @@ export type ExpenseCategory = 'link_cost' | 'tool' | 'other'
 export type InvoiceKind = 'retainer' | 'project'
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue'
 export type ReportStatus = 'draft' | 'sent'
-export type WebhookEventType = 'report.sent' | 'invoice.paid' | 'deal.won'
 export type ChecklistPriority = 'high' | 'medium' | 'low'
 export type ChecklistStatus = 'to_do' | 'in_progress' | 'done' | 'na'
 
@@ -253,40 +245,6 @@ export interface Database {
             columns: ['account_id']
             isOneToOne: false
             referencedRelation: 'accounts'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      deals: {
-        Row: {
-          id: string
-          account_id: string | null
-          name: string
-          stage: DealStage
-          value_cents: number | null
-          source: string | null
-          owner_id: string | null
-          expected_close: string | null
-          lost_reason: string | null
-          created_at: string
-        }
-        Insert: Partial<Database['public']['Tables']['deals']['Row']> & {
-          name: string
-        }
-        Update: Partial<Database['public']['Tables']['deals']['Row']>
-        Relationships: [
-          {
-            foreignKeyName: 'deals_account_id_fkey'
-            columns: ['account_id']
-            isOneToOne: false
-            referencedRelation: 'accounts'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'deals_owner_id_fkey'
-            columns: ['owner_id']
-            isOneToOne: false
-            referencedRelation: 'team_members'
             referencedColumns: ['id']
           },
         ]
@@ -558,7 +516,6 @@ export interface Database {
           message: string | null
           source: string
           status: string
-          converted_deal_id: string | null
           created_at: string
         }
         Insert: Partial<Database['public']['Tables']['leads']['Row']> & {
@@ -566,15 +523,7 @@ export interface Database {
           email: string
         }
         Update: Partial<Database['public']['Tables']['leads']['Row']>
-        Relationships: [
-          {
-            foreignKeyName: 'leads_converted_deal_id_fkey'
-            columns: ['converted_deal_id']
-            isOneToOne: false
-            referencedRelation: 'deals'
-            referencedColumns: ['id']
-          },
-        ]
+        Relationships: []
       }
       report_schedules: {
         Row: {
@@ -1018,45 +967,6 @@ export interface Database {
           },
         ]
       }
-      utm_links: {
-        Row: {
-          id: string
-          account_id: string | null
-          base_url: string
-          source: string
-          medium: string
-          campaign: string
-          term: string | null
-          content: string | null
-          built_url: string
-          created_by: string | null
-          created_at: string
-        }
-        Insert: Partial<Database['public']['Tables']['utm_links']['Row']> & {
-          base_url: string
-          source: string
-          medium: string
-          campaign: string
-          built_url: string
-        }
-        Update: Partial<Database['public']['Tables']['utm_links']['Row']>
-        Relationships: [
-          {
-            foreignKeyName: 'utm_links_account_id_fkey'
-            columns: ['account_id']
-            isOneToOne: false
-            referencedRelation: 'accounts'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'utm_links_created_by_fkey'
-            columns: ['created_by']
-            isOneToOne: false
-            referencedRelation: 'team_members'
-            referencedColumns: ['id']
-          },
-        ]
-      }
       member_rates: {
         Row: {
           member_id: string
@@ -1258,60 +1168,6 @@ export interface Database {
           },
         ]
       }
-      api_keys: {
-        Row: {
-          id: string
-          account_id: string | null
-          label: string
-          key_hash: string
-          key_prefix: string
-          created_by: string | null
-          created_at: string
-          revoked_at: string | null
-        }
-        Insert: Partial<Database['public']['Tables']['api_keys']['Row']> & {
-          label: string
-          key_hash: string
-          key_prefix: string
-        }
-        Update: Partial<Database['public']['Tables']['api_keys']['Row']>
-        Relationships: [
-          {
-            foreignKeyName: 'api_keys_account_id_fkey'
-            columns: ['account_id']
-            isOneToOne: false
-            referencedRelation: 'accounts'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      webhook_subscriptions: {
-        Row: {
-          id: string
-          account_id: string | null
-          url: string
-          event_type: WebhookEventType
-          secret: string
-          active: boolean
-          created_by: string | null
-          created_at: string
-        }
-        Insert: Partial<Database['public']['Tables']['webhook_subscriptions']['Row']> & {
-          url: string
-          event_type: WebhookEventType
-          secret: string
-        }
-        Update: Partial<Database['public']['Tables']['webhook_subscriptions']['Row']>
-        Relationships: [
-          {
-            foreignKeyName: 'webhook_subscriptions_account_id_fkey'
-            columns: ['account_id']
-            isOneToOne: false
-            referencedRelation: 'accounts'
-            referencedColumns: ['id']
-          },
-        ]
-      }
       audit_log: {
         Row: {
           id: number
@@ -1328,16 +1184,10 @@ export interface Database {
       }
     }
     Views: Record<string, never>
-    Functions: {
-      create_api_key: {
-        Args: { p_account_id: string | null; p_label: string }
-        Returns: string
-      }
-    }
+    Functions: Record<string, never>
     Enums: {
       member_role: MemberRole
       account_health: AccountHealth
-      deal_stage: DealStage
       activity_kind: ActivityKind
       task_status: TaskStatus
       metric_source: MetricSource
@@ -1349,7 +1199,6 @@ export interface Database {
       invoice_kind: InvoiceKind
       invoice_status: InvoiceStatus
       report_status: ReportStatus
-      webhook_event_type: WebhookEventType
       checklist_priority: ChecklistPriority
       checklist_status: ChecklistStatus
     }
