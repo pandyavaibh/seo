@@ -23,6 +23,7 @@ import {
 } from '@/features/accounts/use-account'
 import { useAccountPerformance } from '@/features/accounts/use-account-performance'
 import { useDeleteAccount } from '@/features/accounts/use-accounts'
+import { TechnicalAuditCard } from '@/features/accounts/technical-audit-card'
 import { ChurnRiskCard } from '@/features/intelligence/churn-risk-card'
 import { PortalCommentsThread } from '@/features/portal/portal-comments-thread'
 import {
@@ -1216,6 +1217,9 @@ export function AccountRecordPage() {
             </div>
             <div className="flex-[1_1_360px] min-w-0">
               {accountId && <ChurnRiskCard accountId={accountId} />}
+            </div>
+            <div className="flex-[1_1_360px] min-w-0">
+              {accountId && <TechnicalAuditCard accountId={accountId} website={acc.website} />}
             </div>
             {currentMember?.role === 'admin' && (
               <div className="flex-[1_1_360px] min-w-0">

@@ -2,6 +2,8 @@ import { AlertTriangle, Handshake } from 'lucide-react'
 import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { cn } from '@/lib/utils'
+
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -172,9 +174,89 @@ function DealRowView({ deal }: { deal: DealRow }) {
   )
 }
 
+function KanbanCard({ deal }: { deal: DealRow }) {
+  const navigate = useNavigate()
+  const updateStage = useUpdateDealStage()
+
+  return (
+    <div
+      draggable
+      onDragStart={(e) => e.dataTransfer.setData('text/deal-id', deal.id)}
+      className="bg-surface border border-border rounded-[10px] p-[11px_13px] flex flex-col gap-[6px] cursor-grab active:cursor-grabbing"
+    >
+      <span className="text-[13px] font-medium leading-snug">{deal.name}</span>
+      {deal.accountId ? (
+        <button
+          onClick={() => navigate(`/clients/${deal.accountId}`)}
+          className="self-start border-none bg-transparent p-0 cursor-pointer text-[12px] text-brand hover:underline"
+        >
+          {deal.accountName}
+        </button>
+      ) : (
+        <span className="text-[12px] text-ink-faint">No account linked</span>
+      )}
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-mono text-[11.5px] text-ink-secondary">{formatMoney(deal.valueCents)}</span>
+        <span className="font-mono text-[10.5px] text-ink-muted">{deal.ownerName ?? '—'}</span>
+      </div>
+      {updateStage.isPending && <span className="font-mono text-[10px] text-ink-faint">Moving…</span>}
+    </div>
+  )
+}
+
+function KanbanColumn({ stage, deals }: { stage: DealRow['stage']; deals: DealRow[] }) {
+  const updateStage = useUpdateDealStage()
+  const [dragOver, setDragOver] = React.useState(false)
+  const totalCents = deals.reduce((s, d) => s + (d.valueCents ?? 0), 0)
+
+  return (
+    <div
+      onDragOver={(e) => {
+        e.preventDefault()
+        setDragOver(true)
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault()
+        setDragOver(false)
+        const dealId = e.dataTransfer.getData('text/deal-id')
+        if (dealId) updateStage.mutate({ id: dealId, stage })
+      }}
+      className={cn(
+        'flex-[1_0_220px] min-w-[220px] flex flex-col gap-[10px] rounded-[12px] p-[10px] border',
+        dragOver ? 'border-brand bg-surface-sunken' : 'border-border-light bg-surface-sunken-2',
+      )}
+    >
+      <div className="flex items-center justify-between gap-2 px-[3px]">
+        <span className="flex items-center gap-[6px]">
+          <Badge tone={DEAL_STAGE_TONE[stage]}>{DEAL_STAGE_LABEL[stage]}</Badge>
+          <span className="font-mono text-[11px] text-ink-muted">{deals.length}</span>
+        </span>
+        {totalCents > 0 && <span className="font-mono text-[10.5px] text-ink-faint">{formatMoney(totalCents)}</span>}
+      </div>
+      <div className="flex flex-col gap-[8px] min-h-[40px]">
+        {deals.map((d) => (
+          <KanbanCard key={d.id} deal={d} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function DealsKanbanBoard({ deals }: { deals: DealRow[] }) {
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-2">
+      {DEAL_STAGES.map((stage) => (
+        <KanbanColumn key={stage} stage={stage} deals={deals.filter((d) => d.stage === stage)} />
+      ))}
+    </div>
+  )
+}
+
 export function DealsListPage() {
   const { data, isLoading, isError, error, refetch, isFetching } = useDeals()
   const [showNewDeal, setShowNewDeal] = React.useState(false)
+  const [view, setView] = React.useState<'table' | 'board'>('board')
 
   const openCount = (data ?? []).filter((d) => d.stage !== 'won' && d.stage !== 'lost').length
 
@@ -187,7 +269,23 @@ export function DealsListPage() {
           </span>
           <h1 className="m-0 text-[25px] font-semibold tracking-[-0.02em]">Deals</h1>
         </div>
-        {!showNewDeal && <Button onClick={() => setShowNewDeal(true)}>New deal</Button>}
+        <div className="flex items-center gap-2">
+          <div className="flex gap-[3px] bg-surface-sunken border border-border rounded-full p-[3px]">
+            {(['board', 'table'] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={cn(
+                  'text-[12px] font-medium px-[12px] py-[5px] rounded-full border-none cursor-pointer capitalize',
+                  view === v ? 'bg-brand text-white' : 'bg-transparent text-ink-secondary hover:text-ink',
+                )}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+          {!showNewDeal && <Button onClick={() => setShowNewDeal(true)}>New deal</Button>}
+        </div>
       </div>
 
       {showNewDeal && <NewDealForm onClose={() => setShowNewDeal(false)} />}
@@ -226,7 +324,11 @@ export function DealsListPage() {
         </div>
       )}
 
-      {!isError && !isLoading && data && data.length > 0 && (
+      {!isError && !isLoading && data && data.length > 0 && view === 'board' && (
+        <DealsKanbanBoard deals={data} />
+      )}
+
+      {!isError && !isLoading && data && data.length > 0 && view === 'table' && (
         <div className="bg-surface border border-border rounded-[12px] overflow-hidden">
           <Table className="min-w-[820px]">
             <TableHeader>

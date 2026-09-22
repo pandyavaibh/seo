@@ -504,6 +504,39 @@ export interface Database {
           },
         ]
       }
+      technical_audits: {
+        Row: {
+          id: string
+          account_id: string
+          url: string
+          run_at: string
+          performance_score: number | null
+          seo_score: number | null
+          accessibility_score: number | null
+          best_practices_score: number | null
+          lcp_ms: number | null
+          cls: number | null
+          inp_ms: number | null
+          has_robots_txt: boolean | null
+          has_sitemap: boolean | null
+          error: string | null
+          run_by: string | null
+        }
+        Insert: Partial<Database['public']['Tables']['technical_audits']['Row']> & {
+          account_id: string
+          url: string
+        }
+        Update: Partial<Database['public']['Tables']['technical_audits']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'technical_audits_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       keywords: {
         Row: {
           id: string
