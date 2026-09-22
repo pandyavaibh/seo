@@ -313,6 +313,31 @@ hidden.
 `supabase/migrations/20260922240000_remove_capacity_and_leads.sql`,
 `supabase/migrations/20260922270000_remove_tasks.sql`)
 
+## Leave & Attendance (new tab)
+
+A new "Leave & Attendance" nav item, visible to every staff member —
+"Each Team Add their Punch in And punch out":
+
+- **Attendance** (`attendance_entries`: member, work date, punch in,
+  punch out, note; unique per member/day) — a "Punch In" button starts
+  today's entry, "Punch Out" fills it in; a "Team today" card shows
+  everyone's times and hours worked live, and each member sees their
+  own last 14 days. One session per day, not multiple in/out pairs
+  (no lunch-break split) — matches the literal ask; that's a follow-up
+  if it's ever needed.
+- **Leave** (`member_leave`: member, date range, kind — leave/holiday/
+  sick, note) — this is the exact table Stage 3's Capacity & strength
+  page used before that whole page was removed by request; the leave
+  log itself was never the problem, so it's rebuilt verbatim as its
+  own tab rather than redesigned. Any staff member logs their own;
+  admins/managers can log or remove anyone's, matching the original
+  policy. Split into "Upcoming & current" and a collapsed "Past".
+
+Same self-or-admin/manager write, staff-read-all RLS pattern as the
+rest of the app's per-person data (time entries, the old leave table).
+
+(`supabase/migrations/20260922320000_leave_and_attendance.sql`)
+
 ## Deliberate scope cuts
 
 - **No keyword research, keyword difficulty, or backlink index** — the

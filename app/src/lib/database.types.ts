@@ -48,6 +48,54 @@ export interface Database {
           },
         ]
       }
+      attendance_entries: {
+        Row: {
+          id: string
+          member_id: string
+          work_date: string
+          punch_in: string
+          punch_out: string | null
+          note: string | null
+        }
+        Insert: Partial<Database['public']['Tables']['attendance_entries']['Row']> & {
+          member_id: string
+        }
+        Update: Partial<Database['public']['Tables']['attendance_entries']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'attendance_entries_member_id_fkey'
+            columns: ['member_id']
+            isOneToOne: false
+            referencedRelation: 'team_members'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      member_leave: {
+        Row: {
+          id: string
+          member_id: string
+          starts_on: string
+          ends_on: string
+          kind: string
+          note: string | null
+        }
+        Insert: Partial<Database['public']['Tables']['member_leave']['Row']> & {
+          member_id: string
+          starts_on: string
+          ends_on: string
+        }
+        Update: Partial<Database['public']['Tables']['member_leave']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'member_leave_member_id_fkey'
+            columns: ['member_id']
+            isOneToOne: false
+            referencedRelation: 'team_members'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       projects: {
         Row: {
           id: string
