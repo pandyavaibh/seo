@@ -73,13 +73,11 @@ client-self-service.
 
 ## What's not live yet
 
-- **No Google Cloud service account exists yet.** Nothing above can
-  actually pull real data until one is created (Search Console API +
-  Google Analytics Data API enabled, a service account created, its
-  JSON key set as the `GOOGLE_SERVICE_ACCOUNT_KEY` secret on this
-  Edge Function) and added to at least one client's properties. Until
-  then every account correctly shows "Needs access" — that's the real
-  state, not a bug.
+- ~~**No Google Cloud service account exists yet.**~~ Resolved: the
+  service account is live — `search_connections` shows real `gsc`/`ga4`
+  rows with `status = 'granted'` against `vrbonkers.com`, synced
+  nightly (verified directly against the database, not just code
+  review this time).
 - ~~**No nightly schedule.**~~ Built:
   `20260921190000_nightly_search_sync.sql` adds an `internal_config`
   table (RLS enabled, zero policies — deny-all except service role;
@@ -91,28 +89,21 @@ client-self-service.
   (every account with a connection, secret checked) — and is deployed
   with `verify_jwt=false` since the cron path carries no Supabase JWT
   at all; both paths are fully authenticated in the function's own
-  code before touching Google or the database. **Unverified
-  end-to-end** — this sandbox's outbound network policy blocks a
-  direct curl test of the deployed function, so this is verified by
-  code review, not a live run. It fails harmlessly and identically to
-  the manual path (the same "GOOGLE_SERVICE_ACCOUNT_KEY is not set"
-  error) until that secret exists.
+  code before touching Google or the database. ~~**Unverified
+  end-to-end.**~~ Now verified live: `search_connections.last_synced_at`
+  updates at 03:00 UTC daily, matching the cron schedule exactly.
 - **Core Web Vitals, index coverage, manual actions, GA4 "assisted
   conversions"** — not gaps to fill later, genuinely unavailable
   through the APIs this integration uses. See the detail migration's
   header for the specifics on each.
-- **The account record's original stat tiles** (organic clicks,
-  keywords, links live) are still the Stage 1 substitutes — Stage 1
-  deliberately didn't fabricate GSC/GA4 numbers before this stage
-  existed to source them for real, and wiring the account record card
-  itself to `metric_snapshots` is follow-up work, not done here.
-- **No "add contact" or "new engagement" UI** — pre-existing Stage 1/2
-  gaps, unrelated to this stage, still open.
-- **Project-level KPI/OKR reporting** — a distinct, larger piece
-  (rankings vs. targets, traffic/conversions vs. goals, hours vs.
-  budget, custom KPIs) requested alongside this expansion; not started,
-  needs its own design pass since nothing like it exists in the schema
-  yet.
+- ~~**The account record's original stat tiles are still the Stage 1
+  substitutes.**~~ Resolved in a later pass — the account record wires
+  real GSC/GA4 numbers through `useAccountPerformance`.
+- ~~**No "add contact" or "new engagement" UI.**~~ Resolved — both are
+  fully wired (`useAddContact`, `useCreateProject`).
+- ~~**Project-level KPI/OKR reporting.**~~ Built — see the "Project-level
+  KPI/OKR report" commit; `project_goals` plus the Traffic/conversions
+  and Custom KPIs cards on the Project workspace page.
 
 ## Real-world fixes made against a live Google account
 

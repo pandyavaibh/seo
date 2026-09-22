@@ -5,6 +5,16 @@ deliberately deferred, and exactly what's needed from you to unblock the
 rest. Read this before assuming any of Stage 0's six workstreams are
 "done" in the sense of live and tested.
 
+**Update, verified live as of Stage 9:** everything in "What's blocked"
+below has since been resolved — Travel Roach is a real, active Supabase
+project (not the placeholder this doc originally described), `app/
+.env.local` and Google OAuth are configured (sign-in works end to end),
+the nightly backup workflow and Cloudflare deployment are both live, and
+`team_members` has the real roster (confirmed: `vrbonkers@gmail.com` as
+admin, RLS gating a non-member to `/unauthorized` as designed). The
+narrative below is kept as the historical record of how Stage 0 actually
+started, not a current TODO list.
+
 ## Why this session diverged from the original brief
 
 `00-START-HERE.md` and the design docs describe rebuilding a front end
