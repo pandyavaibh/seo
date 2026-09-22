@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 export interface ReportSnapshot {
   search: { clicks: number; impressions: number } | null
   ga4: { sessions: number; conversions: number } | null
-  linksPlaced: { domain: string; projectName: string | null }[]
+  linksPlaced: number
   keywordsImproved: number
   keywordsDeclined: number
   keywordsTracked: number
@@ -117,22 +117,28 @@ async function buildSnapshot(accountId: string, periodStart: string, periodEnd: 
 
   const projects = projectsRes.data ?? []
   const projectIds = projects.map((p) => p.id)
-  const projectName = new Map(projects.map((p) => [p.id, p.name]))
 
-  let linksPlaced: ReportSnapshot['linksPlaced'] = []
+  let linksPlaced = 0
   let keywordsImproved = 0
   let keywordsDeclined = 0
   let keywordsTracked = 0
 
   if (projectIds.length > 0) {
+    const backlinkTypesRes = await supabase
+      .from('offpage_activity_types')
+      .select('activity_type')
+      .eq('activity_group', 'backlinks')
+    if (backlinkTypesRes.error) throw new Error(backlinkTypesRes.error.message)
+    const backlinkTypeNames = (backlinkTypesRes.data ?? []).map((t) => t.activity_type)
+
     const [backlinksRes, keywordsRes] = await Promise.all([
       supabase
-        .from('backlinks')
-        .select('domain, project_id')
+        .from('offpage_activity_entries')
+        .select('count')
         .in('project_id', projectIds)
-        .eq('status', 'placed')
-        .gte('placed_on', periodStart)
-        .lte('placed_on', periodEnd),
+        .in('activity_type', backlinkTypeNames)
+        .gte('entry_date', periodStart)
+        .lte('entry_date', periodEnd),
       supabase
         .from('keywords')
         .select('id, project_id, keyword_checks(rank, checked_on)')
@@ -143,10 +149,7 @@ async function buildSnapshot(accountId: string, periodStart: string, periodEnd: 
       if (res.error) throw new Error(res.error.message)
     }
 
-    linksPlaced = (backlinksRes.data ?? []).map((b) => ({
-      domain: b.domain,
-      projectName: projectName.get(b.project_id) ?? null,
-    }))
+    linksPlaced = (backlinksRes.data ?? []).reduce((s, b) => s + b.count, 0)
 
     keywordsTracked = (keywordsRes.data ?? []).length
     for (const k of keywordsRes.data ?? []) {
@@ -168,7 +171,7 @@ async function buildSnapshot(accountId: string, periodStart: string, periodEnd: 
     keywordsImproved,
     keywordsDeclined,
     keywordsTracked,
-    linksPlaced: linksPlaced.length,
+    linksPlaced,
   })
 
   return { search, ga4, linksPlaced, keywordsImproved, keywordsDeclined, keywordsTracked, commentary }

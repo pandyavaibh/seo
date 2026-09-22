@@ -164,7 +164,7 @@ function ReportCard({ accountId, accountName, report }: { accountId: string; acc
           )}
           <div className="flex flex-col gap-[2px]">
             <span className="font-mono text-[10px] uppercase text-ink-muted">Links built</span>
-            <span className="text-[16px] font-semibold">{s.linksPlaced.length}</span>
+            <span className="text-[16px] font-semibold">{s.linksPlaced}</span>
           </div>
           <div className="flex flex-col gap-[2px]">
             <span className="font-mono text-[10px] uppercase text-ink-muted">Keywords ↑ / ↓</span>

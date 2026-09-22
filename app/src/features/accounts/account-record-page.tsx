@@ -31,13 +31,17 @@ import {
   useDeleteDeliverable,
   useDeliverables,
 } from '@/features/portal/use-deliverables'
+import { ActivityFeedCard, ActivityGroupsSection } from '@/features/projects/activity-section'
+import { ChecklistCard } from '@/features/checklist/checklist-card'
+import { KeywordsSection } from '@/features/projects/keywords-section'
 import {
   ProjectHoursPanel,
   ProjectHoursSummary,
 } from '@/features/projects/project-hours-panel'
+import { AssignedTeamCard, CustomGoalsCard, TrafficGoalCard } from '@/features/projects/project-panels'
 import { useCreateProject } from '@/features/projects/use-projects'
 import { useCurrentMember } from '@/features/team/use-current-member'
-import { initials, tintFor } from '@/lib/avatar'
+import { initials } from '@/lib/avatar'
 import type { AccountHealth, ActivityKind } from '@/lib/database.types'
 import { PROJECT_TYPES, PROJECT_TYPE_LABEL } from '@/lib/project-type'
 import { STAGE_LABEL, STAGE_TONE } from '@/lib/project-stage'
@@ -641,7 +645,6 @@ function AddProjectForm({
   acc: AccountDetail
   onClose: () => void
 }) {
-  const navigate = useNavigate()
   const createProject = useCreateProject(accountId, acc.name)
   const [name, setName] = React.useState('')
   const [projectType, setProjectType] = React.useState('')
@@ -776,11 +779,11 @@ function AddProjectForm({
           onClick={() =>
             createProject.mutate(
               { name, projectType, dueOn, weeklyHours, billingCycle, renewalDay, linkTarget },
-              { onSuccess: (id) => navigate(`/projects/${id}`) },
+              { onSuccess: onClose },
             )
           }
         >
-          {createProject.isPending ? 'Creating…' : 'Create engagement'}
+          {createProject.isPending ? 'Creating…' : 'Set up engagement'}
         </Button>
         <Button
           variant="secondary"
@@ -913,9 +916,6 @@ export function AccountRecordPage() {
   const { data: acc, isLoading, isError, error, refetch, isFetching } =
     useAccount(accountId)
   const { data: currentMember } = useCurrentMember()
-  const [expandedProjectId, setExpandedProjectId] = React.useState<
-    string | null
-  >(null)
   const [showAddProject, setShowAddProject] = React.useState(false)
   const [showEditAccount, setShowEditAccount] = React.useState(false)
   const [confirmingDelete, setConfirmingDelete] = React.useState(false)
@@ -1008,9 +1008,9 @@ export function AccountRecordPage() {
               >
                 Billing
               </Button>
-              {!showAddProject && (
+              {acc.projects.length === 0 && !showAddProject && (
                 <Button onClick={() => setShowAddProject(true)}>
-                  New engagement
+                  Set up engagement
                 </Button>
               )}
               {canDelete && !confirmingDelete && (
@@ -1038,7 +1038,7 @@ export function AccountRecordPage() {
           )}
 
           <section className="grid gap-[10px]" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(168px, 1fr))' }}>
-            <StatTile label="Engagements" value={String(acc.projects.length)} />
+            <StatTile label="Engagement" value={acc.projects[0]?.name ?? 'Not set up'} />
             <StatTile label="Contacts" value={String(acc.contacts.length)} />
             <StatTile
               label="Hours budget"
@@ -1052,90 +1052,95 @@ export function AccountRecordPage() {
 
           {accountId && <PerformanceTiles accountId={accountId} />}
 
+          {acc.projects.length === 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Engagement</CardTitle>
+              </CardHeader>
+              <CardContent className="p-[16px_18px] flex flex-col gap-2">
+                {showAddProject && accountId ? (
+                  <AddProjectForm
+                    accountId={accountId}
+                    acc={acc}
+                    onClose={() => setShowAddProject(false)}
+                  />
+                ) : (
+                  <p className="m-0 text-[13px] text-ink-muted">
+                    No engagement set up for this client yet — use "Set up engagement" above to
+                    start tracking keywords, backlinks and hours.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            (() => {
+              const proj = acc.projects[0]
+              return (
+                <>
+                  <section className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <span className="font-mono text-[11px] tracking-[0.14em] uppercase text-ink-muted">
+                      {[
+                        proj.projectType,
+                        proj.billingCycle === 'monthly'
+                          ? `renews ${proj.renewalDay ? `on the ${proj.renewalDay}` : 'monthly'}`
+                          : 'one-time project',
+                        proj.dueOn ? `due ${proj.dueOn}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                    {proj.stage && (
+                      <Badge tone={STAGE_TONE[proj.stage] ?? 'neutral'}>
+                        {STAGE_LABEL[proj.stage] ?? proj.stage}
+                      </Badge>
+                    )}
+                  </section>
+
+                  <section className="flex flex-wrap gap-3 items-start">
+                    <div className="flex-[1_1_320px] min-w-0">
+                      <AssignedTeamCard projectId={proj.id} team={proj.team} />
+                    </div>
+                    <div className="flex-[1_1_320px] min-w-0">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Log hours</CardTitle>
+                          <ProjectHoursSummary projectId={proj.id} />
+                        </CardHeader>
+                        <CardContent className="p-[16px_18px]">
+                          <ProjectHoursPanel projectId={proj.id} staffed={proj.staffed} />
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </section>
+
+                  <KeywordsSection projectId={proj.id} />
+
+                  <ActivityGroupsSection projectId={proj.id} />
+
+                  <ChecklistCard projectId={proj.id} />
+
+                  <ActivityFeedCard projectId={proj.id} />
+
+                  <section className="flex flex-wrap gap-3 items-start">
+                    <div className="flex-[1_1_420px] min-w-0">
+                      <TrafficGoalCard
+                        projectId={proj.id}
+                        accountId={accountId!}
+                        trafficGoalClicks={proj.trafficGoalClicks}
+                        conversionsGoal={proj.conversionsGoal}
+                      />
+                    </div>
+                    <div className="flex-[1_1_280px] max-w-[340px]">
+                      <CustomGoalsCard projectId={proj.id} />
+                    </div>
+                  </section>
+                </>
+              )
+            })()
+          )}
+
           <section className="flex flex-wrap gap-3 items-start">
             <div className="flex-[1_1_420px] min-w-0 flex flex-col gap-3">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Engagements</CardTitle>
-                </CardHeader>
-                <CardContent className="p-[16px_18px] flex flex-col gap-2">
-                  {showAddProject && accountId && (
-                    <AddProjectForm
-                      accountId={accountId}
-                      acc={acc}
-                      onClose={() => setShowAddProject(false)}
-                    />
-                  )}
-                  {acc.projects.length === 0 && !showAddProject && (
-                    <p className="m-0 text-[13px] text-ink-muted">
-                      No engagements attached to this account yet.
-                    </p>
-                  )}
-                  {acc.projects.map((p) => {
-                    const expanded = expandedProjectId === p.id
-                    return (
-                      <div
-                        key={p.id}
-                        className="flex flex-col gap-2 p-[11px_12px] border border-border-light rounded-[10px] bg-surface-sunken-2"
-                      >
-                        <button
-                          onClick={() => navigate(`/projects/${p.id}`)}
-                          className="flex items-center gap-3 border-none bg-transparent p-0 cursor-pointer text-left w-full"
-                        >
-                          <div className="flex flex-col gap-[2px] flex-1 min-w-0">
-                            <span className="text-[13.5px] font-medium">
-                              {p.name}
-                            </span>
-                            {p.projectType && (
-                              <span className="font-mono text-[10.5px] uppercase tracking-[0.08em] text-ink-muted">
-                                {p.projectType}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex gap-[3px]">
-                            {p.staffed.map((m, i) => (
-                              <span
-                                key={m.id}
-                                title={m.name}
-                                className="w-[22px] h-[22px] rounded-full grid place-items-center font-mono text-[9.5px] font-semibold"
-                                style={{ background: tintFor(i) }}
-                              >
-                                {initials(m.name)}
-                              </span>
-                            ))}
-                          </div>
-                          {p.stage && (
-                            <Badge tone={STAGE_TONE[p.stage] ?? 'neutral'}>
-                              {STAGE_LABEL[p.stage] ?? p.stage}
-                            </Badge>
-                          )}
-                          <span className="font-mono text-[11.5px] text-ink-muted min-w-[52px] text-right">
-                            {p.dueOn ?? '—'}
-                          </span>
-                        </button>
-                        <div className="flex items-center justify-between gap-2 pl-0">
-                          <ProjectHoursSummary projectId={p.id} />
-                          <button
-                            onClick={() =>
-                              setExpandedProjectId(expanded ? null : p.id)
-                            }
-                            className="border-none bg-transparent font-mono text-[11px] text-ink-muted hover:text-ink cursor-pointer p-0"
-                          >
-                            {expanded ? 'Hide log ▴' : 'Log hours ▾'}
-                          </button>
-                        </div>
-                        {expanded && (
-                          <ProjectHoursPanel
-                            projectId={p.id}
-                            staffed={p.staffed}
-                          />
-                        )}
-                      </div>
-                    )
-                  })}
-                </CardContent>
-              </Card>
-
               <Card>
                 <CardHeader>
                   <CardTitle>Activity</CardTitle>

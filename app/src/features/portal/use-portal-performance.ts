@@ -66,6 +66,13 @@ export function usePortalPerformance(accountId: string | undefined) {
       let backlinksPlacedThisMonth = 0
 
       if (projectIds.length > 0) {
+        const backlinkTypesRes = await supabase
+          .from('offpage_activity_types')
+          .select('activity_type')
+          .eq('activity_group', 'backlinks')
+        if (backlinkTypesRes.error) throw new Error(backlinkTypesRes.error.message)
+        const backlinkTypeNames = (backlinkTypesRes.data ?? []).map((t) => t.activity_type)
+
         const [keywordsRes, checksRes, backlinksRes] = await Promise.all([
           supabase.from('keywords').select('id').in('project_id', projectIds).eq('archived', false),
           supabase
@@ -74,10 +81,10 @@ export function usePortalPerformance(accountId: string | undefined) {
             .in('project_id', projectIds)
             .order('checked_on', { ascending: false }),
           supabase
-            .from('backlinks')
-            .select('placed_on')
+            .from('offpage_activity_entries')
+            .select('count, entry_date')
             .in('project_id', projectIds)
-            .eq('status', 'placed'),
+            .in('activity_type', backlinkTypeNames),
         ])
         if (keywordsRes.error) throw new Error(keywordsRes.error.message)
         if (checksRes.error) throw new Error(checksRes.error.message)
@@ -95,10 +102,10 @@ export function usePortalPerformance(accountId: string | undefined) {
           }
         }
 
-        backlinksPlacedTotal = (backlinksRes.data ?? []).length
-        backlinksPlacedThisMonth = (backlinksRes.data ?? []).filter(
-          (b) => b.placed_on != null && b.placed_on >= start && b.placed_on < end,
-        ).length
+        backlinksPlacedTotal = (backlinksRes.data ?? []).reduce((s, b) => s + b.count, 0)
+        backlinksPlacedThisMonth = (backlinksRes.data ?? [])
+          .filter((b) => b.entry_date >= start && b.entry_date < end)
+          .reduce((s, b) => s + b.count, 0)
       }
 
       return {

@@ -8,17 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
   useClientsAndEngagements,
   useOnboardClient,
-  type EngagementListItem,
   type OnboardTeamRow,
 } from '@/features/accounts/use-accounts'
 import { useTeamMembers } from '@/features/accounts/use-account'
@@ -311,63 +302,11 @@ const HEALTH_LABEL: Record<AccountHealth, string> = {
   at_risk: 'At risk',
 }
 
-const ENGAGEMENT_STATUS_TONE: Record<string, PillTone> = {
-  active: 'green',
-  paused: 'amber',
-  shipped: 'neutral',
-}
-
 function isRenewalSoon(renewalOn: string | null) {
   if (!renewalOn) return false
   const days =
     (new Date(renewalOn).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
   return days >= 0 && days <= 90
-}
-
-function EngagementsTable({ engagements }: { engagements: EngagementListItem[] }) {
-  const navigate = useNavigate()
-
-  if (engagements.length === 0) {
-    return <p className="m-0 text-[12.5px] text-ink-muted">No engagements yet.</p>
-  }
-
-  return (
-    <Table className="min-w-[560px]">
-      <TableHeader>
-        <TableRow>
-          <TableHead>Engagement</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Staffed</TableHead>
-          <TableHead>Link target</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {engagements.map((e) => (
-          <TableRow key={e.id} clickable onClick={() => navigate(`/projects/${e.id}`)}>
-            <TableCell className="font-medium text-[13.5px]">{e.name}</TableCell>
-            <TableCell>
-              <Badge tone={ENGAGEMENT_STATUS_TONE[e.status] ?? 'neutral'}>{e.status}</Badge>
-            </TableCell>
-            <TableCell>
-              <div className="flex gap-[3px]">
-                {e.staffed.map((m, i) => (
-                  <span
-                    key={m.id}
-                    title={m.name}
-                    className="w-6 h-6 rounded-full grid place-items-center font-mono text-[10px] font-semibold"
-                    style={{ background: tintFor(i) }}
-                  >
-                    {initials(m.name)}
-                  </span>
-                ))}
-              </div>
-            </TableCell>
-            <TableCell className="font-mono text-[12px] text-ink-secondary">{e.linkTarget}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  )
 }
 
 export function ClientsListPage() {
@@ -378,15 +317,12 @@ export function ClientsListPage() {
   const canAddClient = currentMember?.role === 'admin' || currentMember?.role === 'manager'
   const [showAddForm, setShowAddForm] = React.useState(false)
 
-  const totalEngagements =
-    data ? data.clients.reduce((s, c) => s + c.engagements.length, 0) + data.unlinkedEngagements.length : 0
-
   return (
     <div className="flex flex-col gap-[18px]">
       <div className="flex flex-wrap gap-3 items-end justify-between">
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[11px] tracking-[0.14em] uppercase text-ink-muted">
-            {data ? `${data.clients.length} clients · ${totalEngagements} engagements` : 'Loading…'}
+            {data ? `${data.clients.length} clients` : 'Loading…'}
           </span>
           <h1 className="m-0 text-[25px] font-semibold tracking-[-0.02em]">
             Clients
@@ -467,9 +403,26 @@ export function ClientsListPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-0 overflow-x-auto">
-                <EngagementsTable engagements={c.engagements} />
-              </CardContent>
+              {c.engagements.length > 0 && (
+                <CardContent
+                  className="p-[10px_18px] flex flex-wrap items-center gap-2 cursor-pointer"
+                  onClick={() => navigate(`/clients/${c.id}`)}
+                >
+                  <span className="text-[12.5px] text-ink-secondary">{c.engagements[0].name}</span>
+                  <div className="flex gap-[3px]">
+                    {c.engagements[0].staffed.map((m, i) => (
+                      <span
+                        key={m.id}
+                        title={m.name}
+                        className="w-5 h-5 rounded-full grid place-items-center font-mono text-[9px] font-semibold"
+                        style={{ background: tintFor(i) }}
+                      >
+                        {initials(m.name)}
+                      </span>
+                    ))}
+                  </div>
+                </CardContent>
+              )}
             </Card>
           ))}
         </div>
@@ -481,11 +434,17 @@ export function ClientsListPage() {
             Unlinked engagements
           </h2>
           <p className="m-0 text-[12.5px] text-ink-muted">
-            Not tied to a client account — internal or ops work.
+            Not tied to a client account, so there's no client page to manage them from — link
+            each to an account to reach its keywords, backlinks and hours.
           </p>
           <Card>
-            <CardContent className="p-0 overflow-x-auto">
-              <EngagementsTable engagements={data.unlinkedEngagements} />
+            <CardContent className="p-[14px_18px] flex flex-col gap-2">
+              {data.unlinkedEngagements.map((e) => (
+                <div key={e.id} className="flex items-center justify-between gap-2 text-[13px]">
+                  <span>{e.name}</span>
+                  <Badge tone="neutral">{e.status}</Badge>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>

@@ -350,7 +350,9 @@ function ProfitabilityCard({ accountId }: { accountId: string }) {
             </div>
             <div className="flex flex-col gap-[2px]">
               <span className="font-mono text-[10px] uppercase text-ink-muted">Other expenses</span>
-              <span className="text-[16px] font-semibold">{formatCents(data.expensesCents)}</span>
+              <span className="text-[16px] font-semibold">
+                {formatCents(data.expensesCents - data.linkCostsCents)}
+              </span>
             </div>
             <div className="flex flex-col gap-[2px]">
               <span className="font-mono text-[10px] uppercase text-ink-muted">Profit</span>

@@ -11,7 +11,6 @@ export type AccountHealth = 'healthy' | 'watch' | 'at_risk'
 export type ActivityKind = 'call' | 'meeting' | 'email' | 'note' | 'report' | 'issue'
 export type MetricSource = 'gsc' | 'ga4'
 export type ConnectionStatus = 'needs_access' | 'granted'
-export type BacklinkStatus = 'prospect' | 'outreach' | 'placed' | 'declined' | 'removed'
 export type ContentCalendarPlatform = 'facebook' | 'instagram' | 'other'
 export type ContentCalendarStatus = 'draft' | 'scheduled' | 'approved' | 'published'
 export type ExpenseCategory = 'link_cost' | 'tool' | 'other'
@@ -104,44 +103,6 @@ export interface Database {
             columns: ['project_id']
             isOneToOne: false
             referencedRelation: 'projects'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      backlinks: {
-        Row: {
-          id: string
-          project_id: string
-          domain: string
-          source_url: string | null
-          target_url: string | null
-          anchor_text: string | null
-          status: BacklinkStatus
-          cost_cents: number | null
-          contact_email: string | null
-          notes: string | null
-          owner_id: string | null
-          placed_on: string | null
-          created_at: string
-        }
-        Insert: Partial<Database['public']['Tables']['backlinks']['Row']> & {
-          project_id: string
-          domain: string
-        }
-        Update: Partial<Database['public']['Tables']['backlinks']['Row']>
-        Relationships: [
-          {
-            foreignKeyName: 'backlinks_project_id_fkey'
-            columns: ['project_id']
-            isOneToOne: false
-            referencedRelation: 'projects'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'backlinks_owner_id_fkey'
-            columns: ['owner_id']
-            isOneToOne: false
-            referencedRelation: 'team_members'
             referencedColumns: ['id']
           },
         ]
@@ -365,6 +326,7 @@ export interface Database {
           target_min: number
           target_max: number
           sort_order: number
+          activity_group: string
         }
         Insert: Partial<Database['public']['Tables']['offpage_activity_types']['Row']> & {
           activity_type: string
@@ -1056,7 +1018,6 @@ export interface Database {
       activity_kind: ActivityKind
       metric_source: MetricSource
       connection_status: ConnectionStatus
-      backlink_status: BacklinkStatus
       content_calendar_platform: ContentCalendarPlatform
       content_calendar_status: ContentCalendarStatus
       expense_category: ExpenseCategory

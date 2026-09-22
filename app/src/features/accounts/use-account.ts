@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import type { AccountHealth, ActivityKind } from '@/lib/database.types'
+import type { AccountHealth, ActivityKind, MemberRole } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
 
 export interface AccountDetail {
@@ -23,7 +23,13 @@ export interface AccountDetail {
     projectType: string | null
     stage: string | null
     dueOn: string | null
+    billingCycle: string
+    renewalDay: number | null
+    linkTarget: number
+    trafficGoalClicks: number | null
+    conversionsGoal: number | null
     staffed: { id: string; name: string }[]
+    team: { assignmentId: string; id: string; name: string; role: MemberRole; weeklyHours: number }[]
   }[]
   contacts: {
     id: string
@@ -58,7 +64,7 @@ export function useAccount(accountId: string | undefined) {
           supabase
             .from('projects')
             .select(
-              'id, name, project_type, stage, due_on, assignments(member_id, team_members(id, name))',
+              'id, name, project_type, stage, due_on, billing_cycle, renewal_day, link_target, traffic_goal_clicks, conversions_goal, assignments(id, member_id, weekly_hours, team_members(id, name, role))',
             )
             .eq('account_id', accountId!),
           supabase
@@ -101,9 +107,23 @@ export function useAccount(accountId: string | undefined) {
           projectType: p.project_type,
           stage: p.stage,
           dueOn: p.due_on,
+          billingCycle: p.billing_cycle,
+          renewalDay: p.renewal_day,
+          linkTarget: p.link_target,
+          trafficGoalClicks: p.traffic_goal_clicks,
+          conversionsGoal: p.conversions_goal,
           staffed: (p.assignments ?? [])
             .map((a) => a.team_members)
-            .filter((m): m is { id: string; name: string } => m != null),
+            .filter((m): m is { id: string; name: string; role: MemberRole } => m != null),
+          team: (p.assignments ?? [])
+            .filter((a) => a.team_members != null)
+            .map((a) => ({
+              assignmentId: a.id,
+              id: a.team_members!.id,
+              name: a.team_members!.name,
+              role: a.team_members!.role,
+              weeklyHours: Number(a.weekly_hours),
+            })),
         })),
         contacts: (contactsRes.data ?? []).map((c) => ({
           id: c.id,

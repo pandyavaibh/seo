@@ -31,7 +31,7 @@ function json(body: unknown, status = 200) {
 interface Snapshot {
   search: { clicks: number; impressions: number } | null
   ga4: { sessions: number; conversions: number } | null
-  linksPlaced: { domain: string; projectName: string | null }[]
+  linksPlaced: number
   keywordsImproved: number
   keywordsDeclined: number
   keywordsTracked: number
@@ -130,23 +130,26 @@ async function buildSnapshot(admin: any, accountId: string, periodStart: string,
 
   const projects = projectsRes.data ?? []
   const projectIds = projects.map((p: { id: string }) => p.id)
-  const projectName = new Map(projects.map((p: { id: string; name: string }) => [p.id, p.name]))
 
-  let linksPlaced: Snapshot['linksPlaced'] = []
+  let linksPlaced = 0
   let keywordsImproved = 0
   let keywordsDeclined = 0
   let keywordsTracked = 0
 
   if (projectIds.length > 0) {
+    const backlinkTypesRes = await admin.from('offpage_activity_types').select('activity_type').eq('activity_group', 'backlinks')
+    if (backlinkTypesRes.error) throw new Error(backlinkTypesRes.error.message)
+    const backlinkTypeNames = (backlinkTypesRes.data ?? []).map((t: { activity_type: string }) => t.activity_type)
+
     const [backlinksRes, keywordsRes] = await Promise.all([
-      admin.from('backlinks').select('domain, project_id').in('project_id', projectIds).eq('status', 'placed').gte('placed_on', periodStart).lte('placed_on', periodEnd),
+      admin.from('offpage_activity_entries').select('count').in('project_id', projectIds).in('activity_type', backlinkTypeNames).gte('entry_date', periodStart).lte('entry_date', periodEnd),
       admin.from('keywords').select('id, project_id, keyword_checks(rank, checked_on)').in('project_id', projectIds).eq('archived', false),
     ])
     for (const res of [backlinksRes, keywordsRes]) {
       if (res.error) throw new Error(res.error.message)
     }
 
-    linksPlaced = (backlinksRes.data ?? []).map((b: { domain: string; project_id: string }) => ({ domain: b.domain, projectName: projectName.get(b.project_id) ?? null }))
+    linksPlaced = (backlinksRes.data ?? []).reduce((s: number, b: { count: number }) => s + b.count, 0)
 
     keywordsTracked = (keywordsRes.data ?? []).length
     for (const k of keywordsRes.data ?? []) {
@@ -160,7 +163,7 @@ async function buildSnapshot(admin: any, accountId: string, periodStart: string,
     }
   }
 
-  const commentary = generateCommentary({ search, previousSearch, ga4, previousGa4, keywordsImproved, keywordsDeclined, keywordsTracked, linksPlaced: linksPlaced.length })
+  const commentary = generateCommentary({ search, previousSearch, ga4, previousGa4, keywordsImproved, keywordsDeclined, keywordsTracked, linksPlaced })
 
   return { search, ga4, linksPlaced, keywordsImproved, keywordsDeclined, keywordsTracked, commentary }
 }
@@ -171,7 +174,7 @@ function renderHtml(accountName: string, periodStart: string, periodEnd: string,
   if (s.ga4) rows.push(`<p><strong>GA4</strong> — sessions ${s.ga4.sessions}, conversions ${s.ga4.conversions}</p>`)
   if (s.commentary.length) rows.push(`<p><strong>Summary</strong><br/>${s.commentary.join('<br/>')}</p>`)
   rows.push(`<p><strong>Keywords</strong> — tracked ${s.keywordsTracked}, improved ${s.keywordsImproved}, declined ${s.keywordsDeclined}</p>`)
-  rows.push(`<p><strong>Links built</strong> — ${s.linksPlaced.length}</p>`)
+  rows.push(`<p><strong>Links built</strong> — ${s.linksPlaced}</p>`)
   return `<h2>${accountName} — Monthly report</h2><p>${periodStart} to ${periodEnd}</p>${rows.join('\n')}`
 }
 

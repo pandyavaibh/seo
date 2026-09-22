@@ -284,10 +284,9 @@ export function useProfitability(accountId: string | undefined) {
 
       let laborCostCents = 0
       let hoursLogged = 0
-      let linkCostsCents = 0
 
       if (projectIds.length > 0) {
-        const [entriesRes, ratesRes, backlinksRes] = await Promise.all([
+        const [entriesRes, ratesRes] = await Promise.all([
           supabase
             .from('time_entries')
             .select('member_id, hours')
@@ -295,17 +294,9 @@ export function useProfitability(accountId: string | undefined) {
             .gte('worked_on', start)
             .lte('worked_on', end),
           supabase.from('member_rates').select('member_id, cost_rate_cents'),
-          supabase
-            .from('backlinks')
-            .select('cost_cents')
-            .in('project_id', projectIds)
-            .eq('status', 'placed')
-            .gte('placed_on', start)
-            .lte('placed_on', end),
         ])
         if (entriesRes.error) throw new Error(entriesRes.error.message)
         if (ratesRes.error) throw new Error(ratesRes.error.message)
-        if (backlinksRes.error) throw new Error(backlinksRes.error.message)
 
         const rateByMember = new Map((ratesRes.data ?? []).map((r) => [r.member_id, r.cost_rate_cents]))
         for (const e of entriesRes.data ?? []) {
@@ -313,9 +304,14 @@ export function useProfitability(accountId: string | undefined) {
           const rate = rateByMember.get(e.member_id)
           if (rate != null) laborCostCents += Number(e.hours) * rate
         }
-        linkCostsCents = (backlinksRes.data ?? []).reduce((s, b) => s + (b.cost_cents ?? 0), 0)
       }
 
+      // Backlink costs are just an expense category now (no more per-link
+      // cost_cents field on a dedicated table) — a breakdown of
+      // expensesCents, not a separate pool, so it isn't subtracted twice.
+      const linkCostsCents = (expensesRes.data ?? [])
+        .filter((e) => e.category === 'link_cost')
+        .reduce((s, e) => s + e.amount_cents, 0)
       const expensesCents = (expensesRes.data ?? []).reduce((s, e) => s + e.amount_cents, 0)
       const retainerCents = accountRes.data?.retainer_cents ?? null
 
@@ -324,7 +320,7 @@ export function useProfitability(accountId: string | undefined) {
         laborCostCents,
         expensesCents,
         linkCostsCents,
-        profitCents: retainerCents != null ? retainerCents - laborCostCents - expensesCents - linkCostsCents : null,
+        profitCents: retainerCents != null ? retainerCents - laborCostCents - expensesCents : null,
         hoursLogged,
       }
     },

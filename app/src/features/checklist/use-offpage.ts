@@ -12,8 +12,11 @@ export interface OffpageEntryRow {
   remainingAfter: number
 }
 
+export type ActivityGroup = 'backlinks' | 'on_page' | 'technical'
+
 export interface OffpageActivityRow {
   activityType: string
+  activityGroup: ActivityGroup
   targetMin: number
   targetMax: number
   done: number
@@ -43,7 +46,10 @@ export function useOffpageActivity(projectId: string | undefined, month: string)
       const { start, end } = monthDateRange(month)
       const [projectRes, typesRes, entriesRes] = await Promise.all([
         supabase.from('projects').select('link_target').eq('id', projectId!).single(),
-        supabase.from('offpage_activity_types').select('activity_type, target_min, target_max, sort_order').order('sort_order'),
+        supabase
+          .from('offpage_activity_types')
+          .select('activity_type, activity_group, target_min, target_max, sort_order')
+          .order('sort_order'),
         supabase
           .from('offpage_activity_entries')
           .select('id, activity_type, entry_date, count, note, team_members(name)')
@@ -79,6 +85,7 @@ export function useOffpageActivity(projectId: string | undefined, month: string)
         })
         return {
           activityType: t.activity_type,
+          activityGroup: t.activity_group as ActivityGroup,
           targetMin: t.target_min,
           targetMax: t.target_max,
           done: running,
@@ -89,7 +96,9 @@ export function useOffpageActivity(projectId: string | undefined, month: string)
 
       return {
         linkTarget: projectRes.data?.link_target ?? 200,
-        doneThisMonth: activities.reduce((s, a) => s + a.done, 0),
+        doneThisMonth: activities
+          .filter((a) => a.activityGroup === 'backlinks')
+          .reduce((s, a) => s + a.done, 0),
         activities,
       }
     },

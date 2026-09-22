@@ -146,7 +146,7 @@ function LatestReportCard({ accountId }: { accountId: string }) {
               )}
               <div className="flex flex-col gap-[2px]">
                 <span className="font-mono text-[10px] uppercase text-ink-muted">Links built</span>
-                <span className="text-[15px] font-semibold">{latest.snapshot.linksPlaced.length}</span>
+                <span className="text-[15px] font-semibold">{latest.snapshot.linksPlaced}</span>
               </div>
             </div>
             <Link to="/portal/reports" className="text-[12.5px] text-brand hover:underline">

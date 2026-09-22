@@ -144,15 +144,15 @@ one, by request: "merge with all the information, because we are not
 sharing client budget or payment related terms." Now:
 
 - **One nav item, "Clients."** The `/projects` list route, its page,
-  and the "Engagements" sidebar link are gone. `/projects/:projectId`
-  (the engagement workspace) is untouched — reached from the merged
-  list instead of a standalone index.
+  and the "Engagements" sidebar link are gone.
 - **Each client is a card** with its account info (name, website,
-  health, renewal) and a nested table of its engagements (name,
-  status, staffed, link target) — nothing hidden behind a click that
-  wasn't already one click away before. Engagements with no
-  `account_id` (bare/ops projects) list in an "Unlinked engagements"
-  section at the bottom, same as the old Engagements page showed them.
+  health, renewal) and, if it has an engagement, its name and staffed
+  team inline — nothing hidden behind a click that wasn't already one
+  click away before. Engagements with no `account_id` (bare/ops
+  projects) list in an "Unlinked engagements" section at the bottom.
+  (The nested engagement *table* and the separate `/projects/:id`
+  workspace it linked to were later replaced outright — see "Engagement
+  workspace folded into the Client page" below.)
 - **Opened to every staff member**, not just admin/manager — the
   explicit reasoning above. `list_accounts_directory()` is a new
   `SECURITY DEFINER` function returning only `id, name, website,
@@ -172,6 +172,83 @@ sharing client budget or payment related terms." Now:
   unchanged server-side write policy).
 
 (`supabase/migrations/20260922260000_merge_clients_engagements.sql`)
+
+## Engagement workspace folded into the Client page
+
+Every client has exactly one engagement in practice, so the separate
+`/projects/:id` workspace (and its `checklist`/`offpage` sub-pages) was
+retired by request — "remove Engagements, add Backlinks/Keywords/
+On-page + Technical Activities [...] as sections" directly on the
+Client page. `/clients/:id` is now the one stop for a client: header
+stats and performance tiles, then (reading the account's first project)
+Assigned team, Log hours, Keywords, Activities (Backlinks/On-Page/
+Technical), the Sitewide checklist, an SEO activity log, and Traffic/
+Custom KPI cards — everything that used to require a second click into
+a separate workspace page. A client with no engagement yet gets a
+"Set up engagement" prompt instead of empty sections.
+
+- **Backlinks, On-Page and Technical are now one generalized "activity
+  group" system**, not three different things. Off-Page's existing
+  dated/targeted log (`offpage_activity_types` + `offpage_activity_entries`
+  — pick a type, log a dated count, see done/target/left) gained an
+  `activity_group` column (`backlinks` | `on_page` | `technical`). The
+  7 "On-Page & Structured Data" and 21 "Technical Foundation" checklist
+  items became new activity types in their own groups (target 1 — done
+  or not, same as the checkbox they replace, but now dated and
+  attributable) and were deactivated in `checklist_template_items` — the
+  other 7 checklist categories (53 items) are untouched and still a
+  plain monthly checklist. Each group gets one compact "log an activity"
+  control — pick the type from a dropdown, count, optional note — with
+  the date **fixed to today** (no input for it at all, so a past or
+  future date literally isn't choosable), per "no one can add past or
+  feature dates." Per-type done/target/left stays visible beneath it,
+  same as Off-Page always showed ("Show Left in the target").
+  (`supabase/migrations/20260922290000_client_activities.sql`)
+- **Keywords** is the same dated matrix from the last change, just
+  moved from the workspace page onto the Client page directly
+  (`keywords-section.tsx`) — logging and the date-column behavior are
+  unchanged.
+- **Log hours** was never actually lost when Tasks was removed — it's
+  a separate, already-complete feature (`project-hours-panel.tsx`,
+  `time_entries`) that just lived collapsed behind a "Log hours ▾"
+  toggle per engagement row. It's now always visible on the Client page
+  with the per-member monthly breakdown in its header, "so we can
+  easily check how many hours are spent on each project."
+- **A new "SEO activity log"** (`use-activity-feed.ts`) is a combined,
+  date-sorted feed of everything logged through the activity groups
+  plus hours — "List of Activities." Keyword checks are deliberately
+  left out of it (the Keywords matrix is already that history, and
+  2,000+ rank checks would drown out everything else).
+- **The old per-link `backlinks` table** (domain/status pipeline/cost,
+  the "Add prospect" flow) is gone — 0 rows, and superseded by the new
+  Backlinks activity group. Its cost tracking (`backlinks.cost_cents`)
+  had no real replacement field in the new model, so Billing's "Link
+  costs" figure now reads the `expenses` table's existing `link_cost`
+  category instead (a parallel path that already existed) rather than
+  double-counting. Reports' "Links built" figure changed from a
+  per-domain list to a plain count (sum of dated Backlinks-group
+  entries in the period) for the same reason — there's no per-domain
+  record left to list.
+  (`supabase/migrations/20260922300000_remove_old_backlinks_table.sql`)
+- **Portal visibility carried over.** The portal's Backlink Counter
+  widget (Stage 9, `use-portal-performance.ts`) read `backlinks`
+  specifically because `offpage_activity_types`/`entries` were
+  staff-only at the time. Now that it reads those tables instead, they
+  needed the same client-visibility widening `backlinks_read` had, or
+  every client's counter would have silently shown zero.
+  (`supabase/migrations/20260922310000_portal_backlinks_activity_read.sql`)
+- **Route cleanup.** `/projects/:projectId`, `/projects/:projectId/checklist`
+  and `/projects/:projectId/offpage` are gone, along with
+  `project-workspace-page.tsx`, `checklist-page.tsx`, `offpage-page.tsx`
+  and `project-sub-nav.tsx`. `use-project-workspace.ts` now only holds
+  the assignment mutations (still used from the Client page); the rest
+  of its old query was superseded by `useAccount`'s widened project
+  select (team, link target, traffic goals, etc.).
+
+If a client ever needs more than one real engagement, this model doesn't
+support it yet — only the first project per account is shown. That
+matches how every client is actually set up today, and wasn't something
+this change was asked to solve.
 
 ## Removed by request
 

@@ -31,7 +31,7 @@ function json(body: unknown, status = 200) {
 interface Snapshot {
   search: { clicks: number; impressions: number } | null
   ga4: { sessions: number; conversions: number } | null
-  linksPlaced: { domain: string; projectName: string | null }[]
+  linksPlaced: number
   keywordsImproved: number
   keywordsDeclined: number
   keywordsTracked: number
@@ -42,7 +42,7 @@ function renderHtml(accountName: string, periodStart: string, periodEnd: string,
   if (s.search) rows.push(`<p><strong>Search Console</strong> — clicks ${s.search.clicks}, impressions ${s.search.impressions}</p>`)
   if (s.ga4) rows.push(`<p><strong>GA4</strong> — sessions ${s.ga4.sessions}, conversions ${s.ga4.conversions}</p>`)
   rows.push(`<p><strong>Keywords</strong> — tracked ${s.keywordsTracked}, improved ${s.keywordsImproved}, declined ${s.keywordsDeclined}</p>`)
-  rows.push(`<p><strong>Links built</strong> — ${s.linksPlaced.length}</p>`)
+  rows.push(`<p><strong>Links built</strong> — ${s.linksPlaced}</p>`)
   if (plan) rows.push(`<p><strong>Next month</strong><br/>${plan.replace(/\n/g, '<br/>')}</p>`)
   return `<h2>${accountName} — Monthly report</h2><p>${periodStart} to ${periodEnd}</p>${rows.join('\n')}`
 }

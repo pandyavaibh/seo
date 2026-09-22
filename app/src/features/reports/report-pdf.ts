@@ -53,13 +53,9 @@ export async function downloadReportPdf(accountName: string, report: ReportRow) 
   line(`Tracked: ${s.keywordsTracked}   Improved: ${s.keywordsImproved}   Declined: ${s.keywordsDeclined}`)
   y += 4
 
-  line(`Links built (${s.linksPlaced.length})`, 13, 8)
-  if (s.linksPlaced.length === 0) {
+  line(`Links built (${s.linksPlaced})`, 13, 8)
+  if (s.linksPlaced === 0) {
     line('None this period.')
-  } else {
-    for (const l of s.linksPlaced) {
-      line(`• ${l.domain}${l.projectName ? ` — ${l.projectName}` : ''}`, 10, 6)
-    }
   }
   if (report.nextMonthPlan) {
     y += 4
