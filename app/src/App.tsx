@@ -11,6 +11,8 @@ import { ChecklistPage } from '@/features/checklist/checklist-page'
 import { OffpagePage } from '@/features/checklist/offpage-page'
 import { DeveloperPage } from '@/features/developer/developer-page'
 import { DealsListPage } from '@/features/deals/deals-list-page'
+import { LeadsInboxPage } from '@/features/leads/leads-inbox-page'
+import { PublicLeadFormPage } from '@/features/leads/public-lead-form-page'
 import { PortalDashboardPage } from '@/features/portal/portal-dashboard-page'
 import { PortalInvoicesPage } from '@/features/portal/portal-invoices-page'
 import { PortalReportsPage } from '@/features/portal/portal-reports-page'
@@ -18,6 +20,7 @@ import { ProjectsListPage } from '@/features/projects/projects-list-page'
 import { ProjectWorkspacePage } from '@/features/projects/project-workspace-page'
 import { ReportsPage } from '@/features/reports/reports-page'
 import { SearchPerformancePage } from '@/features/search-performance/search-performance-page'
+import { AgencySettingsPage } from '@/features/settings/agency-settings-page'
 import { ContentCalendarPage } from '@/features/social/content-calendar-page'
 import { SocialPage } from '@/features/social/social-page'
 import { UtmBuilderPage } from '@/features/social/utm-builder-page'
@@ -31,6 +34,7 @@ export function App() {
     <Routes>
       <Route path="/sign-in" element={<SignInPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
+      <Route path="/lead" element={<PublicLeadFormPage />} />
 
       <Route element={<RequireAuth />}>
         <Route element={<RequireMember />}>
@@ -44,6 +48,7 @@ export function App() {
               <Route path="/clients/:accountId/reports" element={<ReportsPage />} />
               <Route path="/clients/:accountId/billing" element={<BillingPage />} />
               <Route path="/deals" element={<DealsListPage />} />
+              <Route path="/leads" element={<LeadsInboxPage />} />
               <Route path="/projects" element={<ProjectsListPage />} />
               <Route path="/projects/:projectId" element={<ProjectWorkspacePage />} />
               <Route path="/projects/:projectId/checklist" element={<ChecklistPage />} />
@@ -53,6 +58,7 @@ export function App() {
               <Route path="/capacity" element={<CapacityPage />} />
               <Route path="/utm-builder" element={<UtmBuilderPage />} />
             <Route path="/developer" element={<DeveloperPage />} />
+              <Route path="/settings" element={<AgencySettingsPage />} />
               <Route path="/" element={<Navigate to="/clients" replace />} />
             </Route>
           </Route>

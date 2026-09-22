@@ -1,10 +1,18 @@
 import { jsPDF } from 'jspdf'
 
 import type { ReportRow } from '@/features/reports/use-reports'
+import { supabase } from '@/lib/supabase'
 
 // Client-side PDF export — a free npm package, no server-side rendering
 // service. See docs/STAGE_7.md for why (no paid plan).
-export function downloadReportPdf(accountName: string, report: ReportRow) {
+export async function downloadReportPdf(accountName: string, report: ReportRow) {
+  const { data: settings } = await supabase
+    .from('agency_settings')
+    .select('agency_name')
+    .limit(1)
+    .maybeSingle()
+  const agencyName = settings?.agency_name ?? 'SEO CRM'
+
   const doc = new jsPDF()
   let y = 20
 
@@ -14,6 +22,7 @@ export function downloadReportPdf(accountName: string, report: ReportRow) {
     y += gap
   }
 
+  line(agencyName, 10, 6)
   line(`${accountName} — Monthly report`, 16, 10)
   line(`${report.periodStart} to ${report.periodEnd}`, 10, 12)
 

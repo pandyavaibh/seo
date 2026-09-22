@@ -537,6 +537,46 @@ export interface Database {
           },
         ]
       }
+      agency_settings: {
+        Row: {
+          id: string
+          agency_name: string
+          logo_url: string | null
+          primary_color: string
+          updated_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['agency_settings']['Row']>
+        Update: Partial<Database['public']['Tables']['agency_settings']['Row']>
+        Relationships: []
+      }
+      leads: {
+        Row: {
+          id: string
+          name: string
+          email: string
+          phone: string | null
+          company: string | null
+          message: string | null
+          source: string
+          status: string
+          converted_deal_id: string | null
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['leads']['Row']> & {
+          name: string
+          email: string
+        }
+        Update: Partial<Database['public']['Tables']['leads']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'leads_converted_deal_id_fkey'
+            columns: ['converted_deal_id']
+            isOneToOne: false
+            referencedRelation: 'deals'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       keywords: {
         Row: {
           id: string

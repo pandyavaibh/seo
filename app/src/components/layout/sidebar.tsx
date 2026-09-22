@@ -17,8 +17,20 @@ export function Sidebar() {
   const { data: currentMember } = useCurrentMember()
   const isAdminOrManager = currentMember?.role === 'admin' || currentMember?.role === 'manager'
   let navItems = NAV_ITEMS
-  if (isAdminOrManager) navItems = [...navItems, { to: '/assignments', label: 'Assignments', count: null }]
-  if (currentMember?.role === 'admin') navItems = [...navItems, { to: '/developer', label: 'Developer', count: null }]
+  if (isAdminOrManager) {
+    navItems = [
+      ...navItems,
+      { to: '/leads', label: 'Leads', count: null },
+      { to: '/assignments', label: 'Assignments', count: null },
+    ]
+  }
+  if (currentMember?.role === 'admin') {
+    navItems = [
+      ...navItems,
+      { to: '/developer', label: 'Developer', count: null },
+      { to: '/settings', label: 'Settings', count: null },
+    ]
+  }
 
   return (
     <aside className="bg-sidebar text-sidebar-text flex flex-col gap-6 p-[20px_14px] min-h-screen">

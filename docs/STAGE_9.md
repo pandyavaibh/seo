@@ -47,6 +47,29 @@ does not).
   below) that the initial `/assignments` build deliberately left out;
   it's additive alongside the richer account-linked "New engagement"
   flow, not a replacement for it.
+- **White-label branding** — a single `agency_settings` row (agency
+  name, logo URL, primary color; admin-only write, publicly readable
+  since none of it is sensitive), applied to the client portal shell
+  (`--color-brand` overridden per the CSS custom property cascade, not
+  a full runtime theming system — a deliberately light touch), the PDF
+  report header, and the new public lead form below. Admin-only
+  `/settings` page to edit it.
+- **Lead-capture web form** — a public, unauthenticated `/lead` page
+  (outside every auth guard, like `/sign-in`) posting to a new
+  `submit-lead` Edge Function. Submissions land in a new `leads`
+  staging table, not straight into `deals` — `deals` RLS stays
+  admin/manager-only exactly as Stage 1 set it, and a staging table
+  means a spam submission never pollutes the real pipeline. `leads` has
+  exactly one public capability: `anon`/`authenticated` can INSERT a
+  `status = 'new'` row with no `converted_deal_id`; every other
+  operation (read, update, delete) stays admin/manager, same as
+  `deals`. The Edge Function adds one free, honeypot-based spam filter
+  on top (a hidden field real visitors never fill); there's no real
+  rate limiting since that needs a paid store or Cloudflare's paid
+  rate-limiting tier — staff triage on the new `/leads` inbox (admin/
+  manager: convert to a deal, mark spam, or archive) is the practical
+  backstop instead, the same tradeoff every small business contact form
+  makes.
 
 ## Deliberate scope cuts
 
@@ -59,15 +82,14 @@ does not).
   free tiers so it's buildable, but it's a separate scoped decision
   (sender domain/DNS setup, deliverability, unsubscribe handling) not
   bundled into this stage without asking first.
-- **No lead-capture web forms** — same reasoning: a real scope of its
-  own (public-facing form + spam handling), not a small addition.
 - **No scheduled/recurring report emails** — Stage 7 already has manual
   "send" on a built report; turning that into a schedule needs the same
   kind of `pg_cron` + Edge Function infrastructure Stage 4's nightly
-  sync uses. Real infrastructure, not a checkbox.
-- **No white-label branding on reports/portal** — cosmetic, deferred
-  since nothing about it is blocked by cost or architecture; just not
-  requested yet.
+  sync uses, and is still blocked on the same `RESEND_API_KEY` Stage 7
+  already flagged as open (your action, not code).
+- **No real spam rate-limiting on the lead form** — see above; RLS plus
+  the honeypot plus staff triage is the free-tier answer, not a
+  dedicated rate-limit store.
 
 ## What's next
 
