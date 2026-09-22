@@ -114,12 +114,18 @@ the same entries table over the same month's date range instead.
 
 ## Removed by request
 
-The Deals Kanban board (above), UTM builder (Stage 6), and Developer page
-— API keys + webhooks (Stage 8) — were all later removed at the user's
-request while browsing the live app, none of them had real data (`deals`:
-0 rows; `utm_links`/`api_keys`/`webhook_subscriptions`: unused), confirmed
-against the live database before dropping anything
-(`supabase/migrations/20260922210000_remove_deals_utm_developer.sql`).
+The Deals Kanban board (above), UTM builder (Stage 6), Developer page —
+API keys + webhooks (Stage 8) — and Task Templates (Stage 2) were all
+later removed at the user's request while browsing the live app, none
+of them had real data (`deals`: 0 rows; `utm_links`/`api_keys`/
+`webhook_subscriptions`: unused; `project_templates`/`template_tasks`:
+0 rows, no project had `applied_template_id` set), confirmed against
+the live database before dropping anything
+(`supabase/migrations/20260922210000_remove_deals_utm_developer.sql`,
+`supabase/migrations/20260922230000_remove_task_templates.sql`). Task
+Templates also took its daily `generate-recurring-tasks` cron job and
+the `generate_recurring_tasks()` function with it, and the "Apply
+template" control on the Project workspace page.
 Dropped: the `deals`, `api_keys`, `webhook_subscriptions`, and
 `utm_links` tables; the `fire_webhooks()`/`create_api_key()` functions
 and the three webhook-firing triggers (`report.sent`, `invoice.paid`,

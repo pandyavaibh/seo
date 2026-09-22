@@ -45,7 +45,6 @@ import {
   useUpdateTrafficGoals,
   type CustomGoal,
 } from '@/features/projects/use-project-goals'
-import { useApplyTemplate, useTemplates } from '@/features/templates/use-templates'
 import { initials, tintFor } from '@/lib/avatar'
 import { BACKLINK_STATUS_LABEL, BACKLINK_STATUS_TONE, BACKLINK_STATUSES } from '@/lib/backlink-status'
 import { loadColorFor } from '@/lib/load-color'
@@ -237,56 +236,6 @@ function TeamRow({
       >
         Remove
       </button>
-    </div>
-  )
-}
-
-function ApplyTemplateControl({ projectId }: { projectId: string }) {
-  const [open, setOpen] = React.useState(false)
-  const [templateId, setTemplateId] = React.useState('')
-  const { data: templates } = useTemplates()
-  const applyTemplate = useApplyTemplate(projectId)
-
-  if (!open) {
-    return (
-      <Button onClick={() => setOpen(true)} size="sm" variant="secondary">
-        Apply template
-      </Button>
-    )
-  }
-
-  return (
-    <div className="flex items-center gap-2">
-      <select
-        value={templateId}
-        onChange={(e) => setTemplateId(e.target.value)}
-        className="text-[13px] border border-border rounded-[6px] px-2 py-1"
-      >
-        <option value="">Choose a template…</option>
-        {(templates ?? []).map((t) => (
-          <option key={t.id} value={t.id}>{t.name} ({t.tasks.length} tasks)</option>
-        ))}
-      </select>
-      <Button
-        size="sm"
-        disabled={!templateId || applyTemplate.isPending}
-        onClick={() =>
-          applyTemplate.mutate(templateId, { onSuccess: () => { setOpen(false); setTemplateId('') } })
-        }
-      >
-        {applyTemplate.isPending ? 'Applying…' : 'Apply'}
-      </Button>
-      <button
-        onClick={() => setOpen(false)}
-        className="border-none bg-transparent text-[12px] text-ink-muted hover:text-ink cursor-pointer"
-      >
-        Cancel
-      </button>
-      {applyTemplate.isError && (
-        <span className="text-[12px] text-signal-red">
-          {applyTemplate.error instanceof Error ? applyTemplate.error.message : 'Failed to apply'}
-        </span>
-      )}
     </div>
   )
 }
@@ -1226,7 +1175,6 @@ export function ProjectWorkspacePage() {
             </Badge>
           )}
           <AddTaskForm projectId={ws.id} />
-          <ApplyTemplateControl projectId={ws.id} />
           {canDelete && !confirmingDelete && (
             <Button variant="secondary" onClick={() => setConfirmingDelete(true)}>
               Delete project

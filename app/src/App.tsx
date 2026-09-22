@@ -20,7 +20,6 @@ import { ReportsPage } from '@/features/reports/reports-page'
 import { SearchPerformancePage } from '@/features/search-performance/search-performance-page'
 import { AgencySettingsPage } from '@/features/settings/agency-settings-page'
 import { ContentCalendarPage } from '@/features/social/content-calendar-page'
-import { TemplatesListPage } from '@/features/templates/templates-list-page'
 import { RequireAuth, RequireMember, RequirePortal, RequireStaff } from '@/routes/require-member'
 import { SignInPage } from '@/routes/sign-in'
 import { UnauthorizedPage } from '@/routes/unauthorized'
@@ -47,7 +46,6 @@ export function App() {
               <Route path="/projects/:projectId" element={<ProjectWorkspacePage />} />
               <Route path="/projects/:projectId/checklist" element={<ChecklistPage />} />
               <Route path="/projects/:projectId/offpage" element={<OffpagePage />} />
-              <Route path="/templates" element={<TemplatesListPage />} />
               <Route path="/assignments" element={<AssignmentsPage />} />
               <Route path="/capacity" element={<CapacityPage />} />
               <Route path="/settings" element={<AgencySettingsPage />} />

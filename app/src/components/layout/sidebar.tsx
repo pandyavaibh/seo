@@ -6,7 +6,6 @@ import { useAuth } from '@/providers/auth-provider'
 const NAV_ITEMS = [
   { to: '/clients', label: 'Clients', count: null },
   { to: '/projects', label: 'Engagements', count: null },
-  { to: '/templates', label: 'Templates', count: null },
   { to: '/capacity', label: 'Capacity', count: null },
 ]
 
