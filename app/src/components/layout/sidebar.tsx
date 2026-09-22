@@ -15,9 +15,10 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const { signOut } = useAuth()
   const { data: currentMember } = useCurrentMember()
-  const navItems = currentMember?.role === 'admin'
-    ? [...NAV_ITEMS, { to: '/developer', label: 'Developer', count: null }]
-    : NAV_ITEMS
+  const isAdminOrManager = currentMember?.role === 'admin' || currentMember?.role === 'manager'
+  let navItems = NAV_ITEMS
+  if (isAdminOrManager) navItems = [...navItems, { to: '/assignments', label: 'Assignments', count: null }]
+  if (currentMember?.role === 'admin') navItems = [...navItems, { to: '/developer', label: 'Developer', count: null }]
 
   return (
     <aside className="bg-sidebar text-sidebar-text flex flex-col gap-6 p-[20px_14px] min-h-screen">

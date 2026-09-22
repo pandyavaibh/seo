@@ -43,6 +43,33 @@ draft.
   Clients list, "New engagement" on the Account record, "Edit client"
   and full contact add/edit/remove too. See the commit history from
   `Wire up real "Add client" flow` onward.
+- ~~**No delete for clients, and onboarding a client took three separate
+  trips.**~~ Also since fixed:
+  - **"Add client" is now a full onboarding flow** — client info, an
+    optional first engagement, and staffing it, all in one submit
+    (`useOnboardClient` in `use-accounts.ts`). The old separate steps
+    (New engagement on the account page, Staff someone on the project
+    page) still work too, for adding a second engagement or restaffing
+    later.
+  - **"Delete client"** on the Account record (admin/manager only),
+    matching "Delete project"'s confirm-and-warn pattern. This needed a
+    schema fix: `projects.account_id` was the one accounts-referencing
+    foreign key still `NO ACTION` instead of `CASCADE` — every other
+    table under an account (contacts, deals, invoices, reports, ...)
+    already cascaded, so a client with any engagement on it silently
+    couldn't be deleted at all. Fixed in
+    `supabase/migrations/20260922150000_cascade_delete_account_projects.sql`.
+  - **An `/assignments` overview page** (admin/manager) — a grid of
+    every engagement × every team member with a toggle chip per cell,
+    for staffing at a glance across the whole roster rather than one
+    project at a time. Modeled directly on the real production
+    tracker's own Assignments admin screen (a separate, simpler
+    Supabase-backed app at vrbonkers.com/tracker/, reviewed by reading
+    its source directly). Deliberately additive: this CRM keeps its
+    richer per-assignment `weekly_hours` (used by Stage 3 capacity) and
+    the `accounts`/`projects` split (used by billing, reports, the
+    portal) rather than collapsing to the tracker's flatter,
+    name-only-project model — that would break Stage 3 and Stage 7.
 - **The design's "Next report" card is cut entirely** — it's a Stage 7
   (reporting) concept with no backing data yet; there's nothing honest
   to put in it.

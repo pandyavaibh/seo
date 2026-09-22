@@ -4,6 +4,7 @@ import { AppShell } from '@/components/layout/app-shell'
 import { PortalShell } from '@/components/layout/portal-shell'
 import { AccountRecordPage } from '@/features/accounts/account-record-page'
 import { ClientsListPage } from '@/features/accounts/clients-list-page'
+import { AssignmentsPage } from '@/features/assignments/assignments-page'
 import { BillingPage } from '@/features/billing/billing-page'
 import { CapacityPage } from '@/features/capacity/capacity-page'
 import { ChecklistPage } from '@/features/checklist/checklist-page'
@@ -48,6 +49,7 @@ export function App() {
               <Route path="/projects/:projectId/checklist" element={<ChecklistPage />} />
               <Route path="/projects/:projectId/offpage" element={<OffpagePage />} />
               <Route path="/templates" element={<TemplatesListPage />} />
+              <Route path="/assignments" element={<AssignmentsPage />} />
               <Route path="/capacity" element={<CapacityPage />} />
               <Route path="/utm-builder" element={<UtmBuilderPage />} />
             <Route path="/developer" element={<DeveloperPage />} />

@@ -22,6 +22,7 @@ import {
   type ContactInput,
 } from '@/features/accounts/use-account'
 import { useAccountPerformance } from '@/features/accounts/use-account-performance'
+import { useDeleteAccount } from '@/features/accounts/use-accounts'
 import { ChurnRiskCard } from '@/features/intelligence/churn-risk-card'
 import { PortalCommentsThread } from '@/features/portal/portal-comments-thread'
 import {
@@ -862,6 +863,50 @@ function LogActivityForm({ accountId }: { accountId: string }) {
   )
 }
 
+function DeleteAccountConfirm({
+  accountId,
+  accountName,
+  onCancel,
+}: {
+  accountId: string
+  accountName: string
+  onCancel: () => void
+}) {
+  const navigate = useNavigate()
+  const deleteAccount = useDeleteAccount()
+
+  return (
+    <div className="w-full bg-pill-red-bg border border-signal-red rounded-[10px] p-[14px_16px] flex flex-wrap items-center gap-3">
+      <p className="m-0 text-[13px] text-pill-red-fg flex-1 min-w-[240px]">
+        Permanently delete <strong>{accountName}</strong>? This removes every
+        engagement, contact, deal, invoice and report tied to this client —
+        there's no undo.
+      </p>
+      <div className="flex items-center gap-2">
+        <Button
+          disabled={deleteAccount.isPending}
+          onClick={() =>
+            deleteAccount.mutate(accountId, {
+              onSuccess: () => navigate('/clients'),
+            })
+          }
+          className="!bg-signal-red !border-signal-red hover:!bg-[#8E3C10]"
+        >
+          {deleteAccount.isPending ? 'Deleting…' : 'Yes, delete permanently'}
+        </Button>
+        <Button variant="secondary" onClick={onCancel} disabled={deleteAccount.isPending}>
+          Cancel
+        </Button>
+      </div>
+      {deleteAccount.isError && (
+        <p className="m-0 w-full text-[12px] text-signal-red">
+          {deleteAccount.error instanceof Error ? deleteAccount.error.message : 'Failed to delete'}
+        </p>
+      )}
+    </div>
+  )
+}
+
 export function AccountRecordPage() {
   const { accountId } = useParams<{ accountId: string }>()
   const navigate = useNavigate()
@@ -873,6 +918,8 @@ export function AccountRecordPage() {
   >(null)
   const [showAddProject, setShowAddProject] = React.useState(false)
   const [showEditAccount, setShowEditAccount] = React.useState(false)
+  const [confirmingDelete, setConfirmingDelete] = React.useState(false)
+  const canDelete = currentMember?.role === 'admin' || currentMember?.role === 'manager'
 
   if (isError) {
     return (
@@ -972,8 +1019,21 @@ export function AccountRecordPage() {
                   New engagement
                 </Button>
               )}
+              {canDelete && !confirmingDelete && (
+                <Button variant="secondary" onClick={() => setConfirmingDelete(true)}>
+                  Delete client
+                </Button>
+              )}
             </div>
           </div>
+
+          {confirmingDelete && accountId && (
+            <DeleteAccountConfirm
+              accountId={accountId}
+              accountName={acc.name}
+              onCancel={() => setConfirmingDelete(false)}
+            />
+          )}
 
           {showEditAccount && accountId && (
             <EditAccountForm
