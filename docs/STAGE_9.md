@@ -91,6 +91,29 @@ does not).
   report each month, just doesn't send it, and says so per-account in
   its response rather than failing silently.
 
+## Keywords section — now a dated matrix
+
+The Rankings table on the Project workspace used to show one row per
+keyword with only its latest rank. Rebuilt to match the team's own
+tracking spreadsheet: Sr.No / Keyword / Search vol. / Target, then one
+column per check date (most recent first), each cell showing that
+date's rank — the same pivot shape as the imported Aspire Square
+workbook, now backed by the `keyword_checks` history already collected
+per keyword instead of a flat "latest only" view.
+
+Logging is now a dated batch, not a one-row-at-a-time action: "Log
+ranks for a date" opens a date field (defaults to today, editable to
+log or correct any past date) and an editable draft column pre-filled
+with that date's existing values if any; staff fill in ranks for as
+many keywords as they checked in that sitting and save them all in one
+`useLogRanksForDate` upsert, matching "add a (date) column when we
+check ranking" rather than logging keyword-by-keyword. Re-logging an
+already-used date corrects that column instead of adding a duplicate —
+`keyword_checks` now has a `unique (keyword_id, checked_on)` constraint
+plus an upsert on that pair, after deduping the small number of
+same-day duplicate entries that existed before the constraint went on
+(`supabase/migrations/20260922280000_keyword_checks_unique_date.sql`).
+
 ## Off-page activity logging — now date-wise
 
 The per-type "Done" count on `/projects/:id/offpage` used to be a single

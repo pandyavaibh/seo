@@ -2,15 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { supabase } from '@/lib/supabase'
 
-export interface KeywordRow {
+export interface KeywordMatrixRow {
   id: string
   phrase: string
   targetUrl: string | null
   targetRank: number | null
   searchVolume: number | null
   latestRank: number | null
-  latestCheckedOn: string | null
   previousRank: number | null
+  ranksByDate: Record<string, number | null>
 }
 
 export interface KeywordStats {
@@ -21,15 +21,16 @@ export interface KeywordStats {
   top30: number
 }
 
-export interface KeywordsData {
-  rows: KeywordRow[]
+export interface KeywordsMatrixData {
+  dates: string[]
+  rows: KeywordMatrixRow[]
   stats: KeywordStats
 }
 
 export function useKeywords(projectId: string | undefined) {
   return useQuery({
     queryKey: ['keywords', projectId],
-    queryFn: async (): Promise<KeywordsData> => {
+    queryFn: async (): Promise<KeywordsMatrixData> => {
       const [keywordsRes, checksRes] = await Promise.all([
         supabase
           .from('keywords')
@@ -48,14 +49,19 @@ export function useKeywords(projectId: string | undefined) {
       if (checksRes.error) throw new Error(checksRes.error.message)
 
       const checksByKeyword = new Map<string, { rank: number | null; checked_on: string }[]>()
+      const dateSet = new Set<string>()
       for (const c of checksRes.data ?? []) {
         const list = checksByKeyword.get(c.keyword_id) ?? []
         list.push(c)
         checksByKeyword.set(c.keyword_id, list)
+        dateSet.add(c.checked_on)
       }
+      const dates = Array.from(dateSet).sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
 
-      const rows: KeywordRow[] = (keywordsRes.data ?? []).map((k) => {
+      const rows: KeywordMatrixRow[] = (keywordsRes.data ?? []).map((k) => {
         const checks = checksByKeyword.get(k.id) ?? []
+        const ranksByDate: Record<string, number | null> = {}
+        for (const c of checks) ranksByDate[c.checked_on] = c.rank
         return {
           id: k.id,
           phrase: k.phrase,
@@ -63,8 +69,8 @@ export function useKeywords(projectId: string | undefined) {
           targetRank: k.target_rank,
           searchVolume: k.search_volume,
           latestRank: checks[0]?.rank ?? null,
-          latestCheckedOn: checks[0]?.checked_on ?? null,
           previousRank: checks[1]?.rank ?? null,
+          ranksByDate,
         }
       })
 
@@ -78,7 +84,7 @@ export function useKeywords(projectId: string | undefined) {
         top30: ranked.filter((r) => r <= 30).length,
       }
 
-      return { rows, stats }
+      return { dates, rows, stats }
     },
     enabled: !!projectId,
   })
@@ -131,16 +137,30 @@ export function useSetSearchVolume(projectId: string) {
   })
 }
 
-export function useLogRank(projectId: string) {
+// Logs (or corrects) a whole check-date column at once — a staff member
+// picks a date, fills in a rank per keyword, and saves them all together,
+// matching how the team works through the spreadsheet on their check day.
+// Upserts on (keyword_id, checked_on): re-logging the same date replaces
+// that day's cell instead of stacking a duplicate entry.
+export function useLogRanksForDate(projectId: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (input: { keywordId: string; rank: number; checkedBy: string | null }) => {
-      const { error } = await supabase.from('keyword_checks').insert({
+    mutationFn: async (input: {
+      checkedOn: string
+      entries: { keywordId: string; rank: number }[]
+      checkedBy: string | null
+    }) => {
+      if (input.entries.length === 0) return
+      const rows = input.entries.map((e) => ({
         project_id: projectId,
-        keyword_id: input.keywordId,
-        rank: input.rank,
+        keyword_id: e.keywordId,
+        checked_on: input.checkedOn,
+        rank: e.rank,
         checked_by: input.checkedBy,
-      })
+      }))
+      const { error } = await supabase
+        .from('keyword_checks')
+        .upsert(rows, { onConflict: 'keyword_id,checked_on' })
       if (error) throw new Error(error.message)
     },
     onSuccess: () => {
