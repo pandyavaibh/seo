@@ -114,38 +114,52 @@ the same entries table over the same month's date range instead.
 
 ## Removed by request
 
-The Deals Kanban board (above), UTM builder (Stage 6), Developer page —
-API keys + webhooks (Stage 8) — and Task Templates (Stage 2) were all
-later removed at the user's request while browsing the live app, none
-of them had real data (`deals`: 0 rows; `utm_links`/`api_keys`/
-`webhook_subscriptions`: unused; `project_templates`/`template_tasks`:
-0 rows, no project had `applied_template_id` set), confirmed against
-the live database before dropping anything
+Several features were removed at the user's request while browsing the
+live app, each confirmed to have no real data before dropping anything:
+
+- **Deals Kanban board** (above) and **UTM builder** (Stage 6) —
+  `deals`: 0 rows; `utm_links`: unused. Leads → Convert previously
+  created a `deals` row; it now just flips the lead's status to
+  `converted` with no deal record, since there's no pipeline to
+  convert into anymore.
+- **Developer page** — API keys + webhooks (Stage 8) — `api_keys`/
+  `webhook_subscriptions`: unused. Took the `fire_webhooks()`/
+  `create_api_key()` functions and the three webhook-firing triggers
+  (`report.sent`, `invoice.paid`, `deal.won`) with it, since those
+  existed only to serve those tables. The `public-api` Edge Function's
+  source was deleted too (it read `api_keys`, so it's dead without that
+  table) — **the deployed function itself is still live on Supabase**,
+  same limitation as `sync-meta-performance` in Stage 6: this session's
+  tools can't delete a deployed Edge Function, only its source, so
+  delete it manually from the dashboard if you want it fully gone.
+- **Task Templates** (Stage 2's `project_templates`/`template_tasks`) —
+  0 rows, no project had `applied_template_id` set. Took its daily
+  `generate-recurring-tasks` cron job, the `generate_recurring_tasks()`
+  function, and the "Apply template" control on the Project workspace
+  page with it.
+- **Capacity & strength** (`/capacity`) — the skills matrix
+  (`member_skills`), leave log (`member_leave`), and
+  `team_members.weekly_capacity` are gone. The "Cost rates" admin
+  panel that lived at the bottom of that page moved to **Settings**
+  (`/settings`, admin-only) rather than being deleted with it — Stage
+  7's Billing profitability calculation still reads `member_rates`, so
+  the only way to ever set a rate couldn't go with the page.
+  `assignments.weekly_hours`/`starts_on`/`ends_on` (added by the same
+  Stage 3 migration as the dropped columns) stayed, since Project
+  workspace and Assignments staffing both depend on them well beyond
+  this one page.
+- **Leads** (`/leads`, the public `/lead` form, `submit-lead` Edge
+  Function, and the `leads` table) — nobody had ever submitted the
+  public form. Same "deployed function outlives its deleted source"
+  limitation as above applies to `submit-lead`.
+
+If any of these are ever wanted back, they need to be rebuilt from
+scratch — the tables and Edge Function source are gone, not just
+hidden.
+
 (`supabase/migrations/20260922210000_remove_deals_utm_developer.sql`,
-`supabase/migrations/20260922230000_remove_task_templates.sql`). Task
-Templates also took its daily `generate-recurring-tasks` cron job and
-the `generate_recurring_tasks()` function with it, and the "Apply
-template" control on the Project workspace page.
-Dropped: the `deals`, `api_keys`, `webhook_subscriptions`, and
-`utm_links` tables; the `fire_webhooks()`/`create_api_key()` functions
-and the three webhook-firing triggers (`report.sent`, `invoice.paid`,
-`deal.won`) that existed only to serve those tables; the
-`/deals`, `/utm-builder`, and `/developer` routes, pages, and sidebar
-links; and the `public-api` Edge Function's source (it read `api_keys`,
-so it's dead without that table — **the deployed function itself is
-still live on Supabase**, same limitation as `sync-meta-performance` in
-Stage 6: this session's tools can't delete a deployed Edge Function,
-only its source, so delete it manually from the dashboard if you want it
-fully gone).
-
-Leads → Convert previously created a `deals` row; it now just flips the
-lead's status to `converted` with no deal record, since there's no
-pipeline to convert into anymore. `leads.converted_deal_id` was dropped
-along with it.
-
-If a sales pipeline, UTM tracking, or the public API/webhooks are ever
-wanted back, they need to be rebuilt from scratch — the tables and
-Edge Function source are gone, not just hidden.
+`supabase/migrations/20260922230000_remove_task_templates.sql`,
+`supabase/migrations/20260922240000_remove_capacity_and_leads.sql`)
 
 ## Deliberate scope cuts
 

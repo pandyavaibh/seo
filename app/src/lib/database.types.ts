@@ -32,7 +32,6 @@ export interface Database {
           name: string
           role: MemberRole
           active: boolean
-          weekly_capacity: number
           account_id: string | null
           created_at: string
         }
@@ -470,25 +469,6 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['agency_settings']['Row']>
         Relationships: []
       }
-      leads: {
-        Row: {
-          id: string
-          name: string
-          email: string
-          phone: string | null
-          company: string | null
-          message: string | null
-          source: string
-          status: string
-          created_at: string
-        }
-        Insert: Partial<Database['public']['Tables']['leads']['Row']> & {
-          name: string
-          email: string
-        }
-        Update: Partial<Database['public']['Tables']['leads']['Row']>
-        Relationships: []
-      }
       report_schedules: {
         Row: {
           id: string
@@ -643,53 +623,6 @@ export interface Database {
           {
             foreignKeyName: 'tasks_owner_id_fkey'
             columns: ['owner_id']
-            isOneToOne: false
-            referencedRelation: 'team_members'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      member_skills: {
-        Row: {
-          member_id: string
-          discipline: string
-          level: number
-        }
-        Insert: Partial<Database['public']['Tables']['member_skills']['Row']> & {
-          member_id: string
-          discipline: string
-          level: number
-        }
-        Update: Partial<Database['public']['Tables']['member_skills']['Row']>
-        Relationships: [
-          {
-            foreignKeyName: 'member_skills_member_id_fkey'
-            columns: ['member_id']
-            isOneToOne: false
-            referencedRelation: 'team_members'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      member_leave: {
-        Row: {
-          id: string
-          member_id: string
-          starts_on: string
-          ends_on: string
-          kind: string | null
-          note: string | null
-        }
-        Insert: Partial<Database['public']['Tables']['member_leave']['Row']> & {
-          member_id: string
-          starts_on: string
-          ends_on: string
-        }
-        Update: Partial<Database['public']['Tables']['member_leave']['Row']>
-        Relationships: [
-          {
-            foreignKeyName: 'member_leave_member_id_fkey'
-            columns: ['member_id']
             isOneToOne: false
             referencedRelation: 'team_members'
             referencedColumns: ['id']

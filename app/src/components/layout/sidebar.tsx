@@ -6,7 +6,6 @@ import { useAuth } from '@/providers/auth-provider'
 const NAV_ITEMS = [
   { to: '/clients', label: 'Clients', count: null },
   { to: '/projects', label: 'Engagements', count: null },
-  { to: '/capacity', label: 'Capacity', count: null },
 ]
 
 export function Sidebar() {
@@ -15,11 +14,7 @@ export function Sidebar() {
   const isAdminOrManager = currentMember?.role === 'admin' || currentMember?.role === 'manager'
   let navItems = NAV_ITEMS
   if (isAdminOrManager) {
-    navItems = [
-      ...navItems,
-      { to: '/leads', label: 'Leads', count: null },
-      { to: '/assignments', label: 'Assignments', count: null },
-    ]
+    navItems = [...navItems, { to: '/assignments', label: 'Assignments', count: null }]
   }
   if (currentMember?.role === 'admin') {
     navItems = [...navItems, { to: '/settings', label: 'Settings', count: null }]
