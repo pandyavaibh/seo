@@ -49,10 +49,6 @@ export function PortalReportsPage() {
                   <span className="font-mono text-[10px] uppercase text-ink-muted">Links built</span>
                   <span className="text-[16px] font-semibold">{r.snapshot.linksPlaced.length}</span>
                 </div>
-                <div className="flex flex-col gap-[2px]">
-                  <span className="font-mono text-[10px] uppercase text-ink-muted">Tasks done</span>
-                  <span className="text-[16px] font-semibold">{r.snapshot.tasksCompleted.length}</span>
-                </div>
               </div>
               {r.snapshot.commentary && r.snapshot.commentary.length > 0 && (
                 <ul className="m-0 pl-[18px] flex flex-col gap-[3px] text-[12.5px] text-ink-secondary">

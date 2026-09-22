@@ -29,13 +29,9 @@ import {
 } from '@/features/projects/use-keywords'
 import {
   useAddAssignment,
-  useAddTask,
   useDeleteProject,
   useProjectWorkspace,
-  useQuickLogHour,
   useRemoveAssignment,
-  useToggleTask,
-  type WorkspaceTask,
 } from '@/features/projects/use-project-workspace'
 import {
   useCreateGoal,
@@ -50,84 +46,6 @@ import { BACKLINK_STATUS_LABEL, BACKLINK_STATUS_TONE, BACKLINK_STATUSES } from '
 import { loadColorFor } from '@/lib/load-color'
 import { STAGE_LABEL, STAGE_TONE } from '@/lib/project-stage'
 
-function TaskRow({
-  task,
-  projectId,
-}: {
-  task: WorkspaceTask
-  projectId: string
-}) {
-  const toggle = useToggleTask(projectId)
-  const quickLog = useQuickLogHour(projectId)
-  const { data: currentMember } = useCurrentMember()
-  const done = task.status === 'done'
-  const over = task.estimateHours != null && task.loggedHours > task.estimateHours
-  const met = task.estimateHours != null && task.loggedHours >= task.estimateHours
-
-  return (
-    <TableRowLike>
-      <td className="p-[11px_18px]">
-        <div className="flex items-center gap-[9px]">
-          <button
-            onClick={() => toggle.mutate({ taskId: task.id, done: !done })}
-            aria-label={done ? 'Mark as not done' : 'Mark as done'}
-            className="w-[13px] h-[13px] flex-none rounded-[4px] border-[1.5px] cursor-pointer p-0"
-            style={{
-              borderColor: done ? 'var(--color-signal-green)' : '#C3C0B5',
-              background: done ? 'var(--color-signal-green)' : 'transparent',
-            }}
-          />
-          <span className={done ? 'text-ink-faint' : 'text-ink'}>
-            {task.label}
-          </span>
-        </div>
-      </td>
-      <td className="p-[11px_12px]">
-        {task.ownerName ? (
-          <span
-            title={task.ownerName}
-            className="w-6 h-6 rounded-full grid place-items-center font-mono text-[10px] font-semibold"
-            style={{ background: tintFor(0) }}
-          >
-            {initials(task.ownerName)}
-          </span>
-        ) : (
-          <span className="text-ink-muted text-[12px]">—</span>
-        )}
-      </td>
-      <td
-        className="p-[11px_12px] font-mono text-[12px]"
-        style={{
-          color: over
-            ? 'var(--color-signal-red)'
-            : met
-              ? 'var(--color-signal-green)'
-              : 'var(--color-ink-secondary)',
-        }}
-      >
-        {task.loggedHours} / {task.estimateHours ?? '—'}h
-      </td>
-      <td className="p-[11px_18px]">
-        <Button
-          size="sm"
-          variant="secondary"
-          disabled={!currentMember || quickLog.isPending}
-          onClick={() =>
-            currentMember &&
-            quickLog.mutate({
-              taskId: task.id,
-              taskLabel: task.label,
-              memberId: currentMember.id,
-            })
-          }
-        >
-          +1h
-        </Button>
-      </td>
-    </TableRowLike>
-  )
-}
-
 function ordinal(n: number) {
   const s = ['th', 'st', 'nd', 'rd']
   const v = n % 100
@@ -136,72 +54,6 @@ function ordinal(n: number) {
 
 function TableRowLike({ children }: { children: React.ReactNode }) {
   return <tr className="border-b border-border-light-2">{children}</tr>
-}
-
-function AddTaskForm({ projectId }: { projectId: string }) {
-  const [open, setOpen] = React.useState(false)
-  const [label, setLabel] = React.useState('')
-  const [estimateHours, setEstimateHours] = React.useState('')
-  const mutation = useAddTask(projectId)
-
-  if (!open) {
-    return (
-      <Button onClick={() => setOpen(true)} size="sm" variant="secondary">
-        Add task
-      </Button>
-    )
-  }
-
-  return (
-    <div className="flex items-center gap-2">
-      <input
-        type="text"
-        autoFocus
-        value={label}
-        onChange={(e) => setLabel(e.target.value)}
-        placeholder="Task name"
-        className="text-[13px] border border-border rounded-[6px] px-2 py-1 w-[220px]"
-      />
-      <input
-        type="number"
-        min="0.5"
-        step="0.5"
-        value={estimateHours}
-        onChange={(e) => setEstimateHours(e.target.value)}
-        placeholder="Est. h"
-        className="w-[70px] text-[12px] font-mono border border-border rounded-[6px] px-2 py-1"
-      />
-      <Button
-        size="sm"
-        disabled={!label.trim() || mutation.isPending}
-        onClick={() =>
-          mutation.mutate(
-            {
-              label,
-              ownerId: null,
-              estimateHours: estimateHours ? Number(estimateHours) : null,
-              dueOn: null,
-            },
-            {
-              onSuccess: () => {
-                setLabel('')
-                setEstimateHours('')
-                setOpen(false)
-              },
-            },
-          )
-        }
-      >
-        {mutation.isPending ? 'Adding…' : 'Add'}
-      </Button>
-      <button
-        onClick={() => setOpen(false)}
-        className="border-none bg-transparent text-[12px] text-ink-muted hover:text-ink cursor-pointer"
-      >
-        Cancel
-      </button>
-    </div>
-  )
 }
 
 function TeamRow({
@@ -334,7 +186,7 @@ function DeleteProjectConfirm({
     <div className="w-full bg-pill-red-bg border border-signal-red rounded-[10px] p-[14px_16px] flex flex-wrap items-center gap-3">
       <p className="m-0 text-[13px] text-pill-red-fg flex-1 min-w-[240px]">
         Permanently delete <strong>{projectName}</strong>? This removes all its
-        tasks, logged hours, checklist history and keyword tracking — there's
+        logged hours, checklist history and keyword tracking — there's
         no undo.
       </p>
       <div className="flex items-center gap-2">
@@ -1174,7 +1026,6 @@ export function ProjectWorkspacePage() {
               {STAGE_LABEL[ws.stage] ?? ws.stage}
             </Badge>
           )}
-          <AddTaskForm projectId={ws.id} />
           {canDelete && !confirmingDelete && (
             <Button variant="secondary" onClick={() => setConfirmingDelete(true)}>
               Delete project
@@ -1195,49 +1046,7 @@ export function ProjectWorkspacePage() {
       <ProjectSubNav projectId={ws.id} active="keywords" />
 
       <section className="flex flex-wrap gap-3 items-start">
-        <div className="flex-[1_1_460px] min-w-0 bg-surface border border-border rounded-[12px] overflow-hidden">
-          <div className="flex items-baseline justify-between gap-3 p-[14px_18px] border-b border-border-light">
-            <CardTitle>Tasks</CardTitle>
-            <span className="font-mono text-[11px] text-ink-muted">
-              {ws.hoursThisMonth}h logged this month
-              {monthlyBudget != null ? ` of ${monthlyBudget}h budget` : ''}
-            </span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[540px] border-collapse text-[13px]">
-              <thead>
-                <tr className="text-left bg-surface-sunken">
-                  <th className="p-[9px_18px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
-                    Task
-                  </th>
-                  <th className="p-[9px_12px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
-                    Owner
-                  </th>
-                  <th className="p-[9px_12px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
-                    Logged / est
-                  </th>
-                  <th className="p-[9px_18px] w-[92px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
-                    Log
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {ws.tasks.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="p-[18px] text-center text-[13px] text-ink-muted">
-                      No tasks yet — add one above.
-                    </td>
-                  </tr>
-                )}
-                {ws.tasks.map((t) => (
-                  <TaskRow key={t.id} task={t} projectId={ws.id} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="flex-[1_1_280px] max-w-[340px] flex flex-col gap-3">
+        <div className="flex-[1_1_320px] min-w-0">
           <Card>
             <CardHeader>
               <CardTitle>Assigned team</CardTitle>
@@ -1257,7 +1066,9 @@ export function ProjectWorkspacePage() {
               />
             </CardContent>
           </Card>
+        </div>
 
+        <div className="flex-[1_1_320px] min-w-0">
           <Card>
             <CardHeader>
               <CardTitle>This month</CardTitle>

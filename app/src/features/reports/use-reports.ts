@@ -7,7 +7,6 @@ import { supabase } from '@/lib/supabase'
 export interface ReportSnapshot {
   search: { clicks: number; impressions: number } | null
   ga4: { sessions: number; conversions: number } | null
-  tasksCompleted: { label: string; projectName: string | null }[]
   linksPlaced: { domain: string; projectName: string | null }[]
   keywordsImproved: number
   keywordsDeclined: number
@@ -120,21 +119,13 @@ async function buildSnapshot(accountId: string, periodStart: string, periodEnd: 
   const projectIds = projects.map((p) => p.id)
   const projectName = new Map(projects.map((p) => [p.id, p.name]))
 
-  let tasksCompleted: ReportSnapshot['tasksCompleted'] = []
   let linksPlaced: ReportSnapshot['linksPlaced'] = []
   let keywordsImproved = 0
   let keywordsDeclined = 0
   let keywordsTracked = 0
 
   if (projectIds.length > 0) {
-    const [tasksRes, backlinksRes, keywordsRes] = await Promise.all([
-      supabase
-        .from('tasks')
-        .select('label, project_id')
-        .in('project_id', projectIds)
-        .eq('status', 'done')
-        .gte('completed_at', periodStart)
-        .lte('completed_at', `${periodEnd}T23:59:59`),
+    const [backlinksRes, keywordsRes] = await Promise.all([
       supabase
         .from('backlinks')
         .select('domain, project_id')
@@ -148,14 +139,10 @@ async function buildSnapshot(accountId: string, periodStart: string, periodEnd: 
         .in('project_id', projectIds)
         .eq('archived', false),
     ])
-    for (const res of [tasksRes, backlinksRes, keywordsRes]) {
+    for (const res of [backlinksRes, keywordsRes]) {
       if (res.error) throw new Error(res.error.message)
     }
 
-    tasksCompleted = (tasksRes.data ?? []).map((t) => ({
-      label: t.label,
-      projectName: projectName.get(t.project_id) ?? null,
-    }))
     linksPlaced = (backlinksRes.data ?? []).map((b) => ({
       domain: b.domain,
       projectName: projectName.get(b.project_id) ?? null,
@@ -182,10 +169,9 @@ async function buildSnapshot(accountId: string, periodStart: string, periodEnd: 
     keywordsDeclined,
     keywordsTracked,
     linksPlaced: linksPlaced.length,
-    tasksCompleted: tasksCompleted.length,
   })
 
-  return { search, ga4, tasksCompleted, linksPlaced, keywordsImproved, keywordsDeclined, keywordsTracked, commentary }
+  return { search, ga4, linksPlaced, keywordsImproved, keywordsDeclined, keywordsTracked, commentary }
 }
 
 export function useGenerateReport(accountId: string) {

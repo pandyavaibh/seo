@@ -191,13 +191,27 @@ live app, each confirmed to have no real data before dropping anything:
   public form. Same "deployed function outlives its deleted source"
   limitation as above applies to `submit-lead`.
 
+- **Tasks** (the task list + "+1h" quick-log card on the Project
+  workspace page) — sitting empty and unused on every project. Took
+  the `tasks` table, `task_status` enum, and `time_entries.task_id`
+  (its optional link column — `time_entries` itself stays, since hours
+  are still logged and read from it for "hours this month" independent
+  of any task). The workspace's "Assigned team" and "This month" cards
+  move into the two side-by-side slots the removed card's column used
+  to occupy. Report generation had a "Work completed" line built from
+  `tasks`, client-side (`use-reports.ts`) and in both report-sending
+  Edge Functions (`send-report-email`, `send-scheduled-reports`,
+  redeployed) — gone along with the table, since there's nothing left
+  to report there.
+
 If any of these are ever wanted back, they need to be rebuilt from
 scratch — the tables and Edge Function source are gone, not just
 hidden.
 
 (`supabase/migrations/20260922210000_remove_deals_utm_developer.sql`,
 `supabase/migrations/20260922230000_remove_task_templates.sql`,
-`supabase/migrations/20260922240000_remove_capacity_and_leads.sql`)
+`supabase/migrations/20260922240000_remove_capacity_and_leads.sql`,
+`supabase/migrations/20260922270000_remove_tasks.sql`)
 
 ## Deliberate scope cuts
 

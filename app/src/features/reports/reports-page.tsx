@@ -167,10 +167,6 @@ function ReportCard({ accountId, accountName, report }: { accountId: string; acc
             <span className="text-[16px] font-semibold">{s.linksPlaced.length}</span>
           </div>
           <div className="flex flex-col gap-[2px]">
-            <span className="font-mono text-[10px] uppercase text-ink-muted">Tasks done</span>
-            <span className="text-[16px] font-semibold">{s.tasksCompleted.length}</span>
-          </div>
-          <div className="flex flex-col gap-[2px]">
             <span className="font-mono text-[10px] uppercase text-ink-muted">Keywords ↑ / ↓</span>
             <span className="text-[16px] font-semibold">
               {s.keywordsImproved} / {s.keywordsDeclined}

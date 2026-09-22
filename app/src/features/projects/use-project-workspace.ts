@@ -1,18 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import type { MemberRole, TaskStatus } from '@/lib/database.types'
+import type { MemberRole } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
-
-export interface WorkspaceTask {
-  id: string
-  label: string
-  status: TaskStatus
-  ownerId: string | null
-  ownerName: string | null
-  estimateHours: number | null
-  dueOn: string | null
-  loggedHours: number
-}
 
 export interface ProjectWorkspace {
   id: string
@@ -29,7 +18,6 @@ export interface ProjectWorkspace {
   trafficGoalClicks: number | null
   conversionsGoal: number | null
   team: { assignmentId: string; id: string; name: string; role: MemberRole; weeklyHours: number }[]
-  tasks: WorkspaceTask[]
   checklist: { done: number; total: number }
   linksLiveThisMonth: number
   hoursThisMonth: number
@@ -57,7 +45,6 @@ export function useProjectWorkspace(projectId: string | undefined) {
       const [
         projectRes,
         assignmentsRes,
-        tasksRes,
         entriesRes,
         templateRes,
         checklistRunsRes,
@@ -75,13 +62,8 @@ export function useProjectWorkspace(projectId: string | undefined) {
           .select('id, member_id, weekly_hours, team_members(id, name, role)')
           .eq('project_id', projectId!),
         supabase
-          .from('tasks')
-          .select('id, label, status, owner_id, estimate_hours, due_on, team_members(name)')
-          .eq('project_id', projectId!)
-          .order('created_at'),
-        supabase
           .from('time_entries')
-          .select('task_id, hours, worked_on')
+          .select('hours, worked_on')
           .eq('project_id', projectId!),
         supabase.from('checklist_template_items').select('id').eq('active', true),
         supabase
@@ -99,7 +81,6 @@ export function useProjectWorkspace(projectId: string | undefined) {
 
       if (projectRes.error) throw new Error(projectRes.error.message)
       if (assignmentsRes.error) throw new Error(assignmentsRes.error.message)
-      if (tasksRes.error) throw new Error(tasksRes.error.message)
       if (entriesRes.error) throw new Error(entriesRes.error.message)
       if (templateRes.error) throw new Error(templateRes.error.message)
       if (checklistRunsRes.error) throw new Error(checklistRunsRes.error.message)
@@ -107,12 +88,8 @@ export function useProjectWorkspace(projectId: string | undefined) {
 
       const p = projectRes.data
 
-      const loggedByTask = new Map<string, number>()
       let hoursThisMonth = 0
       for (const e of entriesRes.data ?? []) {
-        if (e.task_id) {
-          loggedByTask.set(e.task_id, (loggedByTask.get(e.task_id) ?? 0) + Number(e.hours))
-        }
         if (e.worked_on >= start && e.worked_on < end) {
           hoursThisMonth += Number(e.hours)
         }
@@ -145,16 +122,6 @@ export function useProjectWorkspace(projectId: string | undefined) {
             role: a.team_members!.role,
             weeklyHours: Number(a.weekly_hours),
           })),
-        tasks: (tasksRes.data ?? []).map((t) => ({
-          id: t.id,
-          label: t.label,
-          status: t.status,
-          ownerId: t.owner_id,
-          ownerName: t.team_members?.name ?? null,
-          estimateHours: t.estimate_hours,
-          dueOn: t.due_on,
-          loggedHours: loggedByTask.get(t.id) ?? 0,
-        })),
         checklist: {
           done: doneItemIds.size,
           total: (templateRes.data ?? []).length,
@@ -164,49 +131,6 @@ export function useProjectWorkspace(projectId: string | undefined) {
       }
     },
     enabled: !!projectId,
-  })
-}
-
-export function useAddTask(projectId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (input: {
-      label: string
-      ownerId: string | null
-      estimateHours: number | null
-      dueOn: string | null
-    }) => {
-      const { error } = await supabase.from('tasks').insert({
-        project_id: projectId,
-        label: input.label,
-        owner_id: input.ownerId,
-        estimate_hours: input.estimateHours,
-        due_on: input.dueOn,
-      })
-      if (error) throw new Error(error.message)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['project-workspace', projectId] })
-    },
-  })
-}
-
-export function useToggleTask(projectId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (input: { taskId: string; done: boolean }) => {
-      const { error } = await supabase
-        .from('tasks')
-        .update({
-          status: (input.done ? 'done' : 'todo') as TaskStatus,
-          completed_at: input.done ? new Date().toISOString() : null,
-        })
-        .eq('id', input.taskId)
-      if (error) throw new Error(error.message)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['project-workspace', projectId] })
-    },
   })
 }
 
@@ -254,21 +178,3 @@ export function useRemoveAssignment(projectId: string) {
   })
 }
 
-export function useQuickLogHour(projectId: string) {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (input: { taskId: string; taskLabel: string; memberId: string }) => {
-      const { error } = await supabase.from('time_entries').insert({
-        project_id: projectId,
-        task_id: input.taskId,
-        member_id: input.memberId,
-        hours: 1,
-        note: input.taskLabel,
-      })
-      if (error) throw new Error(error.message)
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['project-workspace', projectId] })
-    },
-  })
-}

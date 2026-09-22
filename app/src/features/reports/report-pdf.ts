@@ -61,17 +61,6 @@ export async function downloadReportPdf(accountName: string, report: ReportRow) 
       line(`• ${l.domain}${l.projectName ? ` — ${l.projectName}` : ''}`, 10, 6)
     }
   }
-  y += 4
-
-  line(`Work completed (${s.tasksCompleted.length})`, 13, 8)
-  if (s.tasksCompleted.length === 0) {
-    line('None this period.')
-  } else {
-    for (const t of s.tasksCompleted) {
-      line(`• ${t.label}${t.projectName ? ` — ${t.projectName}` : ''}`, 10, 6)
-    }
-  }
-
   if (report.nextMonthPlan) {
     y += 4
     line('Next month', 13, 8)

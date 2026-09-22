@@ -30,7 +30,6 @@ export interface CommentaryInputs {
   keywordsDeclined: number
   keywordsTracked: number
   linksPlaced: number
-  tasksCompleted: number
 }
 
 export function generateCommentary(input: CommentaryInputs): string[] {
@@ -58,9 +57,6 @@ export function generateCommentary(input: CommentaryInputs): string[] {
 
   if (input.linksPlaced > 0) {
     lines.push(`${input.linksPlaced} backlink${input.linksPlaced === 1 ? '' : 's'} went live this period.`)
-  }
-  if (input.tasksCompleted > 0) {
-    lines.push(`${input.tasksCompleted} delivery task${input.tasksCompleted === 1 ? '' : 's'} completed this period.`)
   }
 
   if (lines.length === 0) {

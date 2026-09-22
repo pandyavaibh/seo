@@ -9,7 +9,6 @@
 export type MemberRole = 'admin' | 'manager' | 'member' | 'client'
 export type AccountHealth = 'healthy' | 'watch' | 'at_risk'
 export type ActivityKind = 'call' | 'meeting' | 'email' | 'note' | 'report' | 'issue'
-export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done' | 'na'
 export type MetricSource = 'gsc' | 'ga4'
 export type ConnectionStatus = 'needs_access' | 'granted'
 export type BacklinkStatus = 'prospect' | 'outreach' | 'placed' | 'declined' | 'removed'
@@ -557,7 +556,6 @@ export interface Database {
           id: string
           project_id: string
           member_id: string
-          task_id: string | null
           hours: number
           worked_on: string
           note: string
@@ -581,48 +579,6 @@ export interface Database {
           {
             foreignKeyName: 'time_entries_member_id_fkey'
             columns: ['member_id']
-            isOneToOne: false
-            referencedRelation: 'team_members'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'time_entries_task_id_fkey'
-            columns: ['task_id']
-            isOneToOne: false
-            referencedRelation: 'tasks'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      tasks: {
-        Row: {
-          id: string
-          project_id: string
-          label: string
-          status: TaskStatus
-          owner_id: string | null
-          estimate_hours: number | null
-          due_on: string | null
-          priority: string | null
-          created_at: string
-          completed_at: string | null
-        }
-        Insert: Partial<Database['public']['Tables']['tasks']['Row']> & {
-          project_id: string
-          label: string
-        }
-        Update: Partial<Database['public']['Tables']['tasks']['Row']>
-        Relationships: [
-          {
-            foreignKeyName: 'tasks_project_id_fkey'
-            columns: ['project_id']
-            isOneToOne: false
-            referencedRelation: 'projects'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'tasks_owner_id_fkey'
-            columns: ['owner_id']
             isOneToOne: false
             referencedRelation: 'team_members'
             referencedColumns: ['id']
@@ -1098,7 +1054,6 @@ export interface Database {
       member_role: MemberRole
       account_health: AccountHealth
       activity_kind: ActivityKind
-      task_status: TaskStatus
       metric_source: MetricSource
       connection_status: ConnectionStatus
       backlink_status: BacklinkStatus
