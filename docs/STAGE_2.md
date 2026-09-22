@@ -19,7 +19,48 @@ Live on Travel Roach. Built to match the Project workspace screen in
     (`checklist_template_items`/`checklist_runs`, `offpage_runs`) — no
     new schema needed for those two. **Hours against budget** uses
     `time_entries` (weekly_hours × 4 as the monthly figure, matching
-    the design's own convention).
+    the design's own convention). ~~Both bars are aggregate-only, no
+    item-level UI.~~ Both now link through to full dedicated pages —
+    see "Real checklist and off-page tracking" below.
+
+## Real checklist and off-page tracking
+
+Rebuilt to match the user's actual live tool (vrbonkers.com/tracker/),
+transcribed from screenshots rather than guessed at:
+
+- **Sitewide Checklist** (`/projects/:projectId/checklist`): the real
+  81-item checklist across 9 categories (Technical Foundation, Content
+  Quality, On-Page & Structured Data, Internal Linking, Local SEO,
+  AEO/GEO/AI Search Readiness, Link Authority & Spam Policy Compliance,
+  SEO Strategy & Planning, Analytics/Reporting & Ongoing Monitoring),
+  each item carrying a priority (High/Medium/Low) and a reference tag.
+  `checklist_runs.done` (boolean) became `status`, a 4-state field
+  (To Do/In Progress/Done/N/A) matching the real tool — the old
+  boolean only had two of those four states.
+- **Off-Page & Backlinks** (`/projects/:projectId/offpage`): the
+  project's `link_target` broken down into the real tool's 13 fixed
+  activity types (Guest Post, Web2.0, Document, Business Listing,
+  Business Profile, Social Bookmarking, Social Content Sharing,
+  Classified, Article, Contextual, Image, PR, Link Tree), each with a
+  target (Business Listing is a real range, 15–20) and an
+  auto-computed "remaining" (target max − done, never stored) — the
+  exact behavior confirmed directly against the user's own example
+  (20 target, 3 + 6 = 9 done → 11 remaining, shown automatically).
+  Below that, the real tool's six recurring off-page tasks (a weekly
+  project follow-up and a Friday backlink/indexing check, both with
+  per-week/per-Friday instances computed from the actual month's
+  calendar and never stored as fixed dates; plus four single-instance
+  monthly checks) and a free-text monthly notes field.
+- A shared pill nav (Sitewide Checklist / Off-Page & Backlinks /
+  Keywords) ties the three views together on every project, matching
+  the real tool's own tab layout. "Keywords" still lives on the main
+  project workspace page (Rankings section) rather than a fourth
+  dedicated route.
+- **Search volume** added to `keywords` (confirmed against the user's
+  own rank-tracking spreadsheet, which lists Sr. No. / Keywords /
+  Search Volume) — a plain optional number entered by hand next to
+  each tracked keyword, same manual-tracking approach as everything
+  else in Rankings.
 
 ## Deliberate scope cuts
 

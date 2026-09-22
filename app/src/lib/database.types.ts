@@ -28,6 +28,8 @@ export type InvoiceKind = 'retainer' | 'project'
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue'
 export type ReportStatus = 'draft' | 'sent'
 export type WebhookEventType = 'report.sent' | 'invoice.paid' | 'deal.won'
+export type ChecklistPriority = 'high' | 'medium' | 'low'
+export type ChecklistStatus = 'to_do' | 'in_progress' | 'done' | 'na'
 
 export interface Database {
   public: {
@@ -366,6 +368,8 @@ export interface Database {
           id: string
           label: string
           category: string | null
+          priority: ChecklistPriority | null
+          reference_tag: string | null
           sort_order: number
           active: boolean
         }
@@ -383,7 +387,7 @@ export interface Database {
           project_id: string
           template_item_id: string
           month: string
-          done: boolean
+          status: ChecklistStatus
           note: string | null
           done_by: string | null
           done_at: string | null
@@ -436,6 +440,70 @@ export interface Database {
           },
         ]
       }
+      offpage_activity_types: {
+        Row: {
+          activity_type: string
+          target_min: number
+          target_max: number
+          sort_order: number
+        }
+        Insert: Partial<Database['public']['Tables']['offpage_activity_types']['Row']> & {
+          activity_type: string
+          target_min: number
+          target_max: number
+        }
+        Update: Partial<Database['public']['Tables']['offpage_activity_types']['Row']>
+        Relationships: []
+      }
+      offpage_recurring_runs: {
+        Row: {
+          id: string
+          project_id: string
+          month: string
+          task_key: string
+          instance_key: string
+          done: boolean
+          done_by: string | null
+          done_at: string | null
+        }
+        Insert: Partial<Database['public']['Tables']['offpage_recurring_runs']['Row']> & {
+          project_id: string
+          month: string
+          task_key: string
+        }
+        Update: Partial<Database['public']['Tables']['offpage_recurring_runs']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'offpage_recurring_runs_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      offpage_notes: {
+        Row: {
+          project_id: string
+          month: string
+          note: string | null
+          updated_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['offpage_notes']['Row']> & {
+          project_id: string
+          month: string
+        }
+        Update: Partial<Database['public']['Tables']['offpage_notes']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'offpage_notes_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       keywords: {
         Row: {
           id: string
@@ -443,6 +511,7 @@ export interface Database {
           phrase: string
           target_url: string | null
           target_rank: number | null
+          search_volume: number | null
           archived: boolean
           created_at: string
         }
@@ -1277,6 +1346,8 @@ export interface Database {
       invoice_status: InvoiceStatus
       report_status: ReportStatus
       webhook_event_type: WebhookEventType
+      checklist_priority: ChecklistPriority
+      checklist_status: ChecklistStatus
     }
     CompositeTypes: Record<string, never>
   }

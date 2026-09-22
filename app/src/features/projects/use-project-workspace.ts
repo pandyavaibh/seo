@@ -86,7 +86,7 @@ export function useProjectWorkspace(projectId: string | undefined) {
         supabase.from('checklist_template_items').select('id').eq('active', true),
         supabase
           .from('checklist_runs')
-          .select('template_item_id, done')
+          .select('template_item_id, status')
           .eq('project_id', projectId!)
           .eq('month', month),
         supabase
@@ -118,7 +118,7 @@ export function useProjectWorkspace(projectId: string | undefined) {
       }
 
       const doneItemIds = new Set(
-        (checklistRunsRes.data ?? []).filter((r) => r.done).map((r) => r.template_item_id),
+        (checklistRunsRes.data ?? []).filter((r) => r.status === 'done').map((r) => r.template_item_id),
       )
 
       return {

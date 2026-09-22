@@ -7,6 +7,7 @@ export interface KeywordRow {
   phrase: string
   targetUrl: string | null
   targetRank: number | null
+  searchVolume: number | null
   latestRank: number | null
   latestCheckedOn: string | null
   previousRank: number | null
@@ -32,7 +33,7 @@ export function useKeywords(projectId: string | undefined) {
       const [keywordsRes, checksRes] = await Promise.all([
         supabase
           .from('keywords')
-          .select('id, phrase, target_url, target_rank')
+          .select('id, phrase, target_url, target_rank, search_volume')
           .eq('project_id', projectId!)
           .eq('archived', false)
           .order('phrase'),
@@ -60,6 +61,7 @@ export function useKeywords(projectId: string | undefined) {
           phrase: k.phrase,
           targetUrl: k.target_url,
           targetRank: k.target_rank,
+          searchVolume: k.search_volume,
           latestRank: checks[0]?.rank ?? null,
           latestCheckedOn: checks[0]?.checked_on ?? null,
           previousRank: checks[1]?.rank ?? null,
@@ -104,6 +106,22 @@ export function useSetKeywordTarget(projectId: string) {
       const { error } = await supabase
         .from('keywords')
         .update({ target_rank: input.targetRank })
+        .eq('id', input.keywordId)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['keywords', projectId] })
+    },
+  })
+}
+
+export function useSetSearchVolume(projectId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: { keywordId: string; searchVolume: number | null }) => {
+      const { error } = await supabase
+        .from('keywords')
+        .update({ search_volume: input.searchVolume })
         .eq('id', input.keywordId)
       if (error) throw new Error(error.message)
     },

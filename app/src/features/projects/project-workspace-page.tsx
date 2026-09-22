@@ -10,6 +10,7 @@ import { ProgressBar } from '@/components/ui/progress-bar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useTeamMembers } from '@/features/accounts/use-account'
 import { useAccountPerformance } from '@/features/accounts/use-account-performance'
+import { ProjectSubNav } from '@/features/checklist/project-sub-nav'
 import { useCurrentMember } from '@/features/team/use-current-member'
 import {
   useAddBacklink,
@@ -23,6 +24,7 @@ import {
   useKeywords,
   useLogRank,
   useSetKeywordTarget,
+  useSetSearchVolume,
   type KeywordRow,
 } from '@/features/projects/use-keywords'
 import {
@@ -429,9 +431,13 @@ function RankKeywordRow({ keyword, projectId }: { keyword: KeywordRow; projectId
   const { data: currentMember } = useCurrentMember()
   const logRank = useLogRank(projectId)
   const setTarget = useSetKeywordTarget(projectId)
+  const setVolume = useSetSearchVolume(projectId)
   const [rankInput, setRankInput] = React.useState('')
   const [targetInput, setTargetInput] = React.useState(
     keyword.targetRank != null ? String(keyword.targetRank) : '',
+  )
+  const [volumeInput, setVolumeInput] = React.useState(
+    keyword.searchVolume != null ? String(keyword.searchVolume) : '',
   )
 
   const hitTarget = keyword.targetRank != null && keyword.latestRank != null && keyword.latestRank <= keyword.targetRank
@@ -473,6 +479,21 @@ function RankKeywordRow({ keyword, projectId }: { keyword: KeywordRow; projectId
       </td>
       <td className="p-[11px_12px] font-mono text-[11px] text-ink-muted">
         {keyword.latestCheckedOn ?? '—'}
+      </td>
+      <td className="p-[11px_12px]">
+        <input
+          value={volumeInput}
+          onChange={(e) => setVolumeInput(e.target.value)}
+          onBlur={() => {
+            const next = volumeInput.trim() ? Number(volumeInput) : null
+            if (next !== keyword.searchVolume) {
+              setVolume.mutate({ keywordId: keyword.id, searchVolume: next })
+            }
+          }}
+          placeholder="—"
+          inputMode="numeric"
+          className="w-[64px] text-[12px] font-mono border border-border rounded-[6px] px-1 py-1"
+        />
       </td>
       <td className="p-[11px_12px]">
         <div className="flex items-center gap-[4px]">
@@ -625,6 +646,9 @@ function RankingsSection({ projectId }: { projectId: string }) {
                       </th>
                       <th className="p-[9px_12px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
                         Checked
+                      </th>
+                      <th className="p-[9px_12px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
+                        Search vol.
                       </th>
                       <th className="p-[9px_12px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light">
                         Target
@@ -1220,6 +1244,8 @@ export function ProjectWorkspacePage() {
         />
       )}
 
+      <ProjectSubNav projectId={ws.id} active="keywords" />
+
       <section className="flex flex-wrap gap-3 items-start">
         <div className="flex-[1_1_460px] min-w-0 bg-surface border border-border rounded-[12px] overflow-hidden">
           <div className="flex items-baseline justify-between gap-3 p-[14px_18px] border-b border-border-light">
@@ -1291,7 +1317,12 @@ export function ProjectWorkspacePage() {
             <CardContent className="p-[16px_18px] flex flex-col gap-[13px]">
               <div className="flex flex-col gap-[6px]">
                 <div className="flex items-baseline justify-between gap-[10px]">
-                  <span className="text-[12.5px]">Checklist complete</span>
+                  <button
+                    onClick={() => navigate(`/projects/${ws.id}/checklist`)}
+                    className="border-none bg-transparent p-0 cursor-pointer text-[12.5px] text-brand hover:underline"
+                  >
+                    Checklist complete
+                  </button>
                   <span className="font-mono text-[11.5px] text-ink-secondary">
                     {ws.checklist.total > 0
                       ? `${ws.checklist.done} / ${ws.checklist.total}`
@@ -1305,7 +1336,12 @@ export function ProjectWorkspacePage() {
               </div>
               <div className="flex flex-col gap-[6px]">
                 <div className="flex items-baseline justify-between gap-[10px]">
-                  <span className="text-[12.5px]">Links live</span>
+                  <button
+                    onClick={() => navigate(`/projects/${ws.id}/offpage`)}
+                    className="border-none bg-transparent p-0 cursor-pointer text-[12.5px] text-brand hover:underline"
+                  >
+                    Links live
+                  </button>
                   <span className="font-mono text-[11.5px] text-ink-secondary">
                     {ws.linksLiveThisMonth} / {ws.linkTarget}
                   </span>
