@@ -132,27 +132,30 @@ it disabled) — name, website, industry, retainer, hours budget, renewal
 date, straight into `accounts` via the RLS policy that already existed.
 Contacts and engagements still have no add-UI (see above).
 
-## Where things stand across all seven stages
+## Where things stand across all eight stages
 
 Stage 0 (foundation), Stage 1 (Clients + Account record), Stage 2 core
 slice (Project workspace), Stage 3 core slice (Capacity & strength),
 Stage 4 (Search performance, full GSC/GA4 detail, nightly sync wired),
 Stage 5 (backlink production — see `docs/STAGE_5.md`), Stage 6 (social
-and lead capture — see `docs/STAGE_6.md`), and Stage 7 (reporting,
-client portal, billing — see `docs/STAGE_7.md`) are all live and
-cross-linked. Every gap this file used to list here is closed:
-deals/lead pipeline (`/deals`), contacts (add/edit/remove on the
-Account record), staffing (both per-project and the Capacity page's
-allocation planner), template library + apply-to-project + recurring
-monthly generation (`/templates`), leave/availability (Capacity page),
-account record's stat tiles (real Stage 4 numbers), the project-level
-KPI/OKR report (keyword targets in Rankings, traffic/conversions vs
-goal, custom KPIs), backlink tracking (prospect → outreach → placed,
-manual, on the project workspace), social/lead capture (Meta
-connection, content calendar, UTM builder, standardized lead source),
-and reporting/portal/billing (report builder with PDF export, a real
-client portal, invoices/expenses, admin-only profitability) — see each
-feature's own commit message for the reasoning behind it.
+and lead capture — see `docs/STAGE_6.md`), Stage 7 (reporting, client
+portal, billing — see `docs/STAGE_7.md`), and Stage 8 (intelligence —
+see `docs/STAGE_8.md`) are all live and cross-linked. Every gap this
+file used to list here is closed: deals/lead pipeline (`/deals`),
+contacts (add/edit/remove on the Account record), staffing (both
+per-project and the Capacity page's allocation planner), template
+library + apply-to-project + recurring monthly generation
+(`/templates`), leave/availability (Capacity page), account record's
+stat tiles (real Stage 4 numbers), the project-level KPI/OKR report
+(keyword targets in Rankings, traffic/conversions vs goal, custom
+KPIs), backlink tracking (prospect → outreach → placed, manual, on the
+project workspace), social/lead capture (Meta connection, content
+calendar, UTM builder, standardized lead source), reporting/portal/
+billing (report builder with PDF export, a real client portal,
+invoices/expenses, admin-only profitability), and intelligence
+(traffic forecasting, anomaly detection, rule-based report commentary,
+churn-risk scoring, a public API with webhooks) — see each feature's
+own commit message for the reasoning behind it.
 
 What's still actually open: the Google Cloud service account itself
 (nothing Stage 4 does is real until that exists — every account
@@ -168,4 +171,8 @@ needs a paid API, cut per the user's no-paid-plan decision; see
 webhook ingestion — that needs Meta App Review, an external approval
 gate; see `docs/STAGE_6.md`. Stage 7 deliberately has no payment
 processor and no recurring auto-scheduled report email — see
-`docs/STAGE_7.md`.
+`docs/STAGE_7.md`. Stage 8 deliberately has no LLM-written report
+commentary (rule-based instead, per the user's scoping decision) and
+no churn-risk badge on the Clients list (per-account detail view only)
+— see `docs/STAGE_8.md`. Stage 8 is explicitly "ongoing" per the plan
+doc, not a stage with a defined finish line the way 0–7 were.

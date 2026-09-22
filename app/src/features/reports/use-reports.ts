@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { generateCommentary } from '@/features/intelligence/report-commentary'
 import type { ReportStatus } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
 
@@ -12,6 +13,7 @@ export interface ReportSnapshot {
   keywordsImproved: number
   keywordsDeclined: number
   keywordsTracked: number
+  commentary: string[]
 }
 
 export interface ReportRow {
@@ -50,8 +52,20 @@ export function useReports(accountId: string | undefined) {
   })
 }
 
+function previousPeriod(periodStart: string, periodEnd: string) {
+  const start = new Date(`${periodStart}T00:00:00Z`)
+  const end = new Date(`${periodEnd}T00:00:00Z`)
+  const lengthDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1
+  const prevEnd = new Date(start.getTime() - 86400000)
+  const prevStart = new Date(prevEnd.getTime() - (lengthDays - 1) * 86400000)
+  const iso = (d: Date) => d.toISOString().slice(0, 10)
+  return { prevStart: iso(prevStart), prevEnd: iso(prevEnd) }
+}
+
 async function buildSnapshot(accountId: string, periodStart: string, periodEnd: string): Promise<ReportSnapshot> {
-  const [searchRes, ga4Res, metaRes, projectsRes] = await Promise.all([
+  const { prevStart, prevEnd } = previousPeriod(periodStart, periodEnd)
+
+  const [searchRes, ga4Res, metaRes, projectsRes, prevSearchRes, prevGa4Res] = await Promise.all([
     supabase
       .from('metric_snapshots')
       .select('metric_key, value')
@@ -74,8 +88,22 @@ async function buildSnapshot(accountId: string, periodStart: string, periodEnd: 
       .gte('snapshot_date', periodStart)
       .lte('snapshot_date', periodEnd),
     supabase.from('projects').select('id, name').eq('account_id', accountId),
+    supabase
+      .from('metric_snapshots')
+      .select('metric_key, value')
+      .eq('account_id', accountId)
+      .eq('source', 'gsc')
+      .gte('snapshot_date', prevStart)
+      .lte('snapshot_date', prevEnd),
+    supabase
+      .from('metric_snapshots')
+      .select('metric_key, value')
+      .eq('account_id', accountId)
+      .eq('source', 'ga4')
+      .gte('snapshot_date', prevStart)
+      .lte('snapshot_date', prevEnd),
   ])
-  for (const res of [searchRes, ga4Res, metaRes, projectsRes]) {
+  for (const res of [searchRes, ga4Res, metaRes, projectsRes, prevSearchRes, prevGa4Res]) {
     if (res.error) throw new Error(res.error.message)
   }
 
@@ -93,6 +121,13 @@ async function buildSnapshot(accountId: string, periodStart: string, periodEnd: 
         reach: sumBy(metaRes.data, 'fb_reach') + sumBy(metaRes.data, 'ig_reach'),
         engagement: sumBy(metaRes.data, 'fb_engagement') + sumBy(metaRes.data, 'ig_engagement'),
       }
+    : null
+
+  const previousSearch = prevSearchRes.data && prevSearchRes.data.length > 0
+    ? { clicks: sumBy(prevSearchRes.data, 'clicks'), impressions: sumBy(prevSearchRes.data, 'impressions') }
+    : null
+  const previousGa4 = prevGa4Res.data && prevGa4Res.data.length > 0
+    ? { sessions: sumBy(prevGa4Res.data, 'sessions'), conversions: sumBy(prevGa4Res.data, 'conversions') }
     : null
 
   const projects = projectsRes.data ?? []
@@ -152,7 +187,19 @@ async function buildSnapshot(accountId: string, periodStart: string, periodEnd: 
     }
   }
 
-  return { search, ga4, meta, tasksCompleted, linksPlaced, keywordsImproved, keywordsDeclined, keywordsTracked }
+  const commentary = generateCommentary({
+    search,
+    previousSearch,
+    ga4,
+    previousGa4,
+    keywordsImproved,
+    keywordsDeclined,
+    keywordsTracked,
+    linksPlaced: linksPlaced.length,
+    tasksCompleted: tasksCompleted.length,
+  })
+
+  return { search, ga4, meta, tasksCompleted, linksPlaced, keywordsImproved, keywordsDeclined, keywordsTracked, commentary }
 }
 
 export function useGenerateReport(accountId: string) {

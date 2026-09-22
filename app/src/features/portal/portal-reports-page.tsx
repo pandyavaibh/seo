@@ -54,6 +54,13 @@ export function PortalReportsPage() {
                   <span className="text-[16px] font-semibold">{r.snapshot.tasksCompleted.length}</span>
                 </div>
               </div>
+              {r.snapshot.commentary && r.snapshot.commentary.length > 0 && (
+                <ul className="m-0 pl-[18px] flex flex-col gap-[3px] text-[12.5px] text-ink-secondary">
+                  {r.snapshot.commentary.map((line, i) => (
+                    <li key={i}>{line}</li>
+                  ))}
+                </ul>
+              )}
               {r.nextMonthPlan && (
                 <p className="m-0 text-[12.5px] text-ink-secondary whitespace-pre-wrap">{r.nextMonthPlan}</p>
               )}

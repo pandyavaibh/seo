@@ -6,6 +6,7 @@ import { AccountRecordPage } from '@/features/accounts/account-record-page'
 import { ClientsListPage } from '@/features/accounts/clients-list-page'
 import { BillingPage } from '@/features/billing/billing-page'
 import { CapacityPage } from '@/features/capacity/capacity-page'
+import { DeveloperPage } from '@/features/developer/developer-page'
 import { DealsListPage } from '@/features/deals/deals-list-page'
 import { PortalDashboardPage } from '@/features/portal/portal-dashboard-page'
 import { PortalInvoicesPage } from '@/features/portal/portal-invoices-page'
@@ -45,6 +46,7 @@ export function App() {
               <Route path="/templates" element={<TemplatesListPage />} />
               <Route path="/capacity" element={<CapacityPage />} />
               <Route path="/utm-builder" element={<UtmBuilderPage />} />
+            <Route path="/developer" element={<DeveloperPage />} />
               <Route path="/" element={<Navigate to="/clients" replace />} />
             </Route>
           </Route>

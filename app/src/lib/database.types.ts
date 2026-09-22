@@ -27,6 +27,7 @@ export type ExpenseCategory = 'link_cost' | 'tool' | 'other'
 export type InvoiceKind = 'retainer' | 'project'
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue'
 export type ReportStatus = 'draft' | 'sent'
+export type WebhookEventType = 'report.sent' | 'invoice.paid' | 'deal.won'
 
 export interface Database {
   public: {
@@ -1183,6 +1184,60 @@ export interface Database {
           },
         ]
       }
+      api_keys: {
+        Row: {
+          id: string
+          account_id: string | null
+          label: string
+          key_hash: string
+          key_prefix: string
+          created_by: string | null
+          created_at: string
+          revoked_at: string | null
+        }
+        Insert: Partial<Database['public']['Tables']['api_keys']['Row']> & {
+          label: string
+          key_hash: string
+          key_prefix: string
+        }
+        Update: Partial<Database['public']['Tables']['api_keys']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'api_keys_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      webhook_subscriptions: {
+        Row: {
+          id: string
+          account_id: string | null
+          url: string
+          event_type: WebhookEventType
+          secret: string
+          active: boolean
+          created_by: string | null
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['webhook_subscriptions']['Row']> & {
+          url: string
+          event_type: WebhookEventType
+          secret: string
+        }
+        Update: Partial<Database['public']['Tables']['webhook_subscriptions']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'webhook_subscriptions_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       audit_log: {
         Row: {
           id: number
@@ -1199,7 +1254,12 @@ export interface Database {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      create_api_key: {
+        Args: { p_account_id: string | null; p_label: string }
+        Returns: string
+      }
+    }
     Enums: {
       member_role: MemberRole
       account_health: AccountHealth
@@ -1216,6 +1276,7 @@ export interface Database {
       invoice_kind: InvoiceKind
       invoice_status: InvoiceStatus
       report_status: ReportStatus
+      webhook_event_type: WebhookEventType
     }
     CompositeTypes: Record<string, never>
   }

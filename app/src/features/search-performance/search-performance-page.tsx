@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { useAccount } from '@/features/accounts/use-account'
+import { ForecastAnomalyCard } from '@/features/intelligence/forecast-anomaly-card'
 import {
   useSearchPerformance,
   useSetSearchConnection,
@@ -345,6 +346,12 @@ export function SearchPerformancePage() {
                 <StatTile label="Average CTR" value={`${(avgCtr * 100).toFixed(1)}%`} />
                 <StatTile label="Average position" value={avgPosition.toFixed(1)} />
               </section>
+
+              <ForecastAnomalyCard
+                accountId={accountId!}
+                metricLabel="clicks"
+                points={last28Gsc.map((d) => ({ date: d.date, value: d.clicks }))}
+              />
 
               <DimensionTable
                 title="Top queries"

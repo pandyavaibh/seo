@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 
+import { useCurrentMember } from '@/features/team/use-current-member'
 import { useAuth } from '@/providers/auth-provider'
 
 const NAV_ITEMS = [
@@ -13,6 +14,10 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const { signOut } = useAuth()
+  const { data: currentMember } = useCurrentMember()
+  const navItems = currentMember?.role === 'admin'
+    ? [...NAV_ITEMS, { to: '/developer', label: 'Developer', count: null }]
+    : NAV_ITEMS
 
   return (
     <aside className="bg-sidebar text-sidebar-text flex flex-col gap-6 p-[20px_14px] min-h-screen">
@@ -26,7 +31,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex flex-col gap-[2px]">
-        {NAV_ITEMS.map((item) => (
+        {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

@@ -35,6 +35,17 @@ export function downloadReportPdf(accountName: string, report: ReportRow) {
     y += 4
   }
 
+  if (s.commentary && s.commentary.length > 0) {
+    line('Summary', 13, 8)
+    for (const c of s.commentary) {
+      const wrapped = doc.splitTextToSize(`• ${c}`, 180)
+      doc.setFontSize(10)
+      doc.text(wrapped, 14, y)
+      y += wrapped.length * 5 + 1
+    }
+    y += 3
+  }
+
   line('Keywords', 13, 8)
   line(`Tracked: ${s.keywordsTracked}   Improved: ${s.keywordsImproved}   Declined: ${s.keywordsDeclined}`)
   y += 4
