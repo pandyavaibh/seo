@@ -39,6 +39,7 @@ import { useCreateProject } from '@/features/projects/use-projects'
 import { useCurrentMember } from '@/features/team/use-current-member'
 import { initials, tintFor } from '@/lib/avatar'
 import type { AccountHealth, ActivityKind } from '@/lib/database.types'
+import { PROJECT_TYPES, PROJECT_TYPE_LABEL } from '@/lib/project-type'
 import { STAGE_LABEL, STAGE_TONE } from '@/lib/project-stage'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/providers/auth-provider'
@@ -631,8 +632,6 @@ function ContactsCard({ accountId, contacts }: { accountId: string; contacts: Co
   )
 }
 
-const PROJECT_TYPES = ['technical', 'content', 'offpage', 'local', 'migration', 'analytics']
-
 function AddProjectForm({
   accountId,
   acc,
@@ -695,7 +694,7 @@ function AddProjectForm({
             <option value="">—</option>
             {PROJECT_TYPES.map((t) => (
               <option key={t} value={t}>
-                {t}
+                {PROJECT_TYPE_LABEL[t]}
               </option>
             ))}
           </select>

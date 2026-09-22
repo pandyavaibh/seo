@@ -19,8 +19,7 @@ import { useAccounts, useOnboardClient, type OnboardTeamRow } from '@/features/a
 import { useTeamMembers } from '@/features/accounts/use-account'
 import { initials, tintFor } from '@/lib/avatar'
 import type { AccountHealth } from '@/lib/database.types'
-
-const PROJECT_TYPES = ['technical', 'content', 'offpage', 'local', 'migration', 'analytics']
+import { PROJECT_TYPES, PROJECT_TYPE_LABEL } from '@/lib/project-type'
 
 function AddClientForm({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate()
@@ -157,7 +156,7 @@ function AddClientForm({ onClose }: { onClose: () => void }) {
               <select value={projectType} onChange={(e) => setProjectType(e.target.value)} className={fieldClass}>
                 <option value="">—</option>
                 {PROJECT_TYPES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                  <option key={t} value={t}>{PROJECT_TYPE_LABEL[t]}</option>
                 ))}
               </select>
             </label>
