@@ -577,6 +577,32 @@ export interface Database {
           },
         ]
       }
+      report_schedules: {
+        Row: {
+          id: string
+          account_id: string
+          recipient_email: string
+          send_day: number
+          active: boolean
+          last_sent_period_end: string | null
+          created_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['report_schedules']['Row']> & {
+          account_id: string
+          recipient_email: string
+          send_day: number
+        }
+        Update: Partial<Database['public']['Tables']['report_schedules']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'report_schedules_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: true
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       keywords: {
         Row: {
           id: string

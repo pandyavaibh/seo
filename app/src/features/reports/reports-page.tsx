@@ -9,6 +9,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useAccount } from '@/features/accounts/use-account'
 import { downloadReportPdf } from '@/features/reports/report-pdf'
 import {
+  useReportSchedule,
+  useSaveReportSchedule,
+  useSetReportScheduleActive,
+  type ReportSchedule,
+} from '@/features/reports/use-report-schedule'
+import {
   useDeleteReport,
   useGenerateReport,
   useMarkReportSent,
@@ -214,6 +220,84 @@ function ReportCard({ accountId, accountName, report }: { accountId: string; acc
   )
 }
 
+function ScheduleForm({ accountId, schedule }: { accountId: string; schedule: ReportSchedule | null }) {
+  const save = useSaveReportSchedule(accountId)
+  const [email, setEmail] = React.useState(schedule?.recipientEmail ?? '')
+  const [sendDay, setSendDay] = React.useState(String(schedule?.sendDay ?? 1))
+
+  const fieldClass = 'text-[13px] rounded-[8px] border border-border px-3 py-2 bg-surface'
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <input
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        type="email"
+        placeholder="client@example.com"
+        className={fieldClass + ' flex-1 min-w-[160px]'}
+      />
+      <label className="flex items-center gap-2 text-[12.5px] text-ink-muted">
+        Day of month
+        <input
+          value={sendDay}
+          onChange={(e) => setSendDay(e.target.value)}
+          inputMode="numeric"
+          className={fieldClass + ' w-[60px]'}
+        />
+      </label>
+      <Button
+        size="sm"
+        disabled={!email.trim() || save.isPending}
+        onClick={() =>
+          save.mutate({ id: schedule?.id ?? null, recipientEmail: email, sendDay: Math.min(28, Math.max(1, Number(sendDay) || 1)) })
+        }
+      >
+        {schedule ? 'Update' : 'Schedule'}
+      </Button>
+      {save.isError && (
+        <p className="m-0 w-full text-[12px] text-signal-red">
+          {save.error instanceof Error ? save.error.message : 'Failed to save'}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function RecurringSendCard({ accountId }: { accountId: string }) {
+  const { data: schedule, isLoading } = useReportSchedule(accountId)
+  const setActive = useSetReportScheduleActive(accountId)
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Recurring send</CardTitle>
+        <span className="font-mono text-[11px] text-ink-muted">
+          Auto-generates and emails last month's report on the day below — needs RESEND_API_KEY set
+        </span>
+      </CardHeader>
+      <CardContent className="p-[16px_18px] flex flex-col gap-3">
+        {isLoading && <Skeleton className="h-[40px] w-full" />}
+        {!isLoading && <ScheduleForm key={schedule?.id ?? 'new'} accountId={accountId} schedule={schedule ?? null} />}
+        {!isLoading && schedule && (
+          <div className="flex items-center gap-2">
+            <Badge tone={schedule.active ? 'green' : 'neutral'}>{schedule.active ? 'Active' : 'Paused'}</Badge>
+            <button
+              onClick={() => setActive.mutate({ id: schedule.id, active: !schedule.active })}
+              disabled={setActive.isPending}
+              className="border-none bg-transparent font-mono text-[11px] text-ink-muted hover:text-ink cursor-pointer p-0"
+            >
+              {schedule.active ? 'Pause' : 'Resume'}
+            </button>
+            {schedule.lastSentPeriodEnd && (
+              <span className="font-mono text-[11px] text-ink-faint">Last sent for period ending {schedule.lastSentPeriodEnd}</span>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 export function ReportsPage() {
   const { accountId } = useParams<{ accountId: string }>()
   const navigate = useNavigate()
@@ -239,6 +323,8 @@ export function ReportsPage() {
         </div>
         {!showGenerate && <Button onClick={() => setShowGenerate(true)}>Generate report</Button>}
       </div>
+
+      {accountId && <RecurringSendCard accountId={accountId} />}
 
       {showGenerate && accountId && (
         <GenerateReportForm accountId={accountId} onClose={() => setShowGenerate(false)} />

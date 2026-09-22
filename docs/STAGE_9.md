@@ -71,6 +71,26 @@ does not).
   backstop instead, the same tradeoff every small business contact form
   makes.
 
+- **Scheduled/recurring report emails** — a new `report_schedules` table
+  (one row per account: recipient email, day of month, active/paused,
+  `last_sent_period_end` so a schedule never double-sends the same
+  month) plus a `send-scheduled-reports` Edge Function, cron-triggered
+  daily at 06:00 UTC (reusing the same `internal_config.cron_sync_secret`
+  Stage 4's nightly sync introduced — one internal call-auth token for
+  every cron-driven function, not a new credential). Unlike the manual
+  "Generate report" flow, this runs fully unattended: the report
+  snapshot computation (`buildSnapshot`/`generateCommentary`, the same
+  pure logic `use-reports.ts` already used client-side) is ported into
+  the Edge Function itself, so no staff action is needed before the
+  send — the `next_month_plan` field, the one genuinely manual part of
+  a report, is simply left blank on an auto-generated one. A
+  "Recurring send" card on the Reports page lets an admin/manager set
+  or pause a schedule per account. Still blocked on the same
+  `RESEND_API_KEY` Stage 7 already flagged as open (your action, not
+  code) — until it exists, the function still generates and stores the
+  report each month, just doesn't send it, and says so per-account in
+  its response rather than failing silently.
+
 ## Deliberate scope cuts
 
 - **No keyword research, keyword difficulty, or backlink index** — the
@@ -82,11 +102,6 @@ does not).
   free tiers so it's buildable, but it's a separate scoped decision
   (sender domain/DNS setup, deliverability, unsubscribe handling) not
   bundled into this stage without asking first.
-- **No scheduled/recurring report emails** — Stage 7 already has manual
-  "send" on a built report; turning that into a schedule needs the same
-  kind of `pg_cron` + Edge Function infrastructure Stage 4's nightly
-  sync uses, and is still blocked on the same `RESEND_API_KEY` Stage 7
-  already flagged as open (your action, not code).
 - **No real spam rate-limiting on the lead form** — see above; RLS plus
   the honeypot plus staff triage is the free-tier answer, not a
   dedicated rate-limit store.
