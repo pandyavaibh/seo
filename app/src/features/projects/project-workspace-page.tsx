@@ -343,7 +343,7 @@ function DeleteProjectConfirm({
           onClick={() =>
             deleteProject.mutate(undefined, {
               onSuccess: () =>
-                navigate(accountId ? `/clients/${accountId}` : '/projects'),
+                navigate(accountId ? `/clients/${accountId}` : '/clients'),
             })
           }
           className="!bg-signal-red !border-signal-red hover:!bg-[#8E3C10]"
@@ -1144,7 +1144,7 @@ export function ProjectWorkspacePage() {
     <div className="flex flex-col gap-4">
       <button
         onClick={() =>
-          ws.accountId ? navigate(`/clients/${ws.accountId}`) : navigate('/projects')
+          ws.accountId ? navigate(`/clients/${ws.accountId}`) : navigate('/clients')
         }
         className="self-start flex items-center gap-1 border-none bg-transparent font-mono text-[11px] tracking-[0.1em] uppercase text-ink-muted hover:text-ink cursor-pointer p-0"
       >

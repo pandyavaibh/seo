@@ -1081,7 +1081,19 @@ export interface Database {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      list_accounts_directory: {
+        Args: Record<string, never>
+        Returns: {
+          id: string
+          name: string
+          website: string | null
+          industry: string | null
+          health: AccountHealth
+          renewal_on: string | null
+        }[]
+      }
+    }
     Enums: {
       member_role: MemberRole
       account_health: AccountHealth

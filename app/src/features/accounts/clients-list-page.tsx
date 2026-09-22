@@ -15,8 +15,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useAccounts, useOnboardClient, type OnboardTeamRow } from '@/features/accounts/use-accounts'
+import {
+  useClientsAndEngagements,
+  useOnboardClient,
+  type EngagementListItem,
+  type OnboardTeamRow,
+} from '@/features/accounts/use-accounts'
 import { useTeamMembers } from '@/features/accounts/use-account'
+import { useCurrentMember } from '@/features/team/use-current-member'
 import { initials, tintFor } from '@/lib/avatar'
 import type { AccountHealth } from '@/lib/database.types'
 import { PROJECT_TYPES, PROJECT_TYPE_LABEL } from '@/lib/project-type'
@@ -305,6 +311,12 @@ const HEALTH_LABEL: Record<AccountHealth, string> = {
   at_risk: 'At risk',
 }
 
+const ENGAGEMENT_STATUS_TONE: Record<string, PillTone> = {
+  active: 'green',
+  paused: 'amber',
+  shipped: 'neutral',
+}
+
 function isRenewalSoon(renewalOn: string | null) {
   if (!renewalOn) return false
   const days =
@@ -312,24 +324,75 @@ function isRenewalSoon(renewalOn: string | null) {
   return days >= 0 && days <= 90
 }
 
+function EngagementsTable({ engagements }: { engagements: EngagementListItem[] }) {
+  const navigate = useNavigate()
+
+  if (engagements.length === 0) {
+    return <p className="m-0 text-[12.5px] text-ink-muted">No engagements yet.</p>
+  }
+
+  return (
+    <Table className="min-w-[560px]">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Engagement</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Staffed</TableHead>
+          <TableHead>Link target</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {engagements.map((e) => (
+          <TableRow key={e.id} clickable onClick={() => navigate(`/projects/${e.id}`)}>
+            <TableCell className="font-medium text-[13.5px]">{e.name}</TableCell>
+            <TableCell>
+              <Badge tone={ENGAGEMENT_STATUS_TONE[e.status] ?? 'neutral'}>{e.status}</Badge>
+            </TableCell>
+            <TableCell>
+              <div className="flex gap-[3px]">
+                {e.staffed.map((m, i) => (
+                  <span
+                    key={m.id}
+                    title={m.name}
+                    className="w-6 h-6 rounded-full grid place-items-center font-mono text-[10px] font-semibold"
+                    style={{ background: tintFor(i) }}
+                  >
+                    {initials(m.name)}
+                  </span>
+                ))}
+              </div>
+            </TableCell>
+            <TableCell className="font-mono text-[12px] text-ink-secondary">{e.linkTarget}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  )
+}
+
 export function ClientsListPage() {
   const navigate = useNavigate()
   const { data, isLoading, isError, error, refetch, isFetching } =
-    useAccounts()
+    useClientsAndEngagements()
+  const { data: currentMember } = useCurrentMember()
+  const canAddClient = currentMember?.role === 'admin' || currentMember?.role === 'manager'
   const [showAddForm, setShowAddForm] = React.useState(false)
+
+  const totalEngagements =
+    data ? data.clients.reduce((s, c) => s + c.engagements.length, 0) + data.unlinkedEngagements.length : 0
 
   return (
     <div className="flex flex-col gap-[18px]">
       <div className="flex flex-wrap gap-3 items-end justify-between">
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[11px] tracking-[0.14em] uppercase text-ink-muted">
-            {data ? `${data.length} accounts` : 'Loading…'}
+            {data ? `${data.clients.length} clients · ${totalEngagements} engagements` : 'Loading…'}
           </span>
           <h1 className="m-0 text-[25px] font-semibold tracking-[-0.02em]">
             Clients
           </h1>
         </div>
-        {!showAddForm && (
+        {canAddClient && !showAddForm && (
           <Button onClick={() => setShowAddForm(true)}>Add client</Button>
         )}
       </div>
@@ -342,9 +405,7 @@ export function ClientsListPage() {
             <AlertTriangle size={14} /> Couldn't load clients
           </AlertTitle>
           <AlertDescription>
-            {error instanceof Error ? error.message : 'Unknown error'}. Only
-            admins and managers can see accounts — this could be a real
-            permissions problem, not an empty table.
+            {error instanceof Error ? error.message : 'Unknown error'}
           </AlertDescription>
           <div>
             <Button
@@ -367,7 +428,7 @@ export function ClientsListPage() {
         </div>
       )}
 
-      {!isError && !isLoading && data && data.length === 0 && (
+      {!isError && !isLoading && data && data.clients.length === 0 && (
         <div className="bg-surface border border-border rounded-[12px] p-[40px] flex flex-col items-center gap-2 text-center">
           <Building2 className="text-ink-faint" size={28} />
           <p className="m-0 font-medium text-[14px]">No clients yet</p>
@@ -378,73 +439,55 @@ export function ClientsListPage() {
         </div>
       )}
 
-      {!isError && !isLoading && data && data.length > 0 && (
-        <div className="bg-surface border border-border rounded-[12px] overflow-hidden">
-          <Table className="min-w-[860px]">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Account</TableHead>
-                <TableHead>Health</TableHead>
-                <TableHead>Engagements</TableHead>
-                <TableHead>Staffed</TableHead>
-                <TableHead>Renewal</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((a) => (
-                <TableRow
-                  key={a.id}
-                  clickable
-                  onClick={() => navigate(`/clients/${a.id}`)}
-                >
-                  <TableCell>
-                    <div className="flex flex-col gap-[2px]">
-                      <span className="font-medium text-[13.5px]">
-                        {a.name}
-                      </span>
-                      {a.website && (
-                        <span className="font-mono text-[10.5px] text-ink-muted">
-                          {a.website}
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge tone={HEALTH_TONE[a.health]}>
-                      {HEALTH_LABEL[a.health]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-ink-secondary">
-                    {a.engagementCount}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-[3px]">
-                      {a.staffed.map((m, i) => (
-                        <span
-                          key={m.id}
-                          title={m.name}
-                          className="w-6 h-6 rounded-full grid place-items-center font-mono text-[10px] font-semibold"
-                          style={{ background: tintFor(i) }}
-                        >
-                          {initials(m.name)}
-                        </span>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell
-                    className={
-                      'font-mono text-[12px] ' +
-                      (isRenewalSoon(a.renewalOn)
-                        ? 'text-signal-amber'
-                        : 'text-ink-secondary')
-                    }
-                  >
-                    {a.renewalOn ?? '—'}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+      {!isError && !isLoading && data && data.clients.length > 0 && (
+        <div className="flex flex-col gap-3">
+          {data.clients.map((c) => (
+            <Card key={c.id}>
+              <CardHeader
+                className="cursor-pointer"
+                onClick={() => navigate(`/clients/${c.id}`)}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3 w-full">
+                  <div className="flex flex-col gap-[2px]">
+                    <CardTitle>{c.name}</CardTitle>
+                    {c.website && (
+                      <span className="font-mono text-[10.5px] text-ink-muted">{c.website}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Badge tone={HEALTH_TONE[c.health]}>{HEALTH_LABEL[c.health]}</Badge>
+                    <span
+                      className={
+                        'font-mono text-[12px] ' +
+                        (isRenewalSoon(c.renewalOn) ? 'text-signal-amber' : 'text-ink-secondary')
+                      }
+                    >
+                      {c.renewalOn ? `Renews ${c.renewalOn}` : 'No renewal set'}
+                    </span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0 overflow-x-auto">
+                <EngagementsTable engagements={c.engagements} />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {!isError && !isLoading && data && data.unlinkedEngagements.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <h2 className="m-0 font-mono text-[12px] tracking-[0.08em] uppercase text-ink-muted">
+            Unlinked engagements
+          </h2>
+          <p className="m-0 text-[12.5px] text-ink-muted">
+            Not tied to a client account — internal or ops work.
+          </p>
+          <Card>
+            <CardContent className="p-0 overflow-x-auto">
+              <EngagementsTable engagements={data.unlinkedEngagements} />
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>

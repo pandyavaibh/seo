@@ -112,6 +112,44 @@ the account-level and project-workspace "links this month" rollups
 (`use-account-performance.ts`, `use-project-workspace.ts`) now sum from
 the same entries table over the same month's date range instead.
 
+## Clients and Engagements merged
+
+Two separate top-level sections — Clients (`/clients`, accounts only,
+admin/manager-only RLS) and Engagements (`/projects`, all projects,
+visible to any staff member for their own assigned work) — merged into
+one, by request: "merge with all the information, because we are not
+sharing client budget or payment related terms." Now:
+
+- **One nav item, "Clients."** The `/projects` list route, its page,
+  and the "Engagements" sidebar link are gone. `/projects/:projectId`
+  (the engagement workspace) is untouched — reached from the merged
+  list instead of a standalone index.
+- **Each client is a card** with its account info (name, website,
+  health, renewal) and a nested table of its engagements (name,
+  status, staffed, link target) — nothing hidden behind a click that
+  wasn't already one click away before. Engagements with no
+  `account_id` (bare/ops projects) list in an "Unlinked engagements"
+  section at the bottom, same as the old Engagements page showed them.
+- **Opened to every staff member**, not just admin/manager — the
+  explicit reasoning above. `list_accounts_directory()` is a new
+  `SECURITY DEFINER` function returning only `id, name, website,
+  industry, health, renewal_on` (no `retainer_cents`, `hours_budget`,
+  `notes`, or `account_manager_id`) to any `is_staff()` caller. It's a
+  function rather than a wider `accounts_read` policy specifically
+  because RLS is row-level, not column-level — a broader policy on the
+  table itself would have leaked retainer/budget along with it. The
+  Account record page (`/clients/:id`, full row, edit form) and
+  Billing still read straight from `accounts` under the original
+  admin/manager-only policy, unchanged — this only widens the roster.
+  A member still only sees the engagements they're assigned to under
+  each client (`projects_read`'s existing scope, untouched), so this
+  purely adds client context they didn't have before, nothing new
+  about who's staffed where.
+- "Add client" only shows for admin/manager (client-side, matching the
+  unchanged server-side write policy).
+
+(`supabase/migrations/20260922260000_merge_clients_engagements.sql`)
+
 ## Removed by request
 
 Several features were removed at the user's request while browsing the

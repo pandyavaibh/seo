@@ -3,10 +3,7 @@ import { NavLink } from 'react-router-dom'
 import { useCurrentMember } from '@/features/team/use-current-member'
 import { useAuth } from '@/providers/auth-provider'
 
-const NAV_ITEMS = [
-  { to: '/clients', label: 'Clients', count: null },
-  { to: '/projects', label: 'Engagements', count: null },
-]
+const NAV_ITEMS = [{ to: '/clients', label: 'Clients', count: null }]
 
 export function Sidebar() {
   const { signOut } = useAuth()

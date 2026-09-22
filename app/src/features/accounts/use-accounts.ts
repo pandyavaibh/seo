@@ -3,67 +3,94 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { AccountHealth } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
 
-export interface AccountListItem {
+// ---------------------------------------------------------------------
+// Clients + Engagements, merged into one roster.
+//
+// The old Clients page read straight from `accounts` (admin/manager
+// only). This one reads through list_accounts_directory() instead —
+// a SECURITY DEFINER function open to every staff member, returning
+// only non-financial columns (no retainer_cents/hours_budget/notes,
+// which stay behind the unchanged admin/manager-only accounts_read
+// policy on the Account record page and Billing). Engagements nest
+// under their account; a member sees only the engagements they're
+// assigned to (projects_read's existing scope), same as the old
+// Engagements page — this just adds client context they didn't have
+// before. Bare engagements (no account_id — internal/ops work) list
+// separately, same as the old Engagements page showed them.
+// ---------------------------------------------------------------------
+
+export interface EngagementListItem {
   id: string
   name: string
-  website: string | null
-  health: AccountHealth
-  renewalOn: string | null
-  engagementCount: number
+  status: string
+  linkTarget: number
   staffed: { id: string; name: string }[]
 }
 
-export function useAccounts() {
+export interface ClientWithEngagements {
+  id: string
+  name: string
+  website: string | null
+  industry: string | null
+  health: AccountHealth
+  renewalOn: string | null
+  engagements: EngagementListItem[]
+}
+
+export interface ClientsAndEngagements {
+  clients: ClientWithEngagements[]
+  unlinkedEngagements: EngagementListItem[]
+}
+
+export function useClientsAndEngagements() {
   return useQuery({
-    queryKey: ['accounts'],
-    queryFn: async (): Promise<AccountListItem[]> => {
-      const [accountsRes, projectsRes] = await Promise.all([
-        supabase
-          .from('accounts')
-          .select('id, name, website, health, renewal_on')
-          .order('name'),
+    queryKey: ['clients-and-engagements'],
+    queryFn: async (): Promise<ClientsAndEngagements> => {
+      const [directoryRes, projectsRes] = await Promise.all([
+        supabase.rpc('list_accounts_directory'),
         supabase
           .from('projects')
           .select(
-            'id, account_id, assignments(member_id, team_members(id, name))',
+            'id, name, account_id, status, link_target, assignments(member_id, team_members(id, name))',
           )
-          .not('account_id', 'is', null),
+          .order('name'),
       ])
-
-      if (accountsRes.error) throw new Error(accountsRes.error.message)
+      if (directoryRes.error) throw new Error(directoryRes.error.message)
       if (projectsRes.error) throw new Error(projectsRes.error.message)
 
-      const projectsByAccount = new Map<
-        string,
-        { count: number; staffed: Map<string, string> }
-      >()
+      const toEngagement = (p: NonNullable<typeof projectsRes.data>[number]): EngagementListItem => ({
+        id: p.id,
+        name: p.name,
+        status: p.status,
+        linkTarget: p.link_target,
+        staffed: (p.assignments ?? [])
+          .map((a) => a.team_members)
+          .filter((m): m is { id: string; name: string } => m != null),
+      })
+
+      const engagementsByAccount = new Map<string, EngagementListItem[]>()
+      const unlinkedEngagements: EngagementListItem[] = []
       for (const p of projectsRes.data ?? []) {
-        if (!p.account_id) continue
-        const entry = projectsByAccount.get(p.account_id) ?? {
-          count: 0,
-          staffed: new Map<string, string>(),
+        if (!p.account_id) {
+          unlinkedEngagements.push(toEngagement(p))
+          continue
         }
-        entry.count += 1
-        for (const a of p.assignments ?? []) {
-          if (a.team_members) entry.staffed.set(a.team_members.id, a.team_members.name)
-        }
-        projectsByAccount.set(p.account_id, entry)
+        const list = engagementsByAccount.get(p.account_id) ?? []
+        list.push(toEngagement(p))
+        engagementsByAccount.set(p.account_id, list)
       }
 
-      return (accountsRes.data ?? []).map((a) => {
-        const linked = projectsByAccount.get(a.id)
-        return {
-          id: a.id,
-          name: a.name,
-          website: a.website,
-          health: a.health,
-          renewalOn: a.renewal_on,
-          engagementCount: linked?.count ?? 0,
-          staffed: linked
-            ? Array.from(linked.staffed, ([id, name]) => ({ id, name }))
-            : [],
-        }
-      })
+      const clients: ClientWithEngagements[] = (directoryRes.data ?? []).map((a) => ({
+        id: a.id,
+        name: a.name,
+        website: a.website,
+        industry: a.industry,
+        health: a.health,
+        renewalOn: a.renewal_on,
+        engagements: engagementsByAccount.get(a.id) ?? [],
+      }))
+
+      return { clients, unlinkedEngagements }
     },
   })
 }

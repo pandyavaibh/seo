@@ -11,7 +11,6 @@ import { OffpagePage } from '@/features/checklist/offpage-page'
 import { PortalDashboardPage } from '@/features/portal/portal-dashboard-page'
 import { PortalInvoicesPage } from '@/features/portal/portal-invoices-page'
 import { PortalReportsPage } from '@/features/portal/portal-reports-page'
-import { ProjectsListPage } from '@/features/projects/projects-list-page'
 import { ProjectWorkspacePage } from '@/features/projects/project-workspace-page'
 import { ReportsPage } from '@/features/reports/reports-page'
 import { SearchPerformancePage } from '@/features/search-performance/search-performance-page'
@@ -37,7 +36,6 @@ export function App() {
               <Route path="/clients/:accountId/calendar" element={<ContentCalendarPage />} />
               <Route path="/clients/:accountId/reports" element={<ReportsPage />} />
               <Route path="/clients/:accountId/billing" element={<BillingPage />} />
-              <Route path="/projects" element={<ProjectsListPage />} />
               <Route path="/projects/:projectId" element={<ProjectWorkspacePage />} />
               <Route path="/projects/:projectId/checklist" element={<ChecklistPage />} />
               <Route path="/projects/:projectId/offpage" element={<OffpagePage />} />
