@@ -98,4 +98,32 @@ no-paid-plan discipline as every other stage.
   — only the "send by email" button does.
 - **No cost rates are set yet**, so every account's profitability card
   currently shows $0 labor cost (an honest undercount, not a fabricated
-  number) until an admin sets rates on the Capacity page.
+  number) until an admin sets rates on the Settings page (moved there
+  when Capacity & strength was removed — see docs/STAGE_9.md).
+
+## Portal dashboard widgets (added later)
+
+The client dashboard (`/portal`) originally only showed Deliverables
+and a Latest report card built from a staff-generated report snapshot
+— no live numbers, no visible conversation. Added, per request:
+
+- **Performance tiles**: organic clicks/impressions (28d, Search
+  Console), conversions (28d, GA4), keywords in top 10, and backlinks
+  placed (total + this month) — a client-safe version of the same
+  tiles the Account record page already showed staff
+  (`use-portal-performance.ts`), leaving out anything internal (hours
+  logged, off-page activity tallies).
+- **Client conversation preview**: a card showing the latest
+  `portal_comments` message and a total count, above the existing full
+  thread.
+
+None of the underlying tables (`search_connections`, `metric_snapshots`,
+`backlinks`, `keywords`, `keyword_checks`) were readable by a client
+role before this — their `*_read` policies were staff-only or
+staff-or-assigned-only. Widened each with the same
+`account_id = auth_member_account_id()` (or, for the project-scoped
+tables, a join through `projects.account_id` via the new
+`is_own_account_project()` helper) pattern Stage 7 already used for
+reports/invoices/deliverables/portal_comments — write access to all
+five tables is untouched and stays staff-only
+(`supabase/migrations/20260922250000_portal_dashboard_widgets.sql`).
