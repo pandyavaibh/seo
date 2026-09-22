@@ -22,7 +22,6 @@ import { ReportsPage } from '@/features/reports/reports-page'
 import { SearchPerformancePage } from '@/features/search-performance/search-performance-page'
 import { AgencySettingsPage } from '@/features/settings/agency-settings-page'
 import { ContentCalendarPage } from '@/features/social/content-calendar-page'
-import { SocialPage } from '@/features/social/social-page'
 import { UtmBuilderPage } from '@/features/social/utm-builder-page'
 import { TemplatesListPage } from '@/features/templates/templates-list-page'
 import { RequireAuth, RequireMember, RequirePortal, RequireStaff } from '@/routes/require-member'
@@ -43,7 +42,6 @@ export function App() {
               <Route path="/clients" element={<ClientsListPage />} />
               <Route path="/clients/:accountId" element={<AccountRecordPage />} />
               <Route path="/clients/:accountId/search" element={<SearchPerformancePage />} />
-              <Route path="/clients/:accountId/social" element={<SocialPage />} />
               <Route path="/clients/:accountId/calendar" element={<ContentCalendarPage />} />
               <Route path="/clients/:accountId/reports" element={<ReportsPage />} />
               <Route path="/clients/:accountId/billing" element={<BillingPage />} />

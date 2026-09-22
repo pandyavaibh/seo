@@ -13,7 +13,7 @@
 // a per-account send-day config and a daily cron job — not built here,
 // see docs/STAGE_7.md.
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -31,7 +31,6 @@ function json(body: unknown, status = 200) {
 interface Snapshot {
   search: { clicks: number; impressions: number } | null
   ga4: { sessions: number; conversions: number } | null
-  meta: { reach: number; engagement: number } | null
   tasksCompleted: { label: string; projectName: string | null }[]
   linksPlaced: { domain: string; projectName: string | null }[]
   keywordsImproved: number
@@ -43,7 +42,6 @@ function renderHtml(accountName: string, periodStart: string, periodEnd: string,
   const rows: string[] = []
   if (s.search) rows.push(`<p><strong>Search Console</strong> — clicks ${s.search.clicks}, impressions ${s.search.impressions}</p>`)
   if (s.ga4) rows.push(`<p><strong>GA4</strong> — sessions ${s.ga4.sessions}, conversions ${s.ga4.conversions}</p>`)
-  if (s.meta) rows.push(`<p><strong>Social</strong> — reach ${s.meta.reach}, engagement ${s.meta.engagement}</p>`)
   rows.push(`<p><strong>Keywords</strong> — tracked ${s.keywordsTracked}, improved ${s.keywordsImproved}, declined ${s.keywordsDeclined}</p>`)
   rows.push(`<p><strong>Links built</strong> — ${s.linksPlaced.length}</p>`)
   rows.push(`<p><strong>Work completed</strong> — ${s.tasksCompleted.length} items</p>`)

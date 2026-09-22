@@ -31,7 +31,6 @@ function json(body: unknown, status = 200) {
 interface Snapshot {
   search: { clicks: number; impressions: number } | null
   ga4: { sessions: number; conversions: number } | null
-  meta: { reach: number; engagement: number } | null
   tasksCompleted: { label: string; projectName: string | null }[]
   linksPlaced: { domain: string; projectName: string | null }[]
   keywordsImproved: number
@@ -115,15 +114,14 @@ function priorPeriod(periodStart: string, periodEnd: string) {
 async function buildSnapshot(admin: any, accountId: string, periodStart: string, periodEnd: string): Promise<Snapshot> {
   const { prevStart, prevEnd } = priorPeriod(periodStart, periodEnd)
 
-  const [searchRes, ga4Res, metaRes, projectsRes, prevSearchRes, prevGa4Res] = await Promise.all([
+  const [searchRes, ga4Res, projectsRes, prevSearchRes, prevGa4Res] = await Promise.all([
     admin.from('metric_snapshots').select('metric_key, value').eq('account_id', accountId).eq('source', 'gsc').gte('snapshot_date', periodStart).lte('snapshot_date', periodEnd),
     admin.from('metric_snapshots').select('metric_key, value').eq('account_id', accountId).eq('source', 'ga4').gte('snapshot_date', periodStart).lte('snapshot_date', periodEnd),
-    admin.from('metric_snapshots').select('metric_key, value').eq('account_id', accountId).eq('source', 'meta').gte('snapshot_date', periodStart).lte('snapshot_date', periodEnd),
     admin.from('projects').select('id, name').eq('account_id', accountId),
     admin.from('metric_snapshots').select('metric_key, value').eq('account_id', accountId).eq('source', 'gsc').gte('snapshot_date', prevStart).lte('snapshot_date', prevEnd),
     admin.from('metric_snapshots').select('metric_key, value').eq('account_id', accountId).eq('source', 'ga4').gte('snapshot_date', prevStart).lte('snapshot_date', prevEnd),
   ])
-  for (const res of [searchRes, ga4Res, metaRes, projectsRes, prevSearchRes, prevGa4Res]) {
+  for (const res of [searchRes, ga4Res, projectsRes, prevSearchRes, prevGa4Res]) {
     if (res.error) throw new Error(res.error.message)
   }
 
@@ -132,9 +130,6 @@ async function buildSnapshot(admin: any, accountId: string, periodStart: string,
 
   const search = searchRes.data?.length ? { clicks: sumBy(searchRes.data, 'clicks'), impressions: sumBy(searchRes.data, 'impressions') } : null
   const ga4 = ga4Res.data?.length ? { sessions: sumBy(ga4Res.data, 'sessions'), conversions: sumBy(ga4Res.data, 'conversions') } : null
-  const meta = metaRes.data?.length
-    ? { reach: sumBy(metaRes.data, 'fb_reach') + sumBy(metaRes.data, 'ig_reach'), engagement: sumBy(metaRes.data, 'fb_engagement') + sumBy(metaRes.data, 'ig_engagement') }
-    : null
   const previousSearch = prevSearchRes.data?.length ? { clicks: sumBy(prevSearchRes.data, 'clicks'), impressions: sumBy(prevSearchRes.data, 'impressions') } : null
   const previousGa4 = prevGa4Res.data?.length ? { sessions: sumBy(prevGa4Res.data, 'sessions'), conversions: sumBy(prevGa4Res.data, 'conversions') } : null
 
@@ -175,14 +170,13 @@ async function buildSnapshot(admin: any, accountId: string, periodStart: string,
 
   const commentary = generateCommentary({ search, previousSearch, ga4, previousGa4, keywordsImproved, keywordsDeclined, keywordsTracked, linksPlaced: linksPlaced.length, tasksCompleted: tasksCompleted.length })
 
-  return { search, ga4, meta, tasksCompleted, linksPlaced, keywordsImproved, keywordsDeclined, keywordsTracked, commentary }
+  return { search, ga4, tasksCompleted, linksPlaced, keywordsImproved, keywordsDeclined, keywordsTracked, commentary }
 }
 
 function renderHtml(accountName: string, periodStart: string, periodEnd: string, s: Snapshot) {
   const rows: string[] = []
   if (s.search) rows.push(`<p><strong>Search Console</strong> — clicks ${s.search.clicks}, impressions ${s.search.impressions}</p>`)
   if (s.ga4) rows.push(`<p><strong>GA4</strong> — sessions ${s.ga4.sessions}, conversions ${s.ga4.conversions}</p>`)
-  if (s.meta) rows.push(`<p><strong>Social</strong> — reach ${s.meta.reach}, engagement ${s.meta.engagement}</p>`)
   if (s.commentary.length) rows.push(`<p><strong>Summary</strong><br/>${s.commentary.join('<br/>')}</p>`)
   rows.push(`<p><strong>Keywords</strong> — tracked ${s.keywordsTracked}, improved ${s.keywordsImproved}, declined ${s.keywordsDeclined}</p>`)
   rows.push(`<p><strong>Links built</strong> — ${s.linksPlaced.length}</p>`)

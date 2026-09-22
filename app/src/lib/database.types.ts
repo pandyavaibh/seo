@@ -17,10 +17,9 @@ export type DealStage =
   | 'lost'
 export type ActivityKind = 'call' | 'meeting' | 'email' | 'note' | 'report' | 'issue'
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done' | 'na'
-export type MetricSource = 'gsc' | 'ga4' | 'meta'
+export type MetricSource = 'gsc' | 'ga4'
 export type ConnectionStatus = 'needs_access' | 'granted'
 export type BacklinkStatus = 'prospect' | 'outreach' | 'placed' | 'declined' | 'removed'
-export type MetaSource = 'facebook_page' | 'instagram' | 'ads'
 export type ContentCalendarPlatform = 'facebook' | 'instagram' | 'other'
 export type ContentCalendarStatus = 'draft' | 'scheduled' | 'approved' | 'published'
 export type ExpenseCategory = 'link_cost' | 'tool' | 'other'
@@ -977,99 +976,6 @@ export interface Database {
           },
         ]
       }
-      meta_connections: {
-        Row: {
-          id: string
-          account_id: string
-          source: MetaSource
-          property: string
-          status: ConnectionStatus
-          last_checked_at: string | null
-          last_synced_at: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: Partial<
-          Database['public']['Tables']['meta_connections']['Row']
-        > & { account_id: string; source: MetaSource; property: string }
-        Update: Partial<Database['public']['Tables']['meta_connections']['Row']>
-        Relationships: [
-          {
-            foreignKeyName: 'meta_connections_account_id_fkey'
-            columns: ['account_id']
-            isOneToOne: false
-            referencedRelation: 'accounts'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      meta_posts_daily: {
-        Row: {
-          account_id: string
-          snapshot_date: string
-          post_id: string
-          platform: 'facebook_page' | 'instagram'
-          permalink: string | null
-          caption: string | null
-          published_at: string | null
-          reach: number
-          engagement: number
-          likes: number
-          comments: number
-          shares: number
-        }
-        Insert: Partial<
-          Database['public']['Tables']['meta_posts_daily']['Row']
-        > & {
-          account_id: string
-          snapshot_date: string
-          post_id: string
-          platform: 'facebook_page' | 'instagram'
-        }
-        Update: Partial<Database['public']['Tables']['meta_posts_daily']['Row']>
-        Relationships: [
-          {
-            foreignKeyName: 'meta_posts_daily_account_id_fkey'
-            columns: ['account_id']
-            isOneToOne: false
-            referencedRelation: 'accounts'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      meta_campaigns_daily: {
-        Row: {
-          account_id: string
-          snapshot_date: string
-          campaign_id: string
-          campaign_name: string
-          status: string | null
-          spend_cents: number
-          impressions: number
-          clicks: number
-          leads: number
-        }
-        Insert: Partial<
-          Database['public']['Tables']['meta_campaigns_daily']['Row']
-        > & {
-          account_id: string
-          snapshot_date: string
-          campaign_id: string
-          campaign_name: string
-        }
-        Update: Partial<
-          Database['public']['Tables']['meta_campaigns_daily']['Row']
-        >
-        Relationships: [
-          {
-            foreignKeyName: 'meta_campaigns_daily_account_id_fkey'
-            columns: ['account_id']
-            isOneToOne: false
-            referencedRelation: 'accounts'
-            referencedColumns: ['id']
-          },
-        ]
-      }
       content_calendar: {
         Row: {
           id: string
@@ -1437,7 +1343,6 @@ export interface Database {
       metric_source: MetricSource
       connection_status: ConnectionStatus
       backlink_status: BacklinkStatus
-      meta_source: MetaSource
       content_calendar_platform: ContentCalendarPlatform
       content_calendar_status: ContentCalendarStatus
       expense_category: ExpenseCategory

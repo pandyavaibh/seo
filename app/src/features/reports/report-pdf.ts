@@ -38,12 +38,6 @@ export async function downloadReportPdf(accountName: string, report: ReportRow) 
     line(`Sessions: ${s.ga4.sessions.toLocaleString()}   Conversions: ${s.ga4.conversions.toLocaleString()}`)
     y += 4
   }
-  if (s.meta) {
-    line('Social', 13, 8)
-    line(`Reach: ${s.meta.reach.toLocaleString()}   Engagement: ${s.meta.engagement.toLocaleString()}`)
-    y += 4
-  }
-
   if (s.commentary && s.commentary.length > 0) {
     line('Summary', 13, 8)
     for (const c of s.commentary) {

@@ -993,12 +993,6 @@ export function AccountRecordPage() {
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => navigate(`/clients/${accountId}/social`)}
-              >
-                Social &amp; Ads
-              </Button>
-              <Button
-                variant="secondary"
                 onClick={() => navigate(`/clients/${accountId}/calendar`)}
               >
                 Content calendar

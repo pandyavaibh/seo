@@ -7,7 +7,6 @@ import { supabase } from '@/lib/supabase'
 export interface ReportSnapshot {
   search: { clicks: number; impressions: number } | null
   ga4: { sessions: number; conversions: number } | null
-  meta: { reach: number; engagement: number } | null
   tasksCompleted: { label: string; projectName: string | null }[]
   linksPlaced: { domain: string; projectName: string | null }[]
   keywordsImproved: number
@@ -65,7 +64,7 @@ function previousPeriod(periodStart: string, periodEnd: string) {
 async function buildSnapshot(accountId: string, periodStart: string, periodEnd: string): Promise<ReportSnapshot> {
   const { prevStart, prevEnd } = previousPeriod(periodStart, periodEnd)
 
-  const [searchRes, ga4Res, metaRes, projectsRes, prevSearchRes, prevGa4Res] = await Promise.all([
+  const [searchRes, ga4Res, projectsRes, prevSearchRes, prevGa4Res] = await Promise.all([
     supabase
       .from('metric_snapshots')
       .select('metric_key, value')
@@ -78,13 +77,6 @@ async function buildSnapshot(accountId: string, periodStart: string, periodEnd: 
       .select('metric_key, value')
       .eq('account_id', accountId)
       .eq('source', 'ga4')
-      .gte('snapshot_date', periodStart)
-      .lte('snapshot_date', periodEnd),
-    supabase
-      .from('metric_snapshots')
-      .select('metric_key, value')
-      .eq('account_id', accountId)
-      .eq('source', 'meta')
       .gte('snapshot_date', periodStart)
       .lte('snapshot_date', periodEnd),
     supabase.from('projects').select('id, name').eq('account_id', accountId),
@@ -103,7 +95,7 @@ async function buildSnapshot(accountId: string, periodStart: string, periodEnd: 
       .gte('snapshot_date', prevStart)
       .lte('snapshot_date', prevEnd),
   ])
-  for (const res of [searchRes, ga4Res, metaRes, projectsRes, prevSearchRes, prevGa4Res]) {
+  for (const res of [searchRes, ga4Res, projectsRes, prevSearchRes, prevGa4Res]) {
     if (res.error) throw new Error(res.error.message)
   }
 
@@ -115,12 +107,6 @@ async function buildSnapshot(accountId: string, periodStart: string, periodEnd: 
     : null
   const ga4 = ga4Res.data && ga4Res.data.length > 0
     ? { sessions: sumBy(ga4Res.data, 'sessions'), conversions: sumBy(ga4Res.data, 'conversions') }
-    : null
-  const meta = metaRes.data && metaRes.data.length > 0
-    ? {
-        reach: sumBy(metaRes.data, 'fb_reach') + sumBy(metaRes.data, 'ig_reach'),
-        engagement: sumBy(metaRes.data, 'fb_engagement') + sumBy(metaRes.data, 'ig_engagement'),
-      }
     : null
 
   const previousSearch = prevSearchRes.data && prevSearchRes.data.length > 0
@@ -199,7 +185,7 @@ async function buildSnapshot(accountId: string, periodStart: string, periodEnd: 
     tasksCompleted: tasksCompleted.length,
   })
 
-  return { search, ga4, meta, tasksCompleted, linksPlaced, keywordsImproved, keywordsDeclined, keywordsTracked, commentary }
+  return { search, ga4, tasksCompleted, linksPlaced, keywordsImproved, keywordsDeclined, keywordsTracked, commentary }
 }
 
 export function useGenerateReport(accountId: string) {

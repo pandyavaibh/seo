@@ -162,12 +162,6 @@ function ReportCard({ accountId, accountName, report }: { accountId: string; acc
               <span className="text-[16px] font-semibold">{s.ga4.sessions.toLocaleString()}</span>
             </div>
           )}
-          {s.meta && (
-            <div className="flex flex-col gap-[2px]">
-              <span className="font-mono text-[10px] uppercase text-ink-muted">Social reach</span>
-              <span className="text-[16px] font-semibold">{s.meta.reach.toLocaleString()}</span>
-            </div>
-          )}
           <div className="flex flex-col gap-[2px]">
             <span className="font-mono text-[10px] uppercase text-ink-muted">Links built</span>
             <span className="text-[16px] font-semibold">{s.linksPlaced.length}</span>
