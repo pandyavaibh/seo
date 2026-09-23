@@ -353,6 +353,50 @@ rest of the app's per-person data (time entries, the old leave table).
   the honeypot plus staff triage is the free-tier answer, not a
   dedicated rate-limit store.
 
+## Performance advisor cleanup
+
+Prompted by a "check everything, tell me what's pending" pass. Fixed
+what was safely fixable:
+
+- **18 unindexed foreign keys** (`accounts.account_manager_id`,
+  `activities.author_id`/`project_id`, `checklist_runs.done_by`/
+  `template_item_id`, `content_calendar.owner_id`/`project_id`,
+  `deliverables.created_by`/`project_id`, `expenses.created_by`/
+  `project_id`, `keyword_checks.checked_by`,
+  `offpage_activity_entries.created_by`,
+  `offpage_recurring_runs.done_by`, `portal_comments.author_id`,
+  `reports.generated_by`, `team_members.account_id`,
+  `technical_audits.run_by`) — every one flagged by the linter, all
+  single-column, all a plain `create index`.
+- **`team_members.team_read`** was calling `auth.jwt()` per row
+  instead of once per query — wrapped it in a scalar subquery
+  (`(select auth.jwt())`) so Postgres caches it.
+
+Deliberately left two advisor items alone:
+- **`unused_index`** (now 27 findings) — nearly all of them are the
+  indexes just added above, or `attendance_entries`/`member_leave`'s
+  from the previous change; "unused" only means the app hasn't been
+  used enough yet to hit them, not that they're wrong.
+- **`multiple_permissive_policies`** (135 findings) — this is the
+  is_staff()-read + admin/manager-write shape used on nearly every
+  table in this app, by design since Stage 0. Collapsing it into one
+  OR'd policy per table/action would mean touching every RLS policy in
+  the repo for a cost that only matters at a row-count scale this app
+  (5 accounts, 6 staff) is nowhere near. Not worth the risk.
+
+Two things flagged in that same check are outside what tools here can
+do at all: `RESEND_API_KEY` still isn't set (needs your own free
+Resend account — everything else about reports works, they just can't
+send until that key exists), and three Edge Functions whose features
+were removed (`sync-meta-performance`, `public-api`, `submit-lead`)
+are still deployed on Supabase — this session can delete a function's
+source but not the deployed function itself; delete them from the
+dashboard if you want them fully gone. Leaked-password-protection is
+also still off in Supabase Auth — a dashboard toggle, not something
+any tool here can flip.
+
+(`supabase/migrations/20260922330000_performance_indexes.sql`)
+
 ## What's next
 
 Pick from the cut list above, or scope net-new "Stage 10" work. Ask
