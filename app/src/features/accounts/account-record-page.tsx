@@ -976,7 +976,7 @@ export function AccountRecordPage() {
               <Badge tone={HEALTH_TONE[acc.health]} className="text-[12px] px-[11px] py-[5px]">
                 {HEALTH_LABEL[acc.health]}
               </Badge>
-              {!showEditAccount && (
+              {canDelete && !showEditAccount && (
                 <Button variant="secondary" onClick={() => setShowEditAccount(true)}>
                   Edit client
                 </Button>
@@ -1002,12 +1002,14 @@ export function AccountRecordPage() {
               >
                 Reports
               </Button>
-              <Button
-                variant="secondary"
-                onClick={() => navigate(`/clients/${accountId}/billing`)}
-              >
-                Billing
-              </Button>
+              {canDelete && (
+                <Button
+                  variant="secondary"
+                  onClick={() => navigate(`/clients/${accountId}/billing`)}
+                >
+                  Billing
+                </Button>
+              )}
               {acc.projects.length === 0 && !showAddProject && (
                 <Button onClick={() => setShowAddProject(true)}>
                   Set up engagement
@@ -1213,9 +1215,11 @@ export function AccountRecordPage() {
             <div className="flex-[1_1_360px] min-w-0">
               {accountId && <PortalCommentsThread accountId={accountId} canModerate />}
             </div>
-            <div className="flex-[1_1_360px] min-w-0">
-              {accountId && <ChurnRiskCard accountId={accountId} />}
-            </div>
+            {canDelete && (
+              <div className="flex-[1_1_360px] min-w-0">
+                {accountId && <ChurnRiskCard accountId={accountId} />}
+              </div>
+            )}
             <div className="flex-[1_1_360px] min-w-0">
               {accountId && <TechnicalAuditCard accountId={accountId} website={acc.website} />}
             </div>

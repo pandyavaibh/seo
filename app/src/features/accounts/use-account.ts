@@ -60,7 +60,7 @@ export function useAccount(accountId: string | undefined) {
               'id, name, website, industry, health, retainer_cents, currency, hours_budget, started_on, renewal_on, account_manager_id, notes, team_members!accounts_account_manager_id_fkey(name)',
             )
             .eq('id', accountId!)
-            .single(),
+            .maybeSingle(),
           supabase
             .from('projects')
             .select(
@@ -85,7 +85,50 @@ export function useAccount(accountId: string | undefined) {
       if (contactsRes.error) throw new Error(contactsRes.error.message)
       if (activitiesRes.error) throw new Error(activitiesRes.error.message)
 
-      const acc = accountRes.data
+      // accountRes.data is null for non-admin/manager staff — accounts_read
+      // stays narrow on purpose (retainer/hours_budget/notes shouldn't
+      // leak). Fall back to the safe directory fields rather than
+      // failing the whole page: every section below this (Keywords,
+      // Activities, Checklist, Log hours) is project-scoped and already
+      // available to any assigned staff member regardless.
+      let acc: {
+        id: string
+        name: string
+        website: string | null
+        industry: string | null
+        health: AccountHealth
+        retainer_cents: number | null
+        currency: string
+        hours_budget: number | null
+        started_on: string | null
+        renewal_on: string | null
+        account_manager_id: string | null
+        team_members: { name: string } | null
+        notes: string | null
+      }
+      if (accountRes.data) {
+        acc = accountRes.data
+      } else {
+        const dirRes = await supabase.rpc('get_account_directory', { p_account_id: accountId! })
+        if (dirRes.error) throw new Error(dirRes.error.message)
+        const dir = dirRes.data?.[0]
+        if (!dir) throw new Error('Account not found')
+        acc = {
+          id: dir.id,
+          name: dir.name,
+          website: dir.website,
+          industry: dir.industry,
+          health: dir.health,
+          retainer_cents: null,
+          currency: 'USD',
+          hours_budget: null,
+          started_on: null,
+          renewal_on: dir.renewal_on,
+          account_manager_id: null,
+          team_members: null,
+          notes: null,
+        }
+      }
 
       return {
         id: acc.id,

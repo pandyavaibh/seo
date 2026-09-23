@@ -1059,6 +1059,17 @@ export interface Database {
           renewal_on: string | null
         }[]
       }
+      get_account_directory: {
+        Args: { p_account_id: string }
+        Returns: {
+          id: string
+          name: string
+          website: string | null
+          industry: string | null
+          health: AccountHealth
+          renewal_on: string | null
+        }[]
+      }
     }
     Enums: {
       member_role: MemberRole

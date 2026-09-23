@@ -397,6 +397,40 @@ any tool here can flip.
 
 (`supabase/migrations/20260922330000_performance_indexes.sql`)
 
+## Bug: Account page crashed for regular team members
+
+Reported as "Couldn't load this account — Cannot coerce the result to
+a single JSON object" for a `member`-role user (confirmed against a
+real login: Malvika, assigned to Aspire Square, signed in
+2026-09-23). Root cause: when the Engagement workspace folded into the
+Client page, that page became the daily hub for Keywords, Activities,
+Checklist and Log hours — every assigned staff member needs it. But
+`useAccount()` still read the whole `accounts` row in one `.single()`
+query under the original admin/manager-only `accounts_read` policy
+(kept narrow on purpose, so retainer/hours_budget/notes don't leak).
+For anyone else, that query returned zero rows, `.single()` threw, and
+the **entire page** failed — including the project-scoped sections
+that user did have access to.
+
+Fixed with the same pattern `list_accounts_directory()` already
+established: a new `get_account_directory(p_account_id)` SECURITY
+DEFINER function returns the safe fields (name, website, industry,
+health, renewal_on) to any `is_staff()` caller.  `useAccount()` now
+uses `.maybeSingle()` and falls back to this function when the full
+row is blocked, leaving the financial fields (retainer, hours budget,
+notes, account manager) null rather than crashing. `contacts_read` and
+`activities_read` (client stakeholders, call/meeting log — not
+financial) widened straight to `is_staff()`, same reasoning as the
+roster. Two other queries on the same page had the identical
+`.single()`-on-`accounts` crash risk (`ChurnRiskCard`'s churn score,
+which reads invoice/billing signals, and the Billing page's
+profitability view) — rather than widen those, gated their
+entry points (the "Churn risk" card, and the "Edit client" / "Billing"
+buttons) to admin/manager, since that content is genuinely financial
+and a regular member clicking into it would just hit another dead end.
+
+(`supabase/migrations/20260923100000_fix_account_page_for_staff.sql`)
+
 ## What's next
 
 Pick from the cut list above, or scope net-new "Stage 10" work. Ask
