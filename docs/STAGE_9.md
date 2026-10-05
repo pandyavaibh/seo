@@ -431,6 +431,35 @@ and a regular member clicking into it would just hit another dead end.
 
 (`supabase/migrations/20260923100000_fix_account_page_for_staff.sql`)
 
+## Sitewide checklist — merged in a 109-task Master SEO Tracker
+
+User uploaded `Master_SEO_Tracker.xlsx` — a consolidated methodology
+checklist merged from 7 source workbooks, covering Planning, Technical
+SEO, Content, On-page SEO, Structured data, AEO and GEO, Off-page SEO,
+Local SEO, Ecommerce, International SEO, Migration and launch, User
+experience, Measurement and Keyword research (109 tasks, blank/unfilled
+— a template, not client data; its "Source Library" tab is raw
+provenance from the merge, not itself importable). By request ("mix
+both 81 item checklist and 109 task as well") these 109 tasks were
+added as new `checklist_template_items` rows alongside the 53 items
+already active from the original 81-item checklist — not a
+replacement. The one exact category-name match, "Local SEO" (5 old +
+4 new), merges into a single section automatically, since the
+Checklist page already groups by category text; the other 13 new
+categories render as new sections. Each new item's `reference_tag`
+holds its original Task ID (`SEO-001`..`SEO-109`) from the source
+sheet.
+
+Deliberately left alone: the 28 Technical Foundation / On-Page &
+Structured Data items that were deactivated earlier this session when
+those two categories became the dated Backlinks/On-Page/Technical
+activity-group system — reactivating them would track the same work
+two different ways at once. Checklist is now 162 active items across
+20 category sections (was 53 across 7); no schema or UI change was
+needed, since the Checklist page already reads this table dynamically.
+
+(`supabase/migrations/20261005100000_merge_master_seo_tracker.sql`)
+
 ## What's next
 
 Pick from the cut list above, or scope net-new "Stage 10" work. Ask
