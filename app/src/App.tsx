@@ -7,6 +7,7 @@ import { ClientsListPage } from '@/features/accounts/clients-list-page'
 import { AssignmentsPage } from '@/features/assignments/assignments-page'
 import { AttendancePage } from '@/features/attendance/attendance-page'
 import { BillingPage } from '@/features/billing/billing-page'
+import { DashboardPage } from '@/features/dashboard/dashboard-page'
 import { PortalDashboardPage } from '@/features/portal/portal-dashboard-page'
 import { PortalInvoicesPage } from '@/features/portal/portal-invoices-page'
 import { PortalReportsPage } from '@/features/portal/portal-reports-page'
@@ -28,6 +29,7 @@ export function App() {
         <Route element={<RequireMember />}>
           <Route element={<RequireStaff />}>
             <Route element={<AppShell />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/clients" element={<ClientsListPage />} />
               <Route path="/clients/:accountId" element={<AccountRecordPage />} />
               <Route path="/clients/:accountId/search" element={<SearchPerformancePage />} />
@@ -37,7 +39,7 @@ export function App() {
               <Route path="/assignments" element={<AssignmentsPage />} />
               <Route path="/attendance" element={<AttendancePage />} />
               <Route path="/settings" element={<AgencySettingsPage />} />
-              <Route path="/" element={<Navigate to="/clients" replace />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Route>
 

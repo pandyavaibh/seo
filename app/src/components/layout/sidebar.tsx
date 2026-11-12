@@ -4,6 +4,7 @@ import { useCurrentMember } from '@/features/team/use-current-member'
 import { useAuth } from '@/providers/auth-provider'
 
 const NAV_ITEMS = [
+  { to: '/dashboard', label: 'Dashboard', count: null },
   { to: '/clients', label: 'Clients', count: null },
   { to: '/attendance', label: 'Leave & Attendance', count: null },
 ]

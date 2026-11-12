@@ -460,6 +460,48 @@ needed, since the Checklist page already reads this table dynamically.
 
 (`supabase/migrations/20261005100000_merge_master_seo_tracker.sql`)
 
+## New staff Dashboard (the app had none)
+
+The root route used to just redirect straight to `/clients` — there was
+no landing page for staff at all. By request ("make dashboard
+proper"), added one at `/dashboard` (now the default landing route,
+and the first sidebar item), with three sections scoped to who's
+looking rather than one query widened to fit everyone:
+
+- **Agency overview** (every role): active-client count, a
+  healthy/watch/at-risk breakdown, and renewals due in the next 60
+  days — all read through `list_accounts_directory()`, the same
+  non-financial, any-staff-readable function the Clients page already
+  uses, so this works identically for a `member` as for an admin.
+- **My work today** (every role, personalized): the signed-in member's
+  own assigned clients with a pending-checklist count per engagement
+  this month, hours logged this week, and today's punch status with a
+  link into Leave & Attendance. Every query here is filtered to the
+  caller's own `member_id` and leans on RLS's existing "projects I'm
+  on" scoping (`assignments`, `time_entries`, `checklist_runs`) — no
+  new policies needed, and nothing to widen.
+- **Business overview** (admin/manager only, gated the same way the
+  Account page's Billing/Edit buttons already are): total monthly
+  retainer, labor cost, expenses and profit aggregated across every
+  account, plus the list of accounts flagged Watch or At risk. This
+  reads `accounts.retainer_cents` and `member_rates` directly — both
+  already admin/manager-only under existing RLS — rather than
+  recomputing the full per-account churn-risk score (that stays a
+  drill-in on the Account page itself; flagging by `health` here is
+  the lightweight "glance" version).
+
+No new tables or migrations — every number comes from data and RPCs
+that already existed (`list_accounts_directory`, `assignments`,
+`time_entries`, `checklist_runs`/`checklist_template_items`,
+`accounts`, `member_rates`, `expenses`). New: `features/dashboard/
+use-dashboard.ts` (the three hooks above) and `dashboard-page.tsx`.
+
+(A GitHub repo was floated as a visual reference for this — it turned
+out to be the retired Kubernetes Dashboard, a cluster-admin UI in a
+different stack entirely, so nothing from it carries over; this was
+built to match the app's own existing card/stat-tile conventions
+instead.)
+
 ## What's next
 
 Pick from the cut list above, or scope net-new "Stage 10" work. Ask
