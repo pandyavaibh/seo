@@ -303,6 +303,13 @@ live app, each confirmed to have no real data before dropping anything:
   Edge Functions (`send-report-email`, `send-scheduled-reports`,
   redeployed) — gone along with the table, since there's nothing left
   to report there.
+- **Leave & Attendance** (`/attendance` — see "Leave & Attendance (new
+  tab)" below for what it was) — removed outright by request ("Remove
+  Section - Leave & Attendance"). `member_leave` had 0 rows;
+  `attendance_entries` had exactly 1 real punch-in row, which went with
+  the table. The Dashboard's "My work today" card lost its punch-status
+  badge and "Go to attendance" link along with it — "Hours this week"
+  (from `time_entries`, unrelated to punch clocks) stayed.
 
 If any of these are ever wanted back, they need to be rebuilt from
 scratch — the tables and Edge Function source are gone, not just
@@ -311,9 +318,10 @@ hidden.
 (`supabase/migrations/20260922210000_remove_deals_utm_developer.sql`,
 `supabase/migrations/20260922230000_remove_task_templates.sql`,
 `supabase/migrations/20260922240000_remove_capacity_and_leads.sql`,
-`supabase/migrations/20260922270000_remove_tasks.sql`)
+`supabase/migrations/20260922270000_remove_tasks.sql`,
+`supabase/migrations/20261112100000_remove_leave_and_attendance.sql`)
 
-## Leave & Attendance (new tab)
+## Leave & Attendance (new tab) — since removed, see "Removed by request" above
 
 A new "Leave & Attendance" nav item, visible to every staff member —
 "Each Team Add their Punch in And punch out":
@@ -475,11 +483,13 @@ looking rather than one query widened to fit everyone:
   uses, so this works identically for a `member` as for an admin.
 - **My work today** (every role, personalized): the signed-in member's
   own assigned clients with a pending-checklist count per engagement
-  this month, hours logged this week, and today's punch status with a
-  link into Leave & Attendance. Every query here is filtered to the
-  caller's own `member_id` and leans on RLS's existing "projects I'm
-  on" scoping (`assignments`, `time_entries`, `checklist_runs`) — no
-  new policies needed, and nothing to widen.
+  this month, and hours logged this week. (Originally also showed
+  today's punch status with a link into Leave & Attendance — that tab
+  was removed shortly after, see "Removed by request" below.) Every
+  query here is filtered to the caller's own `member_id` and leans on
+  RLS's existing "projects I'm on" scoping (`assignments`,
+  `time_entries`, `checklist_runs`) — no new policies needed, and
+  nothing to widen.
 - **Business overview** (admin/manager only, gated the same way the
   Account page's Billing/Edit buttons already are): total monthly
   retainer, labor cost, expenses and profit aggregated across every

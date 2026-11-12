@@ -5,7 +5,6 @@ import { PortalShell } from '@/components/layout/portal-shell'
 import { AccountRecordPage } from '@/features/accounts/account-record-page'
 import { ClientsListPage } from '@/features/accounts/clients-list-page'
 import { AssignmentsPage } from '@/features/assignments/assignments-page'
-import { AttendancePage } from '@/features/attendance/attendance-page'
 import { BillingPage } from '@/features/billing/billing-page'
 import { DashboardPage } from '@/features/dashboard/dashboard-page'
 import { PortalDashboardPage } from '@/features/portal/portal-dashboard-page'
@@ -37,7 +36,6 @@ export function App() {
               <Route path="/clients/:accountId/reports" element={<ReportsPage />} />
               <Route path="/clients/:accountId/billing" element={<BillingPage />} />
               <Route path="/assignments" element={<AssignmentsPage />} />
-              <Route path="/attendance" element={<AttendancePage />} />
               <Route path="/settings" element={<AgencySettingsPage />} />
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
             </Route>

@@ -8,7 +8,6 @@ import {
   useBusinessOverview,
   useMyWorkToday,
 } from '@/features/dashboard/use-dashboard'
-import { hoursWorked, useTodayAttendance } from '@/features/attendance/use-attendance'
 import { useCurrentMember } from '@/features/team/use-current-member'
 import type { AccountHealth } from '@/lib/database.types'
 
@@ -91,8 +90,6 @@ function AgencyOverviewCard() {
 function MyWorkTodayCard() {
   const { data: currentMember } = useCurrentMember()
   const { data, isLoading } = useMyWorkToday(currentMember?.id)
-  const { data: today } = useTodayAttendance()
-  const mine = (today ?? []).find((e) => e.memberId === currentMember?.id)
 
   return (
     <Card>
@@ -100,20 +97,10 @@ function MyWorkTodayCard() {
         <CardTitle>My work today</CardTitle>
       </CardHeader>
       <CardContent className="p-[16px_18px] flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <StatTile
-            label="Hours this week"
-            value={isLoading || !data ? '—' : data.hoursThisWeek.toFixed(1)}
-          />
-          <div className="flex flex-col gap-1 items-end">
-            {!mine && <Badge tone="neutral">Not punched in</Badge>}
-            {mine && !mine.punchOut && <Badge tone="green">Punched in · {hoursWorked(mine)}h so far</Badge>}
-            {mine && mine.punchOut && <Badge tone="neutral">Done for today · {hoursWorked(mine)}h</Badge>}
-            <Link to="/attendance" className="font-mono text-[11px] text-ink-muted hover:text-brand no-underline">
-              Go to attendance →
-            </Link>
-          </div>
-        </div>
+        <StatTile
+          label="Hours this week"
+          value={isLoading || !data ? '—' : data.hoursThisWeek.toFixed(1)}
+        />
 
         <div className="flex flex-col gap-1">
           <h3 className="m-0 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-muted">
