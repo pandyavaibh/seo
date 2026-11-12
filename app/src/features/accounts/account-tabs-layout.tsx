@@ -1,4 +1,5 @@
-import { AlertTriangle } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import { AlertTriangle, ChevronsUpDown } from 'lucide-react'
 import * as React from 'react'
 import { Outlet, useNavigate, useParams } from 'react-router-dom'
 
@@ -7,8 +8,8 @@ import { Badge, type PillTone } from '@/components/ui/badge'
 import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { NestedNav, type NavEntry } from '@/components/ui/nested-nav'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs } from '@/components/ui/tabs'
 import {
   useAccount,
   useTeamMembers,
@@ -18,6 +19,7 @@ import {
 import { useDeleteAccount } from '@/features/accounts/use-accounts'
 import { useCurrentMember } from '@/features/team/use-current-member'
 import type { AccountHealth } from '@/lib/database.types'
+import { supabase } from '@/lib/supabase'
 
 export const HEALTH_TONE: Record<AccountHealth, PillTone> = {
   healthy: 'green',
@@ -33,6 +35,44 @@ export const HEALTH_LABEL: Record<AccountHealth, string> = {
 export interface AccountTabContext {
   acc: AccountDetail
   accountId: string
+}
+
+// Just the roster for the switcher dropdown below — reads through the same
+// safe, any-staff-readable function the Clients list already uses.
+function useAccountSwitcherOptions() {
+  return useQuery({
+    queryKey: ['accounts-directory', 'switcher'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('list_accounts_directory')
+      if (error) throw new Error(error.message)
+      return (data ?? [])
+        .map((a) => ({ id: a.id, name: a.name }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+    },
+  })
+}
+
+function AccountSwitcher({ accountId, accountName }: { accountId: string; accountName: string }) {
+  const navigate = useNavigate()
+  const { data: options } = useAccountSwitcherOptions()
+
+  return (
+    <div className="relative">
+      <select
+        value={accountId}
+        onChange={(e) => navigate(`/clients/${e.target.value}`)}
+        className="w-full appearance-none text-[13px] font-semibold rounded-[9px] border border-border bg-surface py-[8px] pl-[10px] pr-[28px] truncate cursor-pointer"
+      >
+        {!options && <option value={accountId}>{accountName}</option>}
+        {(options ?? []).map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.name}
+          </option>
+        ))}
+      </select>
+      <ChevronsUpDown size={13} className="absolute right-[9px] top-1/2 -translate-y-1/2 text-ink-faint pointer-events-none" />
+    </div>
+  )
 }
 
 function EditAccountForm({
@@ -255,6 +295,27 @@ export function AccountTabsLayout() {
     )
   }
 
+  const navItems: NavEntry[] = accountId
+    ? [
+        { type: 'link', to: `/clients/${accountId}`, label: 'Overview', end: true },
+        { type: 'link', to: `/clients/${accountId}/keywords`, label: 'Keywords' },
+        { type: 'link', to: `/clients/${accountId}/activities`, label: 'Activities' },
+        { type: 'link', to: `/clients/${accountId}/checklist`, label: 'Checklist' },
+        {
+          type: 'group',
+          label: 'Analytics & Reporting',
+          items: [
+            { to: `/clients/${accountId}/search`, label: 'Search & Analytics' },
+            { to: `/clients/${accountId}/calendar`, label: 'Content calendar' },
+            { to: `/clients/${accountId}/reports`, label: 'Reports' },
+          ],
+        },
+        ...(canDelete
+          ? [{ type: 'link' as const, to: `/clients/${accountId}/billing`, label: 'Billing' }]
+          : []),
+      ]
+    : []
+
   return (
     <div className="flex flex-col gap-4">
       <Breadcrumb
@@ -269,58 +330,54 @@ export function AccountTabsLayout() {
       )}
 
       {!isLoading && acc && accountId && (
-        <>
-          <div className="flex flex-wrap gap-3 items-end justify-between">
-            <div className="flex flex-col gap-1">
-              <span className="font-mono text-[11px] tracking-[0.14em] uppercase text-ink-muted">
-                {[acc.industry, acc.website].filter(Boolean).join(' · ') || '—'}
-              </span>
-              <h1 className="m-0 text-[25px] font-semibold tracking-[-0.02em]">{acc.name}</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge tone={HEALTH_TONE[acc.health]} className="text-[12px] px-[11px] py-[5px]">
-                {HEALTH_LABEL[acc.health]}
-              </Badge>
-              {canDelete && !showEditAccount && (
-                <Button variant="secondary" onClick={() => setShowEditAccount(true)}>
-                  Edit client
-                </Button>
+        <div className="flex gap-4 items-start">
+          <aside className="w-[200px] flex-none flex flex-col gap-3 bg-surface border border-border rounded-[14px] p-[12px] shadow-[var(--shadow-sm)] sticky top-[22px]">
+            <AccountSwitcher accountId={accountId} accountName={acc.name} />
+            <Badge tone={HEALTH_TONE[acc.health]} className="self-start">
+              {HEALTH_LABEL[acc.health]}
+            </Badge>
+            <NestedNav items={navItems} />
+          </aside>
+
+          <div className="flex-1 min-w-0 flex flex-col gap-4">
+            <div className="flex flex-wrap gap-3 items-end justify-between">
+              <div className="flex flex-col gap-1">
+                <span className="font-mono text-[11px] tracking-[0.14em] uppercase text-ink-muted">
+                  {[acc.industry, acc.website].filter(Boolean).join(' · ') || '—'}
+                </span>
+                <h1 className="m-0 text-[25px] font-semibold tracking-[-0.02em]">{acc.name}</h1>
+              </div>
+              {canDelete && (
+                <div className="flex items-center gap-2">
+                  {!showEditAccount && (
+                    <Button variant="secondary" onClick={() => setShowEditAccount(true)}>
+                      Edit client
+                    </Button>
+                  )}
+                  {!confirmingDelete && (
+                    <Button variant="secondary" onClick={() => setConfirmingDelete(true)}>
+                      Delete client
+                    </Button>
+                  )}
+                </div>
               )}
-              {canDelete && !confirmingDelete && (
-                <Button variant="secondary" onClick={() => setConfirmingDelete(true)}>
-                  Delete client
-                </Button>
-              )}
             </div>
+
+            {confirmingDelete && (
+              <DeleteAccountConfirm
+                accountId={accountId}
+                accountName={acc.name}
+                onCancel={() => setConfirmingDelete(false)}
+              />
+            )}
+
+            {showEditAccount && (
+              <EditAccountForm accountId={accountId} acc={acc} onClose={() => setShowEditAccount(false)} />
+            )}
+
+            <Outlet context={{ acc, accountId } satisfies AccountTabContext} />
           </div>
-
-          {confirmingDelete && (
-            <DeleteAccountConfirm
-              accountId={accountId}
-              accountName={acc.name}
-              onCancel={() => setConfirmingDelete(false)}
-            />
-          )}
-
-          {showEditAccount && (
-            <EditAccountForm accountId={accountId} acc={acc} onClose={() => setShowEditAccount(false)} />
-          )}
-
-          <Tabs
-            items={[
-              { to: `/clients/${accountId}`, label: 'Overview', end: true },
-              { to: `/clients/${accountId}/keywords`, label: 'Keywords' },
-              { to: `/clients/${accountId}/activities`, label: 'Activities' },
-              { to: `/clients/${accountId}/checklist`, label: 'Checklist' },
-              { to: `/clients/${accountId}/search`, label: 'Search & Analytics' },
-              { to: `/clients/${accountId}/calendar`, label: 'Content calendar' },
-              { to: `/clients/${accountId}/reports`, label: 'Reports' },
-              ...(canDelete ? [{ to: `/clients/${accountId}/billing`, label: 'Billing' }] : []),
-            ]}
-          />
-
-          <Outlet context={{ acc, accountId } satisfies AccountTabContext} />
-        </>
+        </div>
       )}
     </div>
   )

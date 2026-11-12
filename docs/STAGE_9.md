@@ -760,6 +760,48 @@ behind the click.
 
 ## What's next
 
+## Client page: horizontal tabs → nested sidebar nav
+
+More screenshots showed SE Ranking's full sidebar depth (an icon rail
+plus a "Projects" panel with a project switcher and expandable
+sections — Rankings/Analytics & Traffic/My Competitors/Website
+Audit/Social Media/Backlink Monitor, most with 3-6 sub-items each).
+Asked directly what to do with it, since most of that maps to features
+this CRM doesn't have (a crawler, a backlink index, social
+auto-posting) — building that nav structure would be empty labels with
+nothing behind them. Picked: restructure our own nav to the same
+*pattern* (switcher + expandable groups), using only pages that
+already exist.
+
+Replaced the Account page's horizontal underline `Tabs` with a second,
+in-content sidebar (`components/ui/nested-nav.tsx` + a two-column
+layout in `account-tabs-layout.tsx`), closely mirroring SE Ranking's
+icon-rail-plus-panel structure (our existing dark `Sidebar` ≈ their
+icon rail; this new panel ≈ their "Projects" panel):
+
+- **A real account switcher** at the top of the panel — a `<select>`
+  reading the same `list_accounts_directory()` roster the Clients list
+  already uses, navigating to another client's Overview on change.
+  Not decorative: it actually switches, same as SE Ranking's project
+  dropdown.
+- **Flat links** for single-view destinations (Overview, Keywords,
+  Activities, Checklist, Billing) — these don't have sub-pages, so
+  nesting them would be forced.
+- **One real expandable group, "Analytics & Reporting"** (Search &
+  Analytics / Content calendar / Reports) — the one place three
+  existing pages share an obvious theme, mirroring SE Ranking's
+  "Analytics & Traffic" grouping without inventing categories that
+  don't fit. Defaults open when one of its pages is active, otherwise
+  follows the user's own last toggle (derived from state, not an
+  effect — avoids a redundant render each time the active route
+  changes).
+- Health badge and Edit/Delete client actions moved into this panel's
+  header area / the content column respectively; the top breadcrumb
+  stays put, matching SE Ranking's own layout (breadcrumb spans the
+  full width above both the switcher panel and the main content).
+
+## What's next
+
 Pick from the cut list above, or scope net-new "Stage 10" work. Ask
 before starting a fork this size, same convention every stage here has
 followed.
