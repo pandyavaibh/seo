@@ -1,7 +1,22 @@
+import {
+  AlertTriangle,
+  ArrowRight,
+  Building2,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  Eye,
+  Receipt,
+  TrendingDown,
+  TrendingUp,
+  Users,
+  Wallet,
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { Badge, type PillTone } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ProgressBar } from '@/components/ui/progress-bar'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   useAgencyOverview,
@@ -9,6 +24,7 @@ import {
   useMyWorkToday,
 } from '@/features/dashboard/use-dashboard'
 import { useCurrentMember } from '@/features/team/use-current-member'
+import { initials, tintFor } from '@/lib/avatar'
 import type { AccountHealth } from '@/lib/database.types'
 
 const HEALTH_TONE: Record<AccountHealth, PillTone> = {
@@ -31,53 +47,157 @@ function formatCents(cents: number | null) {
   }).format(cents / 100)
 }
 
-function StatTile({ label, value, note }: { label: string; value: string; note?: string }) {
+// ---------------------------------------------------------------------
+// Shared bits
+// ---------------------------------------------------------------------
+
+const TILE_TINT: Record<string, { bg: string; fg: string }> = {
+  brand: { bg: 'var(--color-pill-blue-bg)', fg: 'var(--color-pill-blue-fg)' },
+  green: { bg: 'var(--color-pill-green-bg)', fg: 'var(--color-pill-green-fg)' },
+  amber: { bg: 'var(--color-pill-amber-bg)', fg: 'var(--color-pill-amber-fg)' },
+  red: { bg: 'var(--color-pill-red-bg)', fg: 'var(--color-pill-red-fg)' },
+  neutral: { bg: 'var(--color-pill-neutral-bg)', fg: 'var(--color-pill-neutral-fg)' },
+}
+
+function IconTile({
+  icon: Icon,
+  tone = 'neutral',
+}: {
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number }>
+  tone?: keyof typeof TILE_TINT
+}) {
+  const { bg, fg } = TILE_TINT[tone]
   return (
-    <div className="bg-surface-sunken border border-border-light rounded-[10px] p-[12px_14px] flex flex-col gap-[4px] flex-1 min-w-[140px]">
-      <span className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-muted">{label}</span>
-      <span className="text-[21px] font-semibold tracking-[-0.02em] leading-none">{value}</span>
-      {note && <span className="text-[11.5px] text-ink-muted">{note}</span>}
+    <span
+      className="w-[30px] h-[30px] rounded-[9px] grid place-items-center flex-none"
+      style={{ background: bg, color: fg }}
+    >
+      <Icon size={15} strokeWidth={2.25} />
+    </span>
+  )
+}
+
+function StatTile({
+  label,
+  value,
+  note,
+  icon,
+  tone = 'neutral',
+}: {
+  label: string
+  value: string
+  note?: string
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number }>
+  tone?: keyof typeof TILE_TINT
+}) {
+  return (
+    <div className="bg-surface-sunken-2 border border-border-light rounded-[11px] p-[13px_14px] flex items-start gap-[10px] flex-1 min-w-[150px]">
+      <IconTile icon={icon} tone={tone} />
+      <div className="flex flex-col gap-[2px] min-w-0">
+        <span className="font-mono text-[9.5px] tracking-[0.1em] uppercase text-ink-muted">{label}</span>
+        <span className="text-[20px] font-semibold tracking-[-0.02em] leading-tight truncate">{value}</span>
+        {note && <span className="text-[11px] text-ink-muted">{note}</span>}
+      </div>
     </div>
   )
+}
+
+function SectionLabel({
+  icon: Icon,
+  children,
+}: {
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number }>
+  children: React.ReactNode
+}) {
+  return (
+    <h3 className="m-0 flex items-center gap-[6px] font-mono text-[10.5px] uppercase tracking-[0.1em] text-ink-muted">
+      <Icon size={12} strokeWidth={2.25} />
+      {children}
+    </h3>
+  )
+}
+
+function EmptyNote({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="m-0 py-[10px] text-[13px] text-ink-faint italic">{children}</p>
+  )
+}
+
+function ListRow({
+  to,
+  leading,
+  title,
+  trailing,
+}: {
+  to: string
+  leading?: React.ReactNode
+  title: React.ReactNode
+  trailing: React.ReactNode
+}) {
+  return (
+    <Link
+      to={to}
+      className="group flex items-center gap-[10px] py-[9px] border-b border-border-light-2 last:border-b-0 text-ink no-underline"
+    >
+      {leading}
+      <span className="text-[13px] font-medium truncate flex-1 min-w-0 group-hover:text-brand">{title}</span>
+      {trailing}
+      <ArrowRight
+        size={13}
+        className="text-ink-faint opacity-0 group-hover:opacity-100 transition-opacity flex-none"
+      />
+    </Link>
+  )
+}
+
+// ---------------------------------------------------------------------
+// Agency overview
+// ---------------------------------------------------------------------
+
+function renewalTone(daysUntil: number): PillTone {
+  if (daysUntil <= 7) return 'red'
+  if (daysUntil <= 30) return 'amber'
+  return 'neutral'
 }
 
 function AgencyOverviewCard() {
   const { data, isLoading } = useAgencyOverview()
 
   return (
-    <Card>
+    <Card className="shadow-[0_1px_2px_rgba(23,25,28,0.04)]">
       <CardHeader>
-        <CardTitle>Agency overview</CardTitle>
+        <CardTitle className="flex items-center gap-[8px]">
+          <Building2 size={16} strokeWidth={2.25} className="text-ink-muted" />
+          Agency overview
+        </CardTitle>
       </CardHeader>
-      <CardContent className="p-[16px_18px] flex flex-col gap-4">
-        {isLoading && <Skeleton className="h-[90px] w-full" />}
+      <CardContent className="p-[18px] flex flex-col gap-[18px]">
+        {isLoading && <Skeleton className="h-[72px] w-full" />}
         {!isLoading && data && (
           <>
             <div className="flex flex-wrap gap-[10px]">
-              <StatTile label="Active clients" value={String(data.totalClients)} />
-              <StatTile label="Healthy" value={String(data.healthy)} />
-              <StatTile label="Watch" value={String(data.watch)} />
-              <StatTile label="At risk" value={String(data.atRisk)} />
+              <StatTile label="Active clients" value={String(data.totalClients)} icon={Users} tone="brand" />
+              <StatTile label="Healthy" value={String(data.healthy)} icon={CheckCircle2} tone="green" />
+              <StatTile label="Watch" value={String(data.watch)} icon={Eye} tone="amber" />
+              <StatTile label="At risk" value={String(data.atRisk)} icon={AlertTriangle} tone="red" />
             </div>
 
-            <div className="flex flex-col gap-1">
-              <h3 className="m-0 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-muted">
-                Upcoming renewals (60d)
-              </h3>
+            <div className="flex flex-col gap-[2px]">
+              <SectionLabel icon={CalendarDays}>Upcoming renewals · 60d</SectionLabel>
               {data.upcomingRenewals.length === 0 && (
-                <p className="m-0 text-[13px] text-ink-muted">Nothing renewing in the next 60 days.</p>
+                <EmptyNote>Nothing renewing in the next 60 days.</EmptyNote>
               )}
               {data.upcomingRenewals.map((r) => (
-                <Link
+                <ListRow
                   key={r.accountId}
                   to={`/clients/${r.accountId}`}
-                  className="flex items-center justify-between gap-2 py-[6px] border-b border-border-light-2 last:border-b-0 text-ink no-underline hover:text-brand"
-                >
-                  <span className="text-[13px] font-medium truncate">{r.name}</span>
-                  <span className="font-mono text-[11.5px] text-ink-muted">
-                    {r.daysUntil <= 0 ? 'Due' : `${r.daysUntil}d`}
-                  </span>
-                </Link>
+                  title={r.name}
+                  trailing={
+                    <Badge tone={renewalTone(r.daysUntil)}>
+                      {r.daysUntil <= 0 ? 'Due' : `${r.daysUntil}d`}
+                    </Badge>
+                  }
+                />
               ))}
             </div>
           </>
@@ -85,6 +205,16 @@ function AgencyOverviewCard() {
       </CardContent>
     </Card>
   )
+}
+
+// ---------------------------------------------------------------------
+// My work today
+// ---------------------------------------------------------------------
+
+function checklistTone(pct: number) {
+  if (pct >= 100) return 'var(--color-signal-green)'
+  if (pct >= 40) return 'var(--color-signal-amber)'
+  return 'var(--color-signal-red)'
 }
 
 function MyWorkTodayCard() {
@@ -92,81 +222,121 @@ function MyWorkTodayCard() {
   const { data, isLoading } = useMyWorkToday(currentMember?.id)
 
   return (
-    <Card>
+    <Card className="shadow-[0_1px_2px_rgba(23,25,28,0.04)]">
       <CardHeader>
-        <CardTitle>My work today</CardTitle>
+        <CardTitle className="flex items-center gap-[8px]">
+          <Users size={16} strokeWidth={2.25} className="text-ink-muted" />
+          My work today
+        </CardTitle>
       </CardHeader>
-      <CardContent className="p-[16px_18px] flex flex-col gap-4">
+      <CardContent className="p-[18px] flex flex-col gap-[18px]">
         <StatTile
           label="Hours this week"
-          value={isLoading || !data ? '—' : data.hoursThisWeek.toFixed(1)}
+          value={isLoading || !data ? '—' : `${data.hoursThisWeek.toFixed(1)}h`}
+          icon={Clock}
+          tone="brand"
         />
 
-        <div className="flex flex-col gap-1">
-          <h3 className="m-0 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-muted">
-            My clients
-          </h3>
+        <div className="flex flex-col gap-[2px]">
+          <SectionLabel icon={Building2}>My clients</SectionLabel>
           {isLoading && <Skeleton className="h-[60px] w-full" />}
           {!isLoading && (data?.projects.length ?? 0) === 0 && (
-            <p className="m-0 text-[13px] text-ink-muted">You're not assigned to any engagement yet.</p>
+            <EmptyNote>You're not assigned to any engagement yet.</EmptyNote>
           )}
-          {(data?.projects ?? []).map((p) => (
-            <Link
-              key={p.id}
-              to={p.accountId ? `/clients/${p.accountId}` : '/clients'}
-              className="flex items-center justify-between gap-2 py-[6px] border-b border-border-light-2 last:border-b-0 text-ink no-underline hover:text-brand"
-            >
-              <span className="text-[13px] font-medium truncate">{p.accountName ?? p.name}</span>
-              <span className="font-mono text-[11.5px] text-ink-muted">
-                {p.pendingChecklist} pending / {p.totalChecklist}
-              </span>
-            </Link>
-          ))}
+          {(data?.projects ?? []).map((p, i) => {
+            const label = p.accountName ?? p.name
+            const done = p.totalChecklist - p.pendingChecklist
+            const pct = p.totalChecklist > 0 ? Math.round((done / p.totalChecklist) * 100) : 0
+            return (
+              <Link
+                key={p.id}
+                to={p.accountId ? `/clients/${p.accountId}` : '/clients'}
+                className="group flex flex-col gap-[6px] py-[9px] border-b border-border-light-2 last:border-b-0 text-ink no-underline"
+              >
+                <div className="flex items-center gap-[10px]">
+                  <span
+                    className="w-6 h-6 rounded-full grid place-items-center font-mono text-[9.5px] font-semibold flex-none"
+                    style={{ background: tintFor(i) }}
+                  >
+                    {initials(label)}
+                  </span>
+                  <span className="text-[13px] font-medium truncate flex-1 min-w-0 group-hover:text-brand">
+                    {label}
+                  </span>
+                  <span className="font-mono text-[11px] text-ink-muted flex-none">
+                    {pct}% · {done}/{p.totalChecklist}
+                  </span>
+                </div>
+                <ProgressBar pct={pct} color={checklistTone(pct)} />
+              </Link>
+            )
+          })}
         </div>
       </CardContent>
     </Card>
   )
 }
 
+// ---------------------------------------------------------------------
+// Business overview
+// ---------------------------------------------------------------------
+
 function BusinessOverviewCard() {
   const { data, isLoading } = useBusinessOverview(true)
+  const profitPositive = (data?.totalProfitCents ?? 0) >= 0
 
   return (
-    <Card>
+    <Card className="shadow-[0_1px_2px_rgba(23,25,28,0.04)]">
       <CardHeader>
-        <CardTitle>Business overview</CardTitle>
+        <CardTitle className="flex items-center gap-[8px]">
+          <Wallet size={16} strokeWidth={2.25} className="text-ink-muted" />
+          Business overview
+        </CardTitle>
       </CardHeader>
-      <CardContent className="p-[16px_18px] flex flex-col gap-4">
-        {isLoading && <Skeleton className="h-[90px] w-full" />}
+      <CardContent className="p-[18px] flex flex-col gap-[18px]">
+        {isLoading && <Skeleton className="h-[72px] w-full" />}
         {!isLoading && data && (
           <>
             <div className="flex flex-wrap gap-[10px]">
-              <StatTile label="Total retainer (mo.)" value={formatCents(data.totalRetainerCents)} />
-              <StatTile label="Labor cost (mo.)" value={formatCents(data.totalLaborCostCents)} />
-              <StatTile label="Expenses (mo.)" value={formatCents(data.totalExpensesCents)} />
               <StatTile
-                label="Profit (mo.)"
+                label="Total retainer / mo."
+                value={formatCents(data.totalRetainerCents)}
+                icon={Wallet}
+                tone="brand"
+              />
+              <StatTile
+                label="Labor cost / mo."
+                value={formatCents(data.totalLaborCostCents)}
+                icon={Users}
+                tone="neutral"
+              />
+              <StatTile
+                label="Expenses / mo."
+                value={formatCents(data.totalExpensesCents)}
+                icon={Receipt}
+                tone="neutral"
+              />
+              <StatTile
+                label="Profit / mo."
                 value={formatCents(data.totalProfitCents)}
                 note={`${data.hoursLoggedThisMonth.toFixed(1)}h logged`}
+                icon={profitPositive ? TrendingUp : TrendingDown}
+                tone={profitPositive ? 'green' : 'red'}
               />
             </div>
 
-            <div className="flex flex-col gap-1">
-              <h3 className="m-0 font-mono text-[11px] uppercase tracking-[0.08em] text-ink-muted">
-                Flagged accounts
-              </h3>
+            <div className="flex flex-col gap-[2px]">
+              <SectionLabel icon={AlertTriangle}>Flagged accounts</SectionLabel>
               {data.atRiskAccounts.length === 0 && (
-                <p className="m-0 text-[13px] text-ink-muted">No accounts marked Watch or At risk.</p>
+                <EmptyNote>No accounts marked Watch or At risk.</EmptyNote>
               )}
               {data.atRiskAccounts.map((a) => (
-                <Link
+                <ListRow
                   key={a.id}
                   to={`/clients/${a.id}`}
-                  className="flex items-center justify-between gap-2 py-[6px] border-b border-border-light-2 last:border-b-0 text-ink no-underline hover:text-brand"
-                >
-                  <span className="text-[13px] font-medium truncate">{a.name}</span>
-                  <Badge tone={HEALTH_TONE[a.health]}>{HEALTH_LABEL[a.health]}</Badge>
-                </Link>
+                  title={a.name}
+                  trailing={<Badge tone={HEALTH_TONE[a.health]}>{HEALTH_LABEL[a.health]}</Badge>}
+                />
               ))}
             </div>
           </>
@@ -176,26 +346,36 @@ function BusinessOverviewCard() {
   )
 }
 
+// ---------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------
+
+function greeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
 export function DashboardPage() {
   const { data: currentMember } = useCurrentMember()
   const isAdminOrManager = currentMember?.role === 'admin' || currentMember?.role === 'manager'
+  const firstName = currentMember?.name?.split(' ')[0]
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-[18px]">
+      <div className="flex flex-col gap-[3px]">
         <span className="font-mono text-[11px] tracking-[0.14em] uppercase text-ink-muted">
-          At a glance
+          {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
         </span>
-        <h1 className="m-0 text-[25px] font-semibold tracking-[-0.02em]">Dashboard</h1>
+        <h1 className="m-0 text-[26px] font-semibold tracking-[-0.02em]">
+          {greeting()}{firstName ? `, ${firstName}` : ''}
+        </h1>
       </div>
 
-      <section className="flex flex-wrap gap-3 items-start">
-        <div className="flex-[1_1_420px] min-w-0">
-          <AgencyOverviewCard />
-        </div>
-        <div className="flex-[1_1_420px] min-w-0">
-          <MyWorkTodayCard />
-        </div>
+      <section className="grid gap-[14px]" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))' }}>
+        <AgencyOverviewCard />
+        <MyWorkTodayCard />
       </section>
 
       {isAdminOrManager && <BusinessOverviewCard />}

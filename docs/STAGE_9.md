@@ -512,6 +512,41 @@ different stack entirely, so nothing from it carries over; this was
 built to match the app's own existing card/stat-tile conventions
 instead.)
 
+### Visual pass — "the design is very old"
+
+A second repo was floated as a design reference too
+(`nexu-io/open-design` — OpenDesign, a full local-first AI design
+workspace with its own Next.js app, agent/MCP integration, and a
+library of design-system/template packages including a "dashboard"
+template). It's a platform for generating designs with a coding agent,
+not a drop-in component library, so there was nothing to literally
+port from it here — the actual ask was "make it look better," which
+this addresses directly against the app's own tokens. Reworked all three
+Dashboard sections in place, still inside the app's existing design
+tokens (`index.css` — no new colors, fonts, or a second visual
+language that would clash the moment you click through to Clients or
+Billing):
+
+- Every stat now sits in an icon tile (`lucide-react`, already a
+  dependency) tinted with the same pill colors `Badge` already uses —
+  blue for neutral counts, green/amber/red for
+  healthy/watch/at-risk and profit/loss — instead of a bare number in
+  a plain box.
+- **My clients** rows (in "My work today") now show a real progress
+  bar + percentage per engagement (`ProgressBar`, the same component
+  `checklist-card.tsx` already uses), replacing the raw "162 pending /
+  162" fraction, which read as broken rather than "0% done so far
+  this month."
+- List rows (renewals, flagged accounts) gained a hover affordance
+  (arrow fades in) and color-coded urgency on renewals — red inside 7
+  days, amber inside 30, neutral beyond that — instead of flat mono
+  text.
+- The header is now a time-of-day greeting with the signed-in
+  member's first name, replacing the generic "AT A GLANCE" label.
+
+No data/hook changes — `use-dashboard.ts` is untouched; this was a
+presentation-only pass over `dashboard-page.tsx`.
+
 ## What's next
 
 Pick from the cut list above, or scope net-new "Stage 10" work. Ask
