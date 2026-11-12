@@ -547,6 +547,32 @@ Billing):
 No data/hook changes — `use-dashboard.ts` is untouched; this was a
 presentation-only pass over `dashboard-page.tsx`.
 
+### Second pass — real charts, not just colored boxes
+
+Followed up ("make sure dashboard... are good," left to judgment) by
+pulling in **Recharts** — already a project dependency per the
+original design handoff (`docs/DESIGN_HANDOFF.md`: "Charts | Recharts
+| Trend lines and deltas") but never actually used anywhere until now:
+
+- **Client health mix** (Agency overview) — the separate Healthy/
+  Watch/At-risk stat tiles became one small donut chart + legend,
+  reading as a proportion at a glance instead of three numbers you
+  have to add up yourself.
+- **Where the retainer went** (Business overview) — a new horizontal
+  bar comparing Labor / Expenses / Profit in dollars for the month, so
+  "is this account's retainer actually covering its cost" is visible
+  immediately rather than requiring mental subtraction across three
+  stat tiles. Colored the same way Profit's stat tile already is
+  (green if positive, red if negative).
+
+Trade-off worth knowing: Recharts adds real weight to the bundle (the
+main chunk's gzip size went from ~332KB to ~432KB) that every staff
+member now pays on login, since Dashboard is the landing page. Not
+code-split — this app has no lazy-route-loading set up anywhere yet,
+and adding it just for this would be new infrastructure, not a
+Dashboard change; flag it if load time on a slow connection ever
+becomes a real complaint.
+
 ## What's next
 
 Pick from the cut list above, or scope net-new "Stage 10" work. Ask

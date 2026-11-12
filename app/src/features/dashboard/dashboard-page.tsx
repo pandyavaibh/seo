@@ -3,15 +3,14 @@ import {
   ArrowRight,
   Building2,
   CalendarDays,
-  CheckCircle2,
   Clock,
-  Eye,
   Receipt,
   TrendingDown,
   TrendingUp,
   Users,
   Wallet,
 } from 'lucide-react'
+import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
 import { Link } from 'react-router-dom'
 
 import { Badge, type PillTone } from '@/components/ui/badge'
@@ -160,6 +159,44 @@ function renewalTone(daysUntil: number): PillTone {
   return 'neutral'
 }
 
+function HealthMixChart({ healthy, watch, atRisk }: { healthy: number; watch: number; atRisk: number }) {
+  const rows = [
+    { name: 'Healthy', value: healthy, color: 'var(--color-signal-green)' },
+    { name: 'Watch', value: watch, color: 'var(--color-signal-amber)' },
+    { name: 'At risk', value: atRisk, color: 'var(--color-signal-red)' },
+  ]
+  const data = rows.filter((r) => r.value > 0)
+  const total = healthy + watch + atRisk
+
+  if (total === 0) return null
+
+  return (
+    <div className="bg-surface-sunken-2 border border-border-light rounded-[11px] p-[13px_14px] flex items-center gap-[16px] flex-1 min-w-[220px]">
+      <div className="w-[76px] h-[76px] flex-none">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={data} dataKey="value" nameKey="name" innerRadius={24} outerRadius={38} paddingAngle={3} stroke="none" isAnimationActive={false}>
+              {data.map((d) => (
+                <Cell key={d.name} fill={d.color} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="flex flex-col gap-[5px] min-w-0">
+        <span className="font-mono text-[9.5px] tracking-[0.1em] uppercase text-ink-muted">Client health mix</span>
+        {rows.map((r) => (
+          <div key={r.name} className="flex items-center gap-[7px] text-[12.5px]">
+            <span className="w-[8px] h-[8px] rounded-full flex-none" style={{ background: r.color }} />
+            <span className="text-ink-secondary flex-1">{r.name}</span>
+            <span className="font-mono text-ink-muted">{r.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function AgencyOverviewCard() {
   const { data, isLoading } = useAgencyOverview()
 
@@ -177,9 +214,7 @@ function AgencyOverviewCard() {
           <>
             <div className="flex flex-wrap gap-[10px]">
               <StatTile label="Active clients" value={String(data.totalClients)} icon={Users} tone="brand" />
-              <StatTile label="Healthy" value={String(data.healthy)} icon={CheckCircle2} tone="green" />
-              <StatTile label="Watch" value={String(data.watch)} icon={Eye} tone="amber" />
-              <StatTile label="At risk" value={String(data.atRisk)} icon={AlertTriangle} tone="red" />
+              <HealthMixChart healthy={data.healthy} watch={data.watch} atRisk={data.atRisk} />
             </div>
 
             <div className="flex flex-col gap-[2px]">
@@ -281,6 +316,53 @@ function MyWorkTodayCard() {
 // Business overview
 // ---------------------------------------------------------------------
 
+function RetainerBreakdownChart({
+  laborCostCents,
+  expensesCents,
+  profitCents,
+}: {
+  laborCostCents: number
+  expensesCents: number
+  profitCents: number
+}) {
+  const data = [
+    { name: 'Labor', value: Math.round(laborCostCents / 100), color: 'var(--color-ink-faint)' },
+    { name: 'Expenses', value: Math.round(expensesCents / 100), color: 'var(--color-signal-amber)' },
+    {
+      name: 'Profit',
+      value: Math.round(profitCents / 100),
+      color: profitCents >= 0 ? 'var(--color-signal-green)' : 'var(--color-signal-red)',
+    },
+  ]
+  if (data.every((d) => d.value === 0)) return null
+
+  return (
+    <div className="flex flex-col gap-[6px]">
+      <SectionLabel icon={Wallet}>Where the retainer went, this month ($)</SectionLabel>
+      <div className="h-[104px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 0 }}>
+            <XAxis type="number" hide />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={64}
+              tick={{ fontSize: 11.5, fill: 'var(--color-ink-muted)' }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Bar dataKey="value" radius={5} barSize={16} isAnimationActive={false}>
+              {data.map((d) => (
+                <Cell key={d.name} fill={d.color} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  )
+}
+
 function BusinessOverviewCard() {
   const { data, isLoading } = useBusinessOverview(true)
   const profitPositive = (data?.totalProfitCents ?? 0) >= 0
@@ -324,6 +406,12 @@ function BusinessOverviewCard() {
                 tone={profitPositive ? 'green' : 'red'}
               />
             </div>
+
+            <RetainerBreakdownChart
+              laborCostCents={data.totalLaborCostCents}
+              expensesCents={data.totalExpensesCents}
+              profitCents={data.totalProfitCents}
+            />
 
             <div className="flex flex-col gap-[2px]">
               <SectionLabel icon={AlertTriangle}>Flagged accounts</SectionLabel>
