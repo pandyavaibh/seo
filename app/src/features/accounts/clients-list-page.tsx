@@ -1,6 +1,6 @@
 import { AlertTriangle, Building2 } from 'lucide-react'
 import * as React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge, type PillTone } from '@/components/ui/badge'
@@ -312,22 +312,36 @@ function isRenewalSoon(renewalOn: string | null) {
 
 export function ClientsListPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { data, isLoading, isError, error, refetch, isFetching } =
     useClientsAndEngagements()
   const { data: currentMember } = useCurrentMember()
   const canAddClient = currentMember?.role === 'admin' || currentMember?.role === 'manager'
   const [showAddForm, setShowAddForm] = React.useState(false)
 
+  const healthFilter = searchParams.get('health') as AccountHealth | null
+  const visibleClients = healthFilter
+    ? (data?.clients ?? []).filter((c) => c.health === healthFilter)
+    : data?.clients ?? []
+
   return (
     <div className="flex flex-col gap-[18px]">
       <div className="flex flex-wrap gap-3 items-end justify-between">
         <div className="flex flex-col gap-1">
           <span className="font-mono text-[11px] tracking-[0.14em] uppercase text-ink-muted">
-            {data ? `${data.clients.length} clients` : 'Loading…'}
+            {data ? `${visibleClients.length} of ${data.clients.length} clients` : 'Loading…'}
           </span>
           <h1 className="m-0 text-[25px] font-semibold tracking-[-0.02em]">
             Clients
           </h1>
+          {healthFilter && (
+            <button
+              onClick={() => setSearchParams({})}
+              className="self-start flex items-center gap-[6px] mt-1 border-none cursor-pointer p-0"
+            >
+              <Badge tone={HEALTH_TONE[healthFilter]}>{HEALTH_LABEL[healthFilter]} ×</Badge>
+            </button>
+          )}
         </div>
         {canAddClient && !showAddForm && (
           <Button onClick={() => setShowAddForm(true)}>Add client</Button>
@@ -375,9 +389,19 @@ export function ClientsListPage() {
         </div>
       )}
 
-      {!isError && !isLoading && data && data.clients.length > 0 && (
+      {!isError && !isLoading && data && data.clients.length > 0 && visibleClients.length === 0 && (
+        <div className="bg-surface border border-border rounded-[14px] shadow-[var(--shadow-sm)]">
+          <EmptyState
+            icon={Building2}
+            title="No clients match this filter"
+            description={`Nobody's marked ${healthFilter ? HEALTH_LABEL[healthFilter] : 'this'} right now.`}
+          />
+        </div>
+      )}
+
+      {!isError && !isLoading && data && visibleClients.length > 0 && (
         <div className="flex flex-col gap-3">
-          {data.clients.map((c) => (
+          {visibleClients.map((c) => (
             <Card key={c.id}>
               <CardHeader
                 className="cursor-pointer"

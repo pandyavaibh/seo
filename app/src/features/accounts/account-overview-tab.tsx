@@ -58,9 +58,21 @@ function formatMoney(cents: number | null, currency: string) {
   }).format(cents / 100)
 }
 
-function StatTile({ label, value, note }: { label: string; value: string; note?: string }) {
-  return (
-    <div className="bg-surface border border-border rounded-[14px] p-[14px_16px] flex flex-col gap-[6px] shadow-[var(--shadow-sm)]">
+function StatTile({
+  label,
+  value,
+  note,
+  anchor,
+}: {
+  label: string
+  value: string
+  note?: string
+  anchor?: string
+}) {
+  const classes =
+    'bg-surface border border-border rounded-[14px] p-[14px_16px] flex flex-col gap-[6px] shadow-[var(--shadow-sm)]'
+  const inner = (
+    <>
       <span className="font-mono text-[10px] tracking-[0.12em] uppercase text-ink-muted">
         {label}
       </span>
@@ -68,8 +80,16 @@ function StatTile({ label, value, note }: { label: string; value: string; note?:
         {value}
       </span>
       {note && <span className="text-[11.5px] text-ink-muted">{note}</span>}
-    </div>
+    </>
   )
+  if (anchor) {
+    return (
+      <a href={anchor} className={`${classes} no-underline text-inherit transition-colors hover:border-brand`}>
+        {inner}
+      </a>
+    )
+  }
+  return <div className={classes}>{inner}</div>
 }
 
 function PerformanceTiles({ accountId }: { accountId: string }) {
@@ -707,7 +727,7 @@ export function AccountOverviewTab() {
     <div className="flex flex-col gap-4">
       <section className="grid gap-[10px]" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(168px, 1fr))' }}>
         <StatTile label="Engagement" value={acc.projects[0]?.name ?? 'Not set up'} />
-        <StatTile label="Contacts" value={String(acc.contacts.length)} />
+        <StatTile label="Contacts" value={String(acc.contacts.length)} anchor="#contacts-card" />
         <StatTile
           label="Hours budget"
           value={acc.hoursBudget != null ? `${acc.hoursBudget}h / mo` : '—'}
@@ -850,7 +870,9 @@ export function AccountOverviewTab() {
             </CardContent>
           </Card>
 
-          <ContactsCard accountId={accountId} contacts={acc.contacts} />
+          <div id="contacts-card" className="scroll-mt-4">
+            <ContactsCard accountId={accountId} contacts={acc.contacts} />
+          </div>
         </div>
       </section>
 

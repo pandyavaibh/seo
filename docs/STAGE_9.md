@@ -702,12 +702,61 @@ Deliberately not chased, to keep this a bounded pass rather than a
 rebuild: SE Ranking's two-tier sidebar (an icon-only rail plus a second
 expandable panel) — this app has ~5 top-level destinations total vs.
 SE Ranking's dozens, so a single-column icon+label sidebar already
-fits; its segmented position-range filter control and per-row colored
-tag stripes in the rankings table — decorative/filtering features with
-no equivalent data model here yet; and sparklines under each top-level
-stat — would need real historical deltas we don't compute anywhere
-yet, and fabricating a trend line with no real data behind it was
-ruled out rather than attempted.
+fits; per-row colored tag stripes in the rankings table — purely
+decorative, no data behind them even in SE Ranking's own UI; and
+sparklines under each top-level stat — would need real historical
+deltas we don't compute anywhere yet, and fabricating a trend line
+with no real data behind it was ruled out rather than attempted. (The
+segmented position-range filter *was* built — see below; it turned
+out to have a real data model after all.)
+
+## Real drill-through features (not just styling)
+
+More screenshots followed, including interactive bits (SE Ranking's
+position-range filter, its clickable KPI numbers, chart legend
+toggles, a jumped/dropped/unchanged movement panel). Asked directly
+which of those to actually build, since some are real features, not
+visual choices — toggleable chart legends and clickable "jump to
+detail" numbers need interactivity + a target to link to, not CSS.
+Picked: build the ones with real data behind them already, skip the
+ones that would need fabricating data or a feature this app doesn't
+have (Page Changes Monitor — page-diffing/crawling — was flagged as
+entirely out of scope here, not attempted).
+
+What has real data and got built:
+
+- **Keywords position-range filter** (`keywords-section.tsx`) — the
+  Tracked/Top 3/Top 10/Top 30 stat tiles are now clickable and filter
+  the table to that tier (plus a new "Not ranked" tile), mirroring SE
+  Ranking's own position-filter segmented control. Filtering by
+  `latestRank` was already computed per keyword — this just exposes
+  it as a real control instead of a static number.
+- **Jumped / Dropped / Unchanged movement breakdown** — new `jumped`/
+  `dropped`/`unchanged` fields on `KeywordStats` (`use-keywords.ts`),
+  computed by comparing each keyword's `latestRank` against its
+  `previousRank` (both already tracked, just never compared against
+  each other before). Rendered as a segmented bar + percentage
+  breakdown, directly mirroring SE Ranking's "distribution of top
+  positions" movement panel — and genuinely computed, not decorative.
+- **Real drill-throughs**: Dashboard's "Active clients" tile and its
+  health-mix legend rows (Healthy/Watch/At risk) now link to `/clients`
+  and `/clients?health=watch` etc. — `ClientsListPage` gained a
+  `health` query-param filter (with a visible "× clear" chip) to make
+  that a real destination, not a dead link. The Account Overview tab's
+  "Contacts" stat now jumps to the Contacts card on the same page.
+
+Not built, and why: **toggleable chart legends** — this app has
+exactly two charts (Dashboard's health donut and retainer-breakdown
+bar), neither multi-series in a way a toggle would do anything useful
+for; there's no existing multi-line time-series chart anywhere to add
+a toggle to without building a new chart from scratch first, which is
+a bigger ask than "add a toggle." **Numbers styled blue because
+they're clickable** — SE Ranking only tints a number blue when it
+truly links somewhere; several numbers shown in later screenshots
+(organic traffic, keywords) were plain dark text even in their own
+app. Colored the ones that now actually link (the Dashboard tiles
+above); left the rest alone rather than tinting text with nothing
+behind the click.
 
 ## What's next
 

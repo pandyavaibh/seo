@@ -82,23 +82,35 @@ function StatTile({
   note,
   icon,
   tone = 'neutral',
+  to,
 }: {
   label: string
   value: string
   note?: string
   icon: React.ComponentType<{ size?: number; strokeWidth?: number }>
   tone?: keyof typeof TILE_TINT
+  to?: string
 }) {
-  return (
-    <div className="bg-surface-sunken-2 border border-border-light rounded-[11px] p-[13px_14px] flex items-start gap-[10px] flex-1 min-w-[150px]">
+  const classes =
+    'bg-surface-sunken-2 border border-border-light rounded-[11px] p-[13px_14px] flex items-start gap-[10px] flex-1 min-w-[150px] no-underline text-inherit'
+  const inner = (
+    <>
       <IconTile icon={icon} tone={tone} />
       <div className="flex flex-col gap-[2px] min-w-0">
         <span className="font-mono text-[9.5px] tracking-[0.1em] uppercase text-ink-muted">{label}</span>
         <span className="text-[20px] font-semibold tracking-[-0.02em] leading-tight truncate">{value}</span>
         {note && <span className="text-[11px] text-ink-muted">{note}</span>}
       </div>
-    </div>
+    </>
   )
+  if (to) {
+    return (
+      <Link to={to} className={`${classes} transition-colors hover:border-brand`}>
+        {inner}
+      </Link>
+    )
+  }
+  return <div className={classes}>{inner}</div>
 }
 
 function SectionLabel({
@@ -160,10 +172,10 @@ function renewalTone(daysUntil: number): PillTone {
 }
 
 function HealthMixChart({ healthy, watch, atRisk }: { healthy: number; watch: number; atRisk: number }) {
-  const rows = [
-    { name: 'Healthy', value: healthy, color: 'var(--color-signal-green)' },
-    { name: 'Watch', value: watch, color: 'var(--color-signal-amber)' },
-    { name: 'At risk', value: atRisk, color: 'var(--color-signal-red)' },
+  const rows: { name: string; value: number; color: string; health: AccountHealth }[] = [
+    { name: 'Healthy', value: healthy, color: 'var(--color-signal-green)', health: 'healthy' },
+    { name: 'Watch', value: watch, color: 'var(--color-signal-amber)', health: 'watch' },
+    { name: 'At risk', value: atRisk, color: 'var(--color-signal-red)', health: 'at_risk' },
   ]
   const data = rows.filter((r) => r.value > 0)
   const total = healthy + watch + atRisk
@@ -186,11 +198,15 @@ function HealthMixChart({ healthy, watch, atRisk }: { healthy: number; watch: nu
       <div className="flex flex-col gap-[5px] min-w-0">
         <span className="font-mono text-[9.5px] tracking-[0.1em] uppercase text-ink-muted">Client health mix</span>
         {rows.map((r) => (
-          <div key={r.name} className="flex items-center gap-[7px] text-[12.5px]">
+          <Link
+            key={r.name}
+            to={`/clients?health=${r.health}`}
+            className="group flex items-center gap-[7px] text-[12.5px] no-underline text-inherit"
+          >
             <span className="w-[8px] h-[8px] rounded-full flex-none" style={{ background: r.color }} />
-            <span className="text-ink-secondary flex-1">{r.name}</span>
-            <span className="font-mono text-ink-muted">{r.value}</span>
-          </div>
+            <span className="text-ink-secondary flex-1 group-hover:text-brand">{r.name}</span>
+            <span className="font-mono text-ink-muted group-hover:text-brand">{r.value}</span>
+          </Link>
         ))}
       </div>
     </div>
@@ -213,7 +229,7 @@ function AgencyOverviewCard() {
         {!isLoading && data && (
           <>
             <div className="flex flex-wrap gap-[10px]">
-              <StatTile label="Active clients" value={String(data.totalClients)} icon={Users} tone="brand" />
+              <StatTile label="Active clients" value={String(data.totalClients)} icon={Users} tone="brand" to="/clients" />
               <HealthMixChart healthy={data.healthy} watch={data.watch} atRisk={data.atRisk} />
             </div>
 

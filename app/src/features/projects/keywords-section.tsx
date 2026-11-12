@@ -10,6 +10,7 @@ import {
   useSetKeywordTarget,
   useSetSearchVolume,
   type KeywordMatrixRow,
+  type KeywordStats,
 } from '@/features/projects/use-keywords'
 import { useCurrentMember } from '@/features/team/use-current-member'
 
@@ -37,12 +38,50 @@ function RankBadge({ rank }: { rank: number | null }) {
   )
 }
 
-function StatTileSmall({ label, value }: { label: string; value: string }) {
+type PositionFilter = 'all' | 'top3' | 'top10' | 'top30' | 'unranked'
+
+function matchesFilter(latestRank: number | null, filter: PositionFilter) {
+  if (filter === 'all') return true
+  if (filter === 'unranked') return latestRank == null
+  if (latestRank == null) return false
+  if (filter === 'top3') return latestRank <= 3
+  if (filter === 'top10') return latestRank <= 10
+  return latestRank <= 30
+}
+
+// Clickable stat tiles double as a position-range filter for the table
+// below — the same "click a stat to filter the rankings by it" pattern
+// SE Ranking's own position-filter segmented control uses.
+function StatTileSmall({
+  label,
+  value,
+  active,
+  onClick,
+}: {
+  label: string
+  value: string
+  active?: boolean
+  onClick?: () => void
+}) {
+  const Tag = onClick ? 'button' : 'div'
   return (
-    <div className="bg-surface-sunken border border-border-light rounded-[10px] p-[10px_12px] flex flex-col gap-[3px]">
-      <span className="font-mono text-[9.5px] tracking-[0.1em] uppercase text-ink-muted">{label}</span>
+    <Tag
+      onClick={onClick}
+      className={`rounded-[10px] p-[10px_12px] flex flex-col gap-[3px] text-left transition-colors ${
+        onClick ? 'cursor-pointer' : ''
+      } ${
+        active
+          ? 'bg-brand text-white border border-brand'
+          : 'bg-surface-sunken border border-border-light hover:border-border'
+      }`}
+    >
+      <span
+        className={`font-mono text-[9.5px] tracking-[0.1em] uppercase ${active ? 'text-white/70' : 'text-ink-muted'}`}
+      >
+        {label}
+      </span>
       <span className="text-[18px] font-semibold tracking-[-0.02em] leading-none">{value}</span>
-    </div>
+    </Tag>
   )
 }
 
@@ -143,6 +182,48 @@ function KeywordMatrixRowView({
   )
 }
 
+// Jumped/dropped/unchanged since the previous check date, as one segmented
+// bar + a breakdown row — mirrors SE Ranking's own "distribution of top
+// positions" movement panel, built from latestRank vs. previousRank
+// (already computed per keyword), not a fabricated trend.
+function MovementBreakdown({ stats }: { stats: KeywordStats }) {
+  const total = stats.jumped + stats.dropped + stats.unchanged
+  if (total === 0) return null
+
+  const pct = (n: number) => Math.round((n / total) * 100)
+  const segments = [
+    { label: 'Jumped', value: stats.jumped, color: 'var(--color-signal-green)' },
+    { label: 'Dropped', value: stats.dropped, color: 'var(--color-signal-red)' },
+    { label: 'Unchanged', value: stats.unchanged, color: 'var(--color-ink-faint)' },
+  ]
+
+  return (
+    <div className="flex flex-col gap-[6px]">
+      <span className="font-mono text-[9.5px] tracking-[0.1em] uppercase text-ink-muted">
+        Since last check · {total} compared
+      </span>
+      <div className="h-[8px] rounded-[4px] overflow-hidden flex bg-track">
+        {segments.map((s) =>
+          s.value > 0 ? (
+            <span key={s.label} style={{ width: `${pct(s.value)}%`, background: s.color }} />
+          ) : null,
+        )}
+      </div>
+      <div className="flex flex-wrap gap-[14px]">
+        {segments.map((s) => (
+          <span key={s.label} className="flex items-center gap-[6px] text-[12px]">
+            <span className="w-[8px] h-[8px] rounded-full flex-none" style={{ background: s.color }} />
+            <span className="text-ink-secondary">{s.label}</span>
+            <span className="font-mono text-ink-muted">
+              {s.value} ({pct(s.value)}%)
+            </span>
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function AddKeywordsBox({ projectId }: { projectId: string }) {
   const [open, setOpen] = React.useState(false)
   const [text, setText] = React.useState('')
@@ -209,6 +290,7 @@ export function KeywordsSection({ projectId }: { projectId: string }) {
 
   const [loggingDate, setLoggingDate] = React.useState<string | null>(null)
   const [draft, setDraft] = React.useState<Record<string, string>>({})
+  const [positionFilter, setPositionFilter] = React.useState<PositionFilter>('all')
 
   const beginLogging = (date: string) => {
     const seed: Record<string, string> = {}
@@ -227,6 +309,7 @@ export function KeywordsSection({ projectId }: { projectId: string }) {
 
   const displayDates = data ? (loggingDate ? data.dates.filter((d) => d !== loggingDate) : data.dates) : []
   const hasDraftValues = Object.values(draft).some((v) => v.trim())
+  const filteredRows = (data?.rows ?? []).filter((r) => matchesFilter(r.latestRank, positionFilter))
 
   return (
     <div className="bg-surface border border-border rounded-[14px] overflow-hidden shadow-[var(--shadow-sm)]">
@@ -242,15 +325,43 @@ export function KeywordsSection({ projectId }: { projectId: string }) {
               className="grid gap-[10px]"
               style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))' }}
             >
-              <StatTileSmall label="Tracked" value={String(data.stats.tracked)} />
+              <StatTileSmall
+                label="Tracked"
+                value={String(data.stats.tracked)}
+                active={positionFilter === 'all'}
+                onClick={() => setPositionFilter('all')}
+              />
               <StatTileSmall
                 label="Avg position"
                 value={data.stats.averagePosition != null ? data.stats.averagePosition.toFixed(1) : '—'}
               />
-              <StatTileSmall label="Top 3" value={String(data.stats.top3)} />
-              <StatTileSmall label="Top 10" value={String(data.stats.top10)} />
-              <StatTileSmall label="Top 30" value={String(data.stats.top30)} />
+              <StatTileSmall
+                label="Top 3"
+                value={String(data.stats.top3)}
+                active={positionFilter === 'top3'}
+                onClick={() => setPositionFilter('top3')}
+              />
+              <StatTileSmall
+                label="Top 10"
+                value={String(data.stats.top10)}
+                active={positionFilter === 'top10'}
+                onClick={() => setPositionFilter('top10')}
+              />
+              <StatTileSmall
+                label="Top 30"
+                value={String(data.stats.top30)}
+                active={positionFilter === 'top30'}
+                onClick={() => setPositionFilter('top30')}
+              />
+              <StatTileSmall
+                label="Not ranked"
+                value={String(data.rows.filter((r) => r.latestRank == null).length)}
+                active={positionFilter === 'unranked'}
+                onClick={() => setPositionFilter('unranked')}
+              />
             </section>
+
+            <MovementBreakdown stats={data.stats} />
 
             <div className="flex items-center gap-2">
               {loggingDate == null ? (
@@ -298,6 +409,16 @@ export function KeywordsSection({ projectId }: { projectId: string }) {
 
             {data.rows.length === 0 ? (
               <p className="m-0 text-[13px] text-ink-muted">No keywords tracked yet — add some below.</p>
+            ) : filteredRows.length === 0 ? (
+              <p className="m-0 text-[13px] text-ink-muted">
+                No keywords match this filter.{' '}
+                <button
+                  onClick={() => setPositionFilter('all')}
+                  className="border-none bg-transparent text-brand hover:underline cursor-pointer p-0 font-inherit"
+                >
+                  Clear filter
+                </button>
+              </p>
             ) : (
               <div className="overflow-x-auto border border-border-light rounded-[10px]">
                 <table className="w-full min-w-[480px] border-collapse text-[13px]">
@@ -331,7 +452,7 @@ export function KeywordsSection({ projectId }: { projectId: string }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.rows.map((k, i) => (
+                    {filteredRows.map((k, i) => (
                       <KeywordMatrixRowView
                         key={k.id}
                         keyword={k}

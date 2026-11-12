@@ -19,6 +19,13 @@ export interface KeywordStats {
   top3: number
   top10: number
   top30: number
+  // Movement since the previous check date — only counted for keywords with
+  // two data points to compare, same as SE Ranking's own "jumped/dropped/
+  // unchanged" breakdown; a keyword with only one check isn't "unchanged",
+  // it's just new.
+  jumped: number
+  dropped: number
+  unchanged: number
 }
 
 export interface KeywordsMatrixData {
@@ -75,6 +82,7 @@ export function useKeywords(projectId: string | undefined) {
       })
 
       const ranked = rows.filter((r) => r.latestRank != null).map((r) => r.latestRank!)
+      const comparable = rows.filter((r) => r.latestRank != null && r.previousRank != null)
       const stats: KeywordStats = {
         tracked: rows.length,
         averagePosition:
@@ -82,6 +90,9 @@ export function useKeywords(projectId: string | undefined) {
         top3: ranked.filter((r) => r <= 3).length,
         top10: ranked.filter((r) => r <= 10).length,
         top30: ranked.filter((r) => r <= 30).length,
+        jumped: comparable.filter((r) => r.latestRank! < r.previousRank!).length,
+        dropped: comparable.filter((r) => r.latestRank! > r.previousRank!).length,
+        unchanged: comparable.filter((r) => r.latestRank! === r.previousRank!).length,
       }
 
       return { dates, rows, stats }
