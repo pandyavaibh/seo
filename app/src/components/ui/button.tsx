@@ -10,9 +10,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          'bg-ink text-[#F4F3EF] border border-ink shadow-[var(--shadow-sm)] hover:bg-[#2C3035] hover:shadow-[var(--shadow-md)]',
+          'bg-brand text-white border border-brand shadow-[var(--shadow-sm)] hover:bg-[#194a39] hover:shadow-[var(--shadow-md)]',
         secondary:
-          'bg-surface text-ink border border-border hover:bg-[#EFEDE6] hover:border-[#D7D4C9]',
+          'bg-surface text-ink border border-border hover:bg-surface-sunken hover:border-[#CBD2DE]',
         ghost: 'bg-transparent text-ink-muted hover:text-ink hover:bg-surface-sunken border-none',
       },
       size: {

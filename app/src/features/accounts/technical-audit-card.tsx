@@ -13,15 +13,32 @@ function scoreTone(score: number | null): 'green' | 'amber' | 'red' | 'neutral' 
   return 'red'
 }
 
+const SCORE_SOLID: Record<ReturnType<typeof scoreTone>, string> = {
+  green: 'var(--color-signal-green)',
+  amber: 'var(--color-signal-amber)',
+  red: 'var(--color-signal-red)',
+  neutral: 'var(--color-ink-faint)',
+}
+
+// A solid filled circle (score on a colored disc, white text) rather than a
+// soft pastel pill — closer to how a Lighthouse-style score actually reads.
+function ScoreCircle({ score, size = 30 }: { score: number | null; size?: number }) {
+  const tone = scoreTone(score)
+  return (
+    <span
+      className="inline-grid place-items-center rounded-full font-mono font-semibold text-white flex-none"
+      style={{ width: size, height: size, fontSize: size * 0.4, background: SCORE_SOLID[tone] }}
+    >
+      {score ?? '—'}
+    </span>
+  )
+}
+
 function ScoreTile({ label, score }: { label: string; score: number | null }) {
   return (
-    <div className="bg-surface-sunken border border-border-light rounded-[10px] p-[10px_12px] flex flex-col gap-[3px] flex-1 min-w-[100px]">
+    <div className="bg-surface-sunken border border-border-light rounded-[10px] p-[10px_12px] flex items-center gap-[10px] flex-1 min-w-[120px]">
+      <ScoreCircle score={score} />
       <span className="font-mono text-[9.5px] tracking-[0.1em] uppercase text-ink-muted">{label}</span>
-      <span className="text-[18px] font-semibold tracking-[-0.02em] leading-none">
-        <Badge tone={scoreTone(score)} className="text-[14px] px-[8px] py-[2px]">
-          {score ?? '—'}
-        </Badge>
-      </span>
     </div>
   )
 }
@@ -110,8 +127,8 @@ export function TechnicalAuditCard({ accountId, website }: { accountId: string; 
                 <div key={a.id} className="flex items-center justify-between gap-2 py-[6px] border-t border-border-light">
                   <span className="font-mono text-[11px] text-ink-muted">{new Date(a.runAt).toLocaleString()}</span>
                   <span className="flex items-center gap-[6px]">
-                    <Badge tone={scoreTone(a.performanceScore)}>{a.performanceScore ?? '—'}</Badge>
-                    <Badge tone={scoreTone(a.seoScore)}>{a.seoScore ?? '—'}</Badge>
+                    <ScoreCircle score={a.performanceScore} size={22} />
+                    <ScoreCircle score={a.seoScore} size={22} />
                   </span>
                 </div>
               ))}

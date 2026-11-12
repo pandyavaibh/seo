@@ -1,9 +1,10 @@
-import { AlertTriangle, ArrowLeft } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import * as React from 'react'
-import { Link, Outlet, useNavigate, useParams } from 'react-router-dom'
+import { Outlet, useNavigate, useParams } from 'react-router-dom'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge, type PillTone } from '@/components/ui/badge'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -256,12 +257,9 @@ export function AccountTabsLayout() {
 
   return (
     <div className="flex flex-col gap-4">
-      <Link
-        to="/clients"
-        className="self-start flex items-center gap-1 font-mono text-[11px] tracking-[0.1em] uppercase text-ink-muted hover:text-ink no-underline"
-      >
-        <ArrowLeft size={12} /> All clients
-      </Link>
+      <Breadcrumb
+        items={[{ label: 'Clients', to: '/clients' }, { label: acc?.name ?? 'Loading…' }]}
+      />
 
       {isLoading && (
         <div className="flex flex-col gap-4">

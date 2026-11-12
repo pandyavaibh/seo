@@ -7,32 +7,36 @@
   --font-sans: "Instrument Sans", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
-  --color-paper: #f4f3ef;
+  /* Cool slate-blue neutrals (was warm cream/beige) — the shift that
+     actually reads as "modern SaaS" rather than "editorial doc," per
+     the SE Ranking reference screenshots. Same lightness steps, just a
+     blue-gray hue instead of an olive/beige one. */
+  --color-paper: #f2f4f8;
   --color-surface: #ffffff;
-  --color-surface-sunken: #faf9f6;
-  --color-surface-sunken-2: #fcfbf8;
+  --color-surface-sunken: #f7f9fc;
+  --color-surface-sunken-2: #fafbfd;
 
-  --color-ink: #17191c;
-  --color-ink-secondary: #45483f;
-  --color-ink-muted: #6e7168;
-  --color-ink-faint: #8c8f86;
+  --color-ink: #151a23;
+  --color-ink-secondary: #424b5c;
+  --color-ink-muted: #68718a;
+  --color-ink-faint: #8a92a6;
 
-  --color-border: #e2e0d8;
-  --color-border-light: #edebe4;
-  --color-border-light-2: #f1efe9;
-  --color-track: #ecebe2;
+  --color-border: #dde2ea;
+  --color-border-light: #e8ebf1;
+  --color-border-light-2: #eef1f5;
+  --color-track: #e6eaf1;
 
   --color-brand: #1f5c46;
   --color-signal-green: #3f8a63;
   --color-signal-amber: #c4891c;
   --color-signal-red: #c0561c;
 
-  --color-sidebar: #17191c;
-  --color-sidebar-surface: #262a2f;
-  --color-sidebar-border: #2e3136;
-  --color-sidebar-text: #c9cbc4;
-  --color-sidebar-text-muted: #a7a9a2;
-  --color-sidebar-label: #7e8179;
+  --color-sidebar: #141a24;
+  --color-sidebar-surface: #212938;
+  --color-sidebar-border: #2a3244;
+  --color-sidebar-text: #c7ccd7;
+  --color-sidebar-text-muted: #98a0b3;
+  --color-sidebar-label: #747d90;
 
   --color-pill-green-bg: #e2ece5;
   --color-pill-green-fg: #1f5c46;

@@ -1,4 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Search } from 'lucide-react'
+
+import { Card, CardContent } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useAccountContext } from '@/features/accounts/use-account-context'
 import { KeywordsSection } from '@/features/projects/keywords-section'
 
@@ -9,13 +12,12 @@ export function AccountKeywordsTab() {
   if (!proj) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Keywords</CardTitle>
-        </CardHeader>
-        <CardContent className="p-[16px_18px]">
-          <p className="m-0 text-[13px] text-ink-muted">
-            No engagement set up yet — set one up on the Overview tab to start tracking keywords.
-          </p>
+        <CardContent>
+          <EmptyState
+            icon={Search}
+            title="No engagement set up yet"
+            description="Set one up on the Overview tab to start tracking keywords."
+          />
         </CardContent>
       </Card>
     )

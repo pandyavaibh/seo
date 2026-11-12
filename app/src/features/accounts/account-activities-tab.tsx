@@ -1,4 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Activity } from 'lucide-react'
+
+import { Card, CardContent } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useAccountContext } from '@/features/accounts/use-account-context'
 import { ActivityFeedCard, ActivityGroupsSection } from '@/features/projects/activity-section'
 
@@ -9,13 +12,12 @@ export function AccountActivitiesTab() {
   if (!proj) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Activities</CardTitle>
-        </CardHeader>
-        <CardContent className="p-[16px_18px]">
-          <p className="m-0 text-[13px] text-ink-muted">
-            No engagement set up yet — set one up on the Overview tab to start logging activity.
-          </p>
+        <CardContent>
+          <EmptyState
+            icon={Activity}
+            title="No engagement set up yet"
+            description="Set one up on the Overview tab to start logging activity."
+          />
         </CardContent>
       </Card>
     )

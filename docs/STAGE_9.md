@@ -652,6 +652,63 @@ SaaS dashboard" instinct (more depth, clearer hierarchy, icons,
 underline tabs) while staying inside the app's own established tokens
 — deliberately not a wholesale re-skin with new colors.
 
+### Matched against real SE Ranking screenshots
+
+The user then supplied actual screenshots of SE Ranking's own
+dashboard, rankings table, and empty states — the first real visual
+reference this redesign had, vs. guessing. Pulled in concretely:
+
+- **Cool slate-blue neutrals, not warm cream.** `index.css`'s `paper`/
+  `surface`/`ink`/`border` tokens were warm (olive/beige-tinted) from
+  the original "editorial" design brief; SE Ranking (and most SaaS
+  dashboards) run cool blue-gray. Re-hued every neutral token to a
+  blue-gray family at the same lightness steps — same contrast, same
+  structure, just a different hue family. Signal colors
+  (green/amber/red) and the agency's own brand green were left alone
+  on purpose: those are semantic/identity colors, not neutrals, and
+  warm semantic colors on a cool gray UI is exactly how SE Ranking
+  itself (and GitHub, Linear, etc.) do it.
+- **Primary buttons are brand green, solid** — SE Ranking's own
+  "CREATE PROJECT" convention is a solid green CTA, not black. Swapped
+  `Button`'s `primary` variant from `bg-ink` to `bg-brand`. The app's
+  actual brand green (`#1f5c46`, already used for the white-label
+  portal) was kept rather than adopting SE Ranking's brighter kelly
+  green — same convention, this app's own identity color.
+- **Breadcrumbs** (`components/ui/breadcrumb.tsx`) — `Clients ›
+  {Account name}` on the Account page, replacing the plain "← All
+  clients" text link, matching SE Ranking's "Keppler Speakers ›
+  Rankings › Detailed" pattern (two levels here, not three — the Tabs
+  bar right below already names which tab is open, so a third
+  breadcrumb segment would just repeat it).
+- **Circular score badges**, not pastel pills — SE Ranking's content
+  scores render as solid-colored filled circles with white text
+  (`"67"` on a green disc), not a soft tinted pill. Rebuilt
+  `technical-audit-card.tsx`'s Lighthouse scores as `ScoreCircle`
+  (solid green/amber/red background, white mono text) instead of
+  `Badge`.
+- **Keywords table**: the most-recent date column now gets a subtle
+  background tint (matching SE Ranking's shaded "current" column in
+  its own rankings history view), and each rank cell is a small
+  colored pill-badge (`RankBadge`) instead of plain colored text.
+- **`EmptyState`** (`components/ui/empty-state.tsx`) — a shared
+  centered icon-circle + heading + description + optional action,
+  matching the clean empty states SE Ranking uses for "connect your
+  analytics" / "no audit yet" screens. Applied to the three
+  no-engagement tab prompts (Keywords/Activities/Checklist) and the
+  Clients list's "no clients yet" state, replacing three near-duplicate
+  inline versions of the same pattern.
+
+Deliberately not chased, to keep this a bounded pass rather than a
+rebuild: SE Ranking's two-tier sidebar (an icon-only rail plus a second
+expandable panel) — this app has ~5 top-level destinations total vs.
+SE Ranking's dozens, so a single-column icon+label sidebar already
+fits; its segmented position-range filter control and per-row colored
+tag stripes in the rankings table — decorative/filtering features with
+no equivalent data model here yet; and sparklines under each top-level
+stat — would need real historical deltas we don't compute anywhere
+yet, and fabricating a trend line with no real data behind it was
+ruled out rather than attempted.
+
 ## What's next
 
 Pick from the cut list above, or scope net-new "Stage 10" work. Ask

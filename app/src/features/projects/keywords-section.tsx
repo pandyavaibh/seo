@@ -17,11 +17,24 @@ function TableRowLike({ children }: { children: React.ReactNode }) {
   return <tr className="border-b border-border-light-2">{children}</tr>
 }
 
-function rankColor(rank: number | null) {
-  if (rank == null) return 'var(--color-ink-faint)'
-  if (rank <= 3) return 'var(--color-signal-green)'
-  if (rank <= 10) return 'var(--color-signal-amber)'
-  return 'var(--color-ink-secondary)'
+function rankTone(rank: number | null): { bg: string; fg: string } {
+  if (rank == null) return { bg: 'transparent', fg: 'var(--color-ink-faint)' }
+  if (rank <= 3) return { bg: 'var(--color-pill-green-bg)', fg: 'var(--color-pill-green-fg)' }
+  if (rank <= 10) return { bg: 'var(--color-pill-amber-bg)', fg: 'var(--color-pill-amber-fg)' }
+  return { bg: 'var(--color-pill-neutral-bg)', fg: 'var(--color-ink-secondary)' }
+}
+
+function RankBadge({ rank }: { rank: number | null }) {
+  const { bg, fg } = rankTone(rank)
+  if (rank == null) return <span className="text-[12px]" style={{ color: fg }}>—</span>
+  return (
+    <span
+      className="inline-grid place-items-center min-w-[26px] h-[22px] px-[6px] rounded-full font-mono text-[11.5px] font-semibold"
+      style={{ background: bg, color: fg }}
+    >
+      {rank}
+    </span>
+  )
 }
 
 function StatTileSmall({ label, value }: { label: string; value: string }) {
@@ -118,13 +131,12 @@ function KeywordMatrixRowView({
           />
         </td>
       )}
-      {displayDates.map((date) => (
+      {displayDates.map((date, i) => (
         <td
           key={date}
-          className="p-[11px_12px] font-mono text-[12px] text-center"
-          style={{ color: rankColor(keyword.ranksByDate[date] ?? null) }}
+          className={`p-[8px_12px] text-center ${i === 0 && !loggingDate ? 'bg-surface-sunken' : ''}`}
         >
-          {keyword.ranksByDate[date] ?? '—'}
+          <RankBadge rank={keyword.ranksByDate[date] ?? null} />
         </td>
       ))}
     </TableRowLike>
@@ -308,10 +320,10 @@ export function KeywordsSection({ projectId }: { projectId: string }) {
                           {loggingDate}
                         </th>
                       )}
-                      {displayDates.map((date) => (
+                      {displayDates.map((date, i) => (
                         <th
                           key={date}
-                          className="p-[9px_12px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light text-center"
+                          className={`p-[9px_12px] font-mono text-[10px] uppercase tracking-[0.1em] text-ink-muted border-b border-border-light text-center ${i === 0 && !loggingDate ? 'bg-surface-sunken' : ''}`}
                         >
                           {date}
                         </th>

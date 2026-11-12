@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge, type PillTone } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   useClientsAndEngagements,
@@ -365,13 +366,12 @@ export function ClientsListPage() {
       )}
 
       {!isError && !isLoading && data && data.clients.length === 0 && (
-        <div className="bg-surface border border-border rounded-[14px] p-[40px] flex flex-col items-center gap-2 text-center shadow-[var(--shadow-sm)]">
-          <Building2 className="text-ink-faint" size={28} />
-          <p className="m-0 font-medium text-[14px]">No clients yet</p>
-          <p className="m-0 text-[13px] text-ink-muted max-w-[40ch]">
-            Accounts you add will show up here, with their engagements and
-            staffed team members.
-          </p>
+        <div className="bg-surface border border-border rounded-[14px] shadow-[var(--shadow-sm)]">
+          <EmptyState
+            icon={Building2}
+            title="No clients yet"
+            description="Accounts you add will show up here, with their engagements and staffed team members."
+          />
         </div>
       )}
 

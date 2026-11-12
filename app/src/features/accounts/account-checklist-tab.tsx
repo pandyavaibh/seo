@@ -1,4 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ListChecks } from 'lucide-react'
+
+import { Card, CardContent } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { ChecklistCard } from '@/features/checklist/checklist-card'
 import { useAccountContext } from '@/features/accounts/use-account-context'
 
@@ -9,14 +12,12 @@ export function AccountChecklistTab() {
   if (!proj) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle>Checklist</CardTitle>
-        </CardHeader>
-        <CardContent className="p-[16px_18px]">
-          <p className="m-0 text-[13px] text-ink-muted">
-            No engagement set up yet — set one up on the Overview tab to start the sitewide
-            checklist.
-          </p>
+        <CardContent>
+          <EmptyState
+            icon={ListChecks}
+            title="No engagement set up yet"
+            description="Set one up on the Overview tab to start the sitewide checklist."
+          />
         </CardContent>
       </Card>
     )
