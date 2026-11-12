@@ -357,7 +357,7 @@ export function ClientsListPage() {
       )}
 
       {!isError && isLoading && (
-        <div className="bg-surface border border-border rounded-[12px] p-[18px] flex flex-col gap-3">
+        <div className="bg-surface border border-border rounded-[14px] p-[18px] flex flex-col gap-3 shadow-[var(--shadow-sm)]">
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-[38px] w-full" />
           ))}
@@ -365,7 +365,7 @@ export function ClientsListPage() {
       )}
 
       {!isError && !isLoading && data && data.clients.length === 0 && (
-        <div className="bg-surface border border-border rounded-[12px] p-[40px] flex flex-col items-center gap-2 text-center">
+        <div className="bg-surface border border-border rounded-[14px] p-[40px] flex flex-col items-center gap-2 text-center shadow-[var(--shadow-sm)]">
           <Building2 className="text-ink-faint" size={28} />
           <p className="m-0 font-medium text-[14px]">No clients yet</p>
           <p className="m-0 text-[13px] text-ink-muted max-w-[40ch]">

@@ -2,7 +2,11 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 
 import { AppShell } from '@/components/layout/app-shell'
 import { PortalShell } from '@/components/layout/portal-shell'
-import { AccountRecordPage } from '@/features/accounts/account-record-page'
+import { AccountActivitiesTab } from '@/features/accounts/account-activities-tab'
+import { AccountChecklistTab } from '@/features/accounts/account-checklist-tab'
+import { AccountKeywordsTab } from '@/features/accounts/account-keywords-tab'
+import { AccountOverviewTab } from '@/features/accounts/account-overview-tab'
+import { AccountTabsLayout } from '@/features/accounts/account-tabs-layout'
 import { ClientsListPage } from '@/features/accounts/clients-list-page'
 import { AssignmentsPage } from '@/features/assignments/assignments-page'
 import { BillingPage } from '@/features/billing/billing-page'
@@ -30,11 +34,16 @@ export function App() {
             <Route element={<AppShell />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/clients" element={<ClientsListPage />} />
-              <Route path="/clients/:accountId" element={<AccountRecordPage />} />
-              <Route path="/clients/:accountId/search" element={<SearchPerformancePage />} />
-              <Route path="/clients/:accountId/calendar" element={<ContentCalendarPage />} />
-              <Route path="/clients/:accountId/reports" element={<ReportsPage />} />
-              <Route path="/clients/:accountId/billing" element={<BillingPage />} />
+              <Route path="/clients/:accountId" element={<AccountTabsLayout />}>
+                <Route index element={<AccountOverviewTab />} />
+                <Route path="keywords" element={<AccountKeywordsTab />} />
+                <Route path="activities" element={<AccountActivitiesTab />} />
+                <Route path="checklist" element={<AccountChecklistTab />} />
+                <Route path="search" element={<SearchPerformancePage />} />
+                <Route path="calendar" element={<ContentCalendarPage />} />
+                <Route path="reports" element={<ReportsPage />} />
+                <Route path="billing" element={<BillingPage />} />
+              </Route>
               <Route path="/assignments" element={<AssignmentsPage />} />
               <Route path="/settings" element={<AgencySettingsPage />} />
               <Route path="/" element={<Navigate to="/dashboard" replace />} />

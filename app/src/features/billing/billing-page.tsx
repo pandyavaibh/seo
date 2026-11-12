@@ -1,6 +1,5 @@
-import { ArrowLeft } from 'lucide-react'
 import * as React from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,7 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useAccount } from '@/features/accounts/use-account'
 import {
   useAddExpense,
   useCreateInvoice,
@@ -376,27 +374,11 @@ function ProfitabilityCard({ accountId }: { accountId: string }) {
 
 export function BillingPage() {
   const { accountId } = useParams<{ accountId: string }>()
-  const navigate = useNavigate()
-  const { data: acc } = useAccount(accountId)
   const { data: currentMember } = useCurrentMember()
   const isAdmin = currentMember?.role === 'admin'
 
   return (
     <div className="flex flex-col gap-4">
-      <button
-        onClick={() => navigate(accountId ? `/clients/${accountId}` : '/clients')}
-        className="self-start flex items-center gap-1 border-none bg-transparent font-mono text-[11px] tracking-[0.1em] uppercase text-ink-muted hover:text-ink cursor-pointer p-0"
-      >
-        <ArrowLeft size={12} /> {acc?.name ?? 'Account'}
-      </button>
-
-      <div className="flex flex-col gap-1">
-        <span className="font-mono text-[11px] tracking-[0.14em] uppercase text-ink-muted">
-          {acc?.website ?? '—'} · Billing
-        </span>
-        <h1 className="m-0 text-[25px] font-semibold tracking-[-0.02em]">Billing</h1>
-      </div>
-
       {accountId && <InvoicesCard accountId={accountId} />}
       {accountId && <ExpensesCard accountId={accountId} />}
       {accountId && isAdmin && <ProfitabilityCard accountId={accountId} />}

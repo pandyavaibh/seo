@@ -18,6 +18,8 @@ Each `.dc.html` file opens directly in a browser. `support.js` and `doc-page.js`
 
 **High fidelity.** Colours, typography, spacing and interaction behaviour are final and should be matched closely. The data is invented sample data — replace with real records.
 
+*Update, Stage 9:* the flat/no-shadow treatment described here was revisited by request ("the design is very old... make it good") — see `docs/STAGE_9.md`'s "App-wide visual refresh" section. Same color tokens and typography, but `Card`/`Button` now carry real elevation (shadow tokens, bigger radius) instead of a flat bordered box. Treat this file's layout/structure guidance as still current; its "no shadows, flat" specifics are superseded.
+
 ---
 
 ## Technology stack (decided)

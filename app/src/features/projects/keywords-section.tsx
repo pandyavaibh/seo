@@ -217,7 +217,7 @@ export function KeywordsSection({ projectId }: { projectId: string }) {
   const hasDraftValues = Object.values(draft).some((v) => v.trim())
 
   return (
-    <div className="bg-surface border border-border rounded-[12px] overflow-hidden">
+    <div className="bg-surface border border-border rounded-[14px] overflow-hidden shadow-[var(--shadow-sm)]">
       <div className="flex items-baseline justify-between gap-3 p-[14px_18px] border-b border-border-light">
         <CardTitle>Keywords</CardTitle>
         <span className="font-mono text-[11px] text-ink-muted">Manually tracked, no rank-check API connected</span>

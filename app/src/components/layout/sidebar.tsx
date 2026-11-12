@@ -1,11 +1,12 @@
+import { LayoutDashboard, Settings, UserCog, Users } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 import { useCurrentMember } from '@/features/team/use-current-member'
 import { useAuth } from '@/providers/auth-provider'
 
 const NAV_ITEMS = [
-  { to: '/dashboard', label: 'Dashboard', count: null },
-  { to: '/clients', label: 'Clients', count: null },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/clients', label: 'Clients', icon: Users },
 ]
 
 export function Sidebar() {
@@ -14,16 +15,16 @@ export function Sidebar() {
   const isAdminOrManager = currentMember?.role === 'admin' || currentMember?.role === 'manager'
   let navItems = NAV_ITEMS
   if (isAdminOrManager) {
-    navItems = [...navItems, { to: '/assignments', label: 'Assignments', count: null }]
+    navItems = [...navItems, { to: '/assignments', label: 'Assignments', icon: UserCog }]
   }
   if (currentMember?.role === 'admin') {
-    navItems = [...navItems, { to: '/settings', label: 'Settings', count: null }]
+    navItems = [...navItems, { to: '/settings', label: 'Settings', icon: Settings }]
   }
 
   return (
     <aside className="bg-sidebar text-sidebar-text flex flex-col gap-6 p-[20px_14px] min-h-screen">
       <div className="flex items-center gap-[10px] px-2">
-        <span className="w-[26px] h-[26px] rounded-[7px] bg-brand grid place-items-center font-mono text-[12px] font-semibold text-white">
+        <span className="w-[28px] h-[28px] rounded-[8px] bg-brand grid place-items-center font-mono text-[12px] font-semibold text-white shadow-[var(--shadow-sm)]">
           S
         </span>
         <span className="text-[14px] font-semibold text-white tracking-[-0.01em]">
@@ -32,27 +33,38 @@ export function Sidebar() {
       </div>
 
       <nav className="flex flex-col gap-[2px]">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              [
-                'flex items-center justify-between gap-2 w-full text-[13px] font-medium text-left px-3 py-[9px] rounded-[8px]',
-                isActive
-                  ? 'bg-sidebar-surface text-white'
-                  : 'text-sidebar-text-muted hover:text-white',
-              ].join(' ')
-            }
-          >
-            <span>{item.label}</span>
-          </NavLink>
-        ))}
+        {navItems.map((item) => {
+          const Icon = item.icon
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                [
+                  'relative flex items-center gap-[10px] w-full text-[13px] font-medium text-left pl-[11px] pr-3 py-[9px] rounded-[9px] transition-colors',
+                  isActive
+                    ? 'bg-sidebar-surface text-white'
+                    : 'text-sidebar-text-muted hover:text-white hover:bg-sidebar-surface/50',
+                ].join(' ')
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <span className="absolute left-0 top-[6px] bottom-[6px] w-[3px] rounded-full bg-brand" />
+                  )}
+                  <Icon size={15} strokeWidth={2} className="flex-none opacity-80" />
+                  <span>{item.label}</span>
+                </>
+              )}
+            </NavLink>
+          )
+        })}
       </nav>
 
-      <div className="mt-auto flex flex-col gap-2 p-[13px] border border-sidebar-border rounded-[10px]">
+      <div className="mt-auto flex flex-col gap-2 p-[13px] border border-sidebar-border rounded-[11px] bg-sidebar-surface/40">
         <span className="font-mono text-[10px] tracking-[0.12em] uppercase text-sidebar-label">
-          Signed in
+          Signed in{currentMember?.name ? ` as ${currentMember.name.split(' ')[0]}` : ''}
         </span>
         <button
           onClick={signOut}

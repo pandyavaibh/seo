@@ -573,6 +573,85 @@ and adding it just for this would be new infrastructure, not a
 Dashboard change; flag it if load time on a slow connection ever
 becomes a real complaint.
 
+## App-wide visual refresh + tabbed Client page
+
+Still "very old" after the above, with the brief widened to "every
+page... with well formatted and proper tabbing" and the actual visual
+direction left to judgment (no reference site given). Two parts:
+
+### 1. Shared primitives, not per-page rewrites
+
+Every staff page already builds on the same four components
+(`Card`, `Button`, `Badge`, the sidebar), so the highest-leverage
+place to modernize was there, not page-by-page:
+
+- **`Card`** — radius 12px→14px, `overflow-hidden` (so a table header's
+  tint clips cleanly to the rounded corner instead of poking past it),
+  and a real default shadow (`--shadow-sm`, new in `index.css` along
+  with `--shadow-md`/`--shadow-lg`) instead of a flat border with no
+  elevation at all. `CardHeader` gets a faint tint and `CardTitle`
+  tighter letter-spacing.
+- **`Button`** — radius 8px→10px, a subtle shadow + hover-lift on the
+  primary variant, and a pressed-state scale-down (`active:scale-98`)
+  for tactile feedback that wasn't there before.
+- **Sidebar** — every nav item now has a `lucide-react` icon
+  (previously text-only), plus a left accent bar on the active item
+  instead of relying on background color alone, and the "Signed in"
+  footer now actually names who.
+- A handful of ad-hoc `rounded-[12px]` boxes that predated the `Card`
+  component (on Clients, Keywords, Search & Analytics) got bumped to
+  match (`14px` + the same shadow token) so nothing reads as a
+  leftover from before this pass.
+
+No new colors, fonts, or a second visual language — same tokens
+(`index.css`), just actually used for depth/hierarchy instead of flat
+borders. This alone changes how every page looks, since they all share
+these components; it's why there was no need to rewrite Clients,
+Assignments, Billing or Settings individually.
+
+### 2. The Client page, tabbed
+
+`/clients/:accountId` (the "inner page") had grown into one 1,200-line
+component: stat tiles, performance tiles, assigned team, log hours,
+Keywords, Activities, Checklist, an activity feed, traffic/custom
+goals, contract details, contacts, deliverables, portal comments,
+churn risk, technical audit and portal users, all stacked in one
+scroll — plus four *more* sections (Search & Analytics, Content
+calendar, Reports, Billing) that required leaving the page entirely
+onto a separate route with its own duplicate header. Restructured into
+one tabbed shell, all eight sections as real routes so the URL always
+matches the open tab (bookmarkable, survives refresh, back/forward
+work normally) rather than client-side-only tab state:
+
+- **`AccountTabsLayout`** (new) owns the account fetch, loading/error
+  states, the back link, the name/health header, Edit/Delete client,
+  and the new **`Tabs`** primitive (`components/ui/tabs.tsx` — router-
+  driven underline tabs, the same pattern as the header component
+  itself). It renders the active tab via `<Outlet context={{ acc,
+  accountId }} />`.
+- **Overview, Keywords, Activities, Checklist** are new tab components
+  (`account-overview-tab.tsx` + the three smaller ones) that pull
+  `{ acc, accountId }` from that context via a new `useAccountContext()`
+  hook — the account is fetched once in the layout, not re-fetched
+  per tab switch. Keywords/Activities/Checklist each show a plain
+  "set up an engagement first" prompt when `acc.projects` is empty,
+  instead of a blank tab.
+- **Search & Analytics, Content calendar, Reports, Billing** are the
+  same four pre-existing pages, unchanged in substance — just stripped
+  of their own duplicate back-link/name header (the shared layout now
+  owns that) since nesting them under `AccountTabsLayout` as child
+  routes means they no longer need to assert their own identity. They
+  still read `accountId` via `useParams()` exactly as before (route
+  params resolve through the whole nested path), so none of their own
+  data-fetching changed.
+- Billing's tab only appears for admin/manager, matching its existing
+  page-level gate — the gate didn't move, just where it's expressed.
+
+No visual direction was supplied to copy, so this followed the "modern
+SaaS dashboard" instinct (more depth, clearer hierarchy, icons,
+underline tabs) while staying inside the app's own established tokens
+— deliberately not a wholesale re-skin with new colors.
+
 ## What's next
 
 Pick from the cut list above, or scope net-new "Stage 10" work. Ask

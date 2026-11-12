@@ -1,6 +1,6 @@
-import { AlertTriangle, ArrowLeft } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import * as React from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -15,7 +15,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useAccount } from '@/features/accounts/use-account'
 import { ForecastAnomalyCard } from '@/features/intelligence/forecast-anomaly-card'
 import {
   useSearchPerformance,
@@ -152,7 +151,7 @@ function Ga4LandingPagesCard({ rows }: { rows: Ga4LandingPageRow[] }) {
 
 function StatTile({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
-    <div className="bg-surface border border-border rounded-[12px] p-[14px_16px] flex flex-col gap-[6px]">
+    <div className="bg-surface border border-border rounded-[14px] p-[14px_16px] flex flex-col gap-[6px] shadow-[var(--shadow-sm)]">
       <span className="font-mono text-[10px] tracking-[0.12em] uppercase text-ink-muted">
         {label}
       </span>
@@ -251,8 +250,6 @@ function ConnectionSetupCard({
 
 export function SearchPerformancePage() {
   const { accountId } = useParams<{ accountId: string }>()
-  const navigate = useNavigate()
-  const { data: acc } = useAccount(accountId)
   const {
     data,
     isLoading,
@@ -292,34 +289,19 @@ export function SearchPerformancePage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <button
-        onClick={() => navigate(accountId ? `/clients/${accountId}` : '/clients')}
-        className="self-start flex items-center gap-1 border-none bg-transparent font-mono text-[11px] tracking-[0.1em] uppercase text-ink-muted hover:text-ink cursor-pointer p-0"
-      >
-        <ArrowLeft size={12} /> {acc?.name ?? 'Account'}
-      </button>
-
-      <div className="flex flex-wrap gap-3 items-end justify-between">
-        <div className="flex flex-col gap-1">
-          <span className="font-mono text-[11px] tracking-[0.14em] uppercase text-ink-muted">
-            {acc?.website ?? '—'} · Search &amp; Analytics
-          </span>
-          <h1 className="m-0 text-[25px] font-semibold tracking-[-0.02em]">Search performance</h1>
+      {data && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <ConnectionPill label="Search Console" info={data.gsc} />
+          <ConnectionPill label="GA4" info={data.ga4} />
+          <Button
+            variant="secondary"
+            disabled={sync.isPending || (!data.gsc.property && !data.ga4.property)}
+            onClick={() => sync.mutate()}
+          >
+            {sync.isPending ? 'Syncing…' : 'Sync now'}
+          </Button>
         </div>
-        {data && (
-          <div className="flex items-center gap-2">
-            <ConnectionPill label="Search Console" info={data.gsc} />
-            <ConnectionPill label="GA4" info={data.ga4} />
-            <Button
-              variant="secondary"
-              disabled={sync.isPending || (!data.gsc.property && !data.ga4.property)}
-              onClick={() => sync.mutate()}
-            >
-              {sync.isPending ? 'Syncing…' : 'Sync now'}
-            </Button>
-          </div>
-        )}
-      </div>
+      )}
 
       {isLoading && (
         <div className="flex flex-col gap-4">
