@@ -310,6 +310,14 @@ function isRenewalSoon(renewalOn: string | null) {
   return days >= 0 && days <= 90
 }
 
+function formatRenewalDate(renewalOn: string) {
+  return new Date(`${renewalOn}T00:00:00`).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
 export function ClientsListPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -408,43 +416,53 @@ export function ClientsListPage() {
                 onClick={() => navigate(`/clients/${c.id}`)}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3 w-full">
-                  <div className="flex flex-col gap-[2px]">
-                    <CardTitle>{c.name}</CardTitle>
+                  <div className="flex flex-col gap-[3px] min-w-0">
+                    <CardTitle className="truncate">{c.name}</CardTitle>
                     {c.website && (
-                      <span className="font-mono text-[10.5px] text-ink-muted">{c.website}</span>
+                      <span className="font-mono text-[10.5px] text-ink-muted truncate">{c.website}</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-[10px] flex-none">
                     <Badge tone={HEALTH_TONE[c.health]}>{HEALTH_LABEL[c.health]}</Badge>
-                    <span
-                      className={
-                        'font-mono text-[12px] ' +
-                        (isRenewalSoon(c.renewalOn) ? 'text-signal-amber' : 'text-ink-secondary')
-                      }
-                    >
-                      {c.renewalOn ? `Renews ${c.renewalOn}` : 'No renewal set'}
-                    </span>
+                    <div className="flex flex-col items-end gap-[1px]">
+                      <span className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-ink-faint">
+                        Renewal
+                      </span>
+                      <span
+                        className={
+                          'text-[12px] font-medium ' +
+                          (isRenewalSoon(c.renewalOn) ? 'text-signal-amber' : 'text-ink-secondary')
+                        }
+                      >
+                        {c.renewalOn ? formatRenewalDate(c.renewalOn) : 'Not set'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </CardHeader>
-              {c.engagements.length > 0 && (
+              {c.engagements.length > 0 && c.engagements[0].staffed.length > 0 && (
                 <CardContent
-                  className="p-[10px_18px] flex flex-wrap items-center gap-2 cursor-pointer"
+                  className="p-[12px_18px] flex items-center gap-[10px] cursor-pointer"
                   onClick={() => navigate(`/clients/${c.id}`)}
                 >
-                  <span className="text-[12.5px] text-ink-secondary">{c.engagements[0].name}</span>
-                  <div className="flex gap-[3px]">
+                  <span className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-ink-faint flex-none">
+                    Team
+                  </span>
+                  <div className="flex -space-x-[6px]">
                     {c.engagements[0].staffed.map((m, i) => (
                       <span
                         key={m.id}
                         title={m.name}
-                        className="w-5 h-5 rounded-full grid place-items-center font-mono text-[9px] font-semibold"
+                        className="w-[22px] h-[22px] rounded-full grid place-items-center font-mono text-[9px] font-semibold border-2 border-surface"
                         style={{ background: tintFor(i) }}
                       >
                         {initials(m.name)}
                       </span>
                     ))}
                   </div>
+                  <span className="text-[11.5px] text-ink-faint">
+                    {c.engagements[0].staffed.length} staffed
+                  </span>
                 </CardContent>
               )}
             </Card>
