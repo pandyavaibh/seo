@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Building2,
   CalendarDays,
+  CheckSquare,
   Clock,
   Receipt,
   TrendingDown,
@@ -23,6 +24,7 @@ import {
   useMyWorkToday,
 } from '@/features/dashboard/use-dashboard'
 import { useCurrentMember } from '@/features/team/use-current-member'
+import { useMyTasks } from '@/features/tasks/use-tasks'
 import { initials, tintFor } from '@/lib/avatar'
 import type { AccountHealth } from '@/lib/database.types'
 
@@ -268,6 +270,39 @@ function checklistTone(pct: number) {
   return 'var(--color-signal-red)'
 }
 
+function MyTasksList() {
+  const { data: currentMember } = useCurrentMember()
+  const { data: tasks, isLoading } = useMyTasks(currentMember?.id)
+  const open = (tasks ?? []).filter((t) => t.status !== 'done').slice(0, 4)
+
+  return (
+    <div className="flex flex-col gap-[2px]">
+      <SectionLabel icon={CheckSquare}>My tasks</SectionLabel>
+      {isLoading && <Skeleton className="h-[40px] w-full" />}
+      {!isLoading && open.length === 0 && <EmptyNote>Nothing on your task list.</EmptyNote>}
+      {open.map((t) => (
+        <Link
+          key={t.id}
+          to="/tasks"
+          className="flex items-center justify-between gap-2 py-[6px] border-b border-border-light-2 last:border-b-0 text-ink no-underline hover:text-brand"
+        >
+          <span className="text-[13px] font-medium truncate flex-1 min-w-0">{t.title}</span>
+          {t.dueOn && (
+            <span className="font-mono text-[11px] text-ink-muted flex-none">
+              {new Date(`${t.dueOn}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+            </span>
+          )}
+        </Link>
+      ))}
+      {(tasks ?? []).length > 0 && (
+        <Link to="/tasks" className="font-mono text-[11px] text-ink-muted hover:text-brand no-underline mt-[4px]">
+          All tasks →
+        </Link>
+      )}
+    </div>
+  )
+}
+
 function MyWorkTodayCard() {
   const { data: currentMember } = useCurrentMember()
   const { data, isLoading } = useMyWorkToday(currentMember?.id)
@@ -323,6 +358,8 @@ function MyWorkTodayCard() {
             )
           })}
         </div>
+
+        <MyTasksList />
       </CardContent>
     </Card>
   )

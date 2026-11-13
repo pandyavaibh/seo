@@ -19,6 +19,8 @@ export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue'
 export type ReportStatus = 'draft' | 'sent'
 export type ChecklistPriority = 'high' | 'medium' | 'low'
 export type ChecklistStatus = 'to_do' | 'in_progress' | 'done' | 'na'
+export type TaskStatus = 'to_do' | 'in_progress' | 'done'
+export type TaskPriority = 'high' | 'medium' | 'low'
 
 export interface Database {
   public: {
@@ -31,6 +33,7 @@ export interface Database {
           role: MemberRole
           active: boolean
           account_id: string | null
+          weekly_capacity_hours: number | null
           created_at: string
         }
         Insert: Partial<Database['public']['Tables']['team_members']['Row']> & {
@@ -541,6 +544,57 @@ export interface Database {
           {
             foreignKeyName: 'time_entries_member_id_fkey'
             columns: ['member_id']
+            isOneToOne: false
+            referencedRelation: 'team_members'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          id: string
+          title: string
+          notes: string | null
+          status: TaskStatus
+          priority: TaskPriority
+          assignee_id: string | null
+          account_id: string | null
+          project_id: string | null
+          due_on: string | null
+          created_by: string | null
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: Partial<Database['public']['Tables']['tasks']['Row']> & {
+          title: string
+        }
+        Update: Partial<Database['public']['Tables']['tasks']['Row']>
+        Relationships: [
+          {
+            foreignKeyName: 'tasks_assignee_id_fkey'
+            columns: ['assignee_id']
+            isOneToOne: false
+            referencedRelation: 'team_members'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'tasks_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'tasks_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'tasks_created_by_fkey'
+            columns: ['created_by']
             isOneToOne: false
             referencedRelation: 'team_members'
             referencedColumns: ['id']

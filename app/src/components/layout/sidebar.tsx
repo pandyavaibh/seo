@@ -1,4 +1,4 @@
-import { LayoutDashboard, Settings, UserCog, Users } from 'lucide-react'
+import { BarChart3, CheckSquare, Gauge, LayoutDashboard, Settings, UserCog, Users } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 import { useCurrentMember } from '@/features/team/use-current-member'
@@ -7,6 +7,7 @@ import { useAuth } from '@/providers/auth-provider'
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/clients', label: 'Clients', icon: Users },
+  { to: '/tasks', label: 'Tasks', icon: CheckSquare },
 ]
 
 export function Sidebar() {
@@ -15,7 +16,12 @@ export function Sidebar() {
   const isAdminOrManager = currentMember?.role === 'admin' || currentMember?.role === 'manager'
   let navItems = NAV_ITEMS
   if (isAdminOrManager) {
-    navItems = [...navItems, { to: '/assignments', label: 'Assignments', icon: UserCog }]
+    navItems = [
+      ...navItems,
+      { to: '/assignments', label: 'Assignments', icon: UserCog },
+      { to: '/workload', label: 'Workload', icon: Gauge },
+      { to: '/performance', label: 'Performance', icon: BarChart3 },
+    ]
   }
   if (currentMember?.role === 'admin') {
     navItems = [...navItems, { to: '/settings', label: 'Settings', icon: Settings }]

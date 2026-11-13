@@ -11,6 +11,7 @@ import { ClientsListPage } from '@/features/accounts/clients-list-page'
 import { AssignmentsPage } from '@/features/assignments/assignments-page'
 import { BillingPage } from '@/features/billing/billing-page'
 import { DashboardPage } from '@/features/dashboard/dashboard-page'
+import { PerformancePage } from '@/features/performance/performance-page'
 import { PortalDashboardPage } from '@/features/portal/portal-dashboard-page'
 import { PortalInvoicesPage } from '@/features/portal/portal-invoices-page'
 import { PortalReportsPage } from '@/features/portal/portal-reports-page'
@@ -18,6 +19,8 @@ import { ReportsPage } from '@/features/reports/reports-page'
 import { SearchPerformancePage } from '@/features/search-performance/search-performance-page'
 import { AgencySettingsPage } from '@/features/settings/agency-settings-page'
 import { ContentCalendarPage } from '@/features/social/content-calendar-page'
+import { TasksPage } from '@/features/tasks/tasks-page'
+import { WorkloadPage } from '@/features/workload/workload-page'
 import { RequireAuth, RequireMember, RequirePortal, RequireStaff } from '@/routes/require-member'
 import { SignInPage } from '@/routes/sign-in'
 import { UnauthorizedPage } from '@/routes/unauthorized'
@@ -44,6 +47,9 @@ export function App() {
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="billing" element={<BillingPage />} />
               </Route>
+              <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/workload" element={<WorkloadPage />} />
+              <Route path="/performance" element={<PerformancePage />} />
               <Route path="/assignments" element={<AssignmentsPage />} />
               <Route path="/settings" element={<AgencySettingsPage />} />
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
