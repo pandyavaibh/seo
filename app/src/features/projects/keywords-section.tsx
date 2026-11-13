@@ -2,7 +2,9 @@ import * as React from 'react'
 
 import { Button } from '@/components/ui/button'
 import { CardTitle } from '@/components/ui/card'
+import { DeltaBadge } from '@/components/ui/delta-badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Sparkline } from '@/components/ui/sparkline'
 import {
   useAddKeywords,
   useKeywords,
@@ -57,11 +59,13 @@ function StatTileSmall({
   value,
   active,
   onClick,
+  extra,
 }: {
   label: string
   value: string
   active?: boolean
   onClick?: () => void
+  extra?: React.ReactNode
 }) {
   const Tag = onClick ? 'button' : 'div'
   return (
@@ -80,7 +84,10 @@ function StatTileSmall({
       >
         {label}
       </span>
-      <span className="text-[18px] font-semibold tracking-[-0.02em] leading-none">{value}</span>
+      <div className="flex items-end justify-between gap-2">
+        <span className="text-[18px] font-semibold tracking-[-0.02em] leading-none">{value}</span>
+        {extra}
+      </div>
     </Tag>
   )
 }
@@ -311,6 +318,25 @@ export function KeywordsSection({ projectId }: { projectId: string }) {
   const hasDraftValues = Object.values(draft).some((v) => v.trim())
   const filteredRows = (data?.rows ?? []).filter((r) => matchesFilter(r.latestRank, positionFilter))
 
+  // Daily average position across every tracked keyword, oldest check date
+  // first — a real trend from data already collected, for the sparkline and
+  // the "vs previous check" delta next to the Avg position tile.
+  const avgPositionByDate = data
+    ? [...data.dates]
+        .reverse()
+        .map((date) => {
+          const ranks = data.rows.map((r) => r.ranksByDate[date]).filter((r): r is number => r != null)
+          return ranks.length > 0 ? ranks.reduce((s, r) => s + r, 0) / ranks.length : null
+        })
+        .filter((v): v is number => v != null)
+    : []
+  const avgPositionDeltaPct =
+    avgPositionByDate.length >= 2 && avgPositionByDate[avgPositionByDate.length - 2] > 0
+      ? ((avgPositionByDate[avgPositionByDate.length - 1] - avgPositionByDate[avgPositionByDate.length - 2]) /
+          avgPositionByDate[avgPositionByDate.length - 2]) *
+        100
+      : null
+
   return (
     <div className="bg-surface border border-border rounded-[14px] overflow-hidden shadow-[var(--shadow-sm)]">
       <div className="flex items-baseline justify-between gap-3 p-[14px_18px] border-b border-border-light">
@@ -334,6 +360,16 @@ export function KeywordsSection({ projectId }: { projectId: string }) {
               <StatTileSmall
                 label="Avg position"
                 value={data.stats.averagePosition != null ? data.stats.averagePosition.toFixed(1) : '—'}
+                extra={
+                  avgPositionByDate.length >= 2 ? (
+                    <div className="flex items-center gap-[6px]">
+                      <Sparkline data={avgPositionByDate} color="var(--color-brand)" reverseY />
+                      {avgPositionDeltaPct != null && (
+                        <DeltaBadge pct={avgPositionDeltaPct} goodDirection="down" />
+                      )}
+                    </div>
+                  ) : undefined
+                }
               />
               <StatTileSmall
                 label="Top 3"

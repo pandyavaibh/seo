@@ -3,6 +3,7 @@ import * as React from 'react'
 import { Link } from 'react-router-dom'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Gauge } from '@/components/ui/gauge'
 import { ProgressBar } from '@/components/ui/progress-bar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCurrentMember } from '@/features/team/use-current-member'
@@ -118,6 +119,11 @@ export function WorkloadPage() {
   const rows = data ?? []
   const overloaded = rows.filter((r) => (r.utilizationPct ?? 0) > 110)
   const noCapacitySet = rows.filter((r) => r.capacityHours == null)
+  const withCapacity = rows.filter((r) => r.utilizationPct != null)
+  const teamUtilization =
+    withCapacity.length > 0
+      ? withCapacity.reduce((s, r) => s + (r.utilizationPct ?? 0), 0) / withCapacity.length
+      : null
 
   return (
     <div className="flex flex-col gap-4">
@@ -127,6 +133,33 @@ export function WorkloadPage() {
         </span>
         <h1 className="m-0 text-[25px] font-semibold tracking-[-0.02em]">Workload</h1>
       </div>
+
+      {teamUtilization != null && (
+        <Card className="shadow-[0_1px_2px_rgba(23,25,28,0.04)]">
+          <CardContent className="p-[18px] flex items-center gap-[20px]">
+            <Gauge
+              pct={Math.min(100, teamUtilization)}
+              color={
+                teamUtilization > 110
+                  ? 'var(--color-signal-red)'
+                  : teamUtilization > 90
+                    ? 'var(--color-signal-amber)'
+                    : 'var(--color-signal-green)'
+              }
+              size={100}
+            />
+            <div className="flex flex-col gap-[2px]">
+              <span className="text-[14.5px] font-semibold">Team utilization</span>
+              <span className="text-[12.5px] text-ink-muted max-w-[320px]">
+                Average assigned-hours-to-capacity across the {withCapacity.length} team member
+                {withCapacity.length === 1 ? '' : 's'} with capacity set.
+                {noCapacitySet.length > 0 &&
+                  ` ${noCapacitySet.length} more haven't set capacity yet, so they're left out of this average.`}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="shadow-[0_1px_2px_rgba(23,25,28,0.04)]">
         <CardHeader>

@@ -800,6 +800,58 @@ icon rail; this new panel ≈ their "Projects" panel):
   stays put, matching SE Ranking's own layout (breadcrumb spans the
   full width above both the switcher panel and the main content).
 
+## Synthesized from ~20 reference dashboards, not copied from one
+
+The user sent a large batch of Dribbble shots, screenshots and a short
+screen-recording across roughly 15-20 different SaaS dashboards
+(StudiosX, BizFlow AI, Genova AI, Rankly, WebPulse, Marketadt, a site-
+audit tool, and others), asking for the result to be "unique" rather
+than matching any single one. Rather than chase each individually, the
+brief became: find what's genuinely common across *all* of them, and
+build only the pieces grounded in data this app already has.
+
+Two patterns showed up in nearly every single reference:
+
+1. **A big stat number next to a colored "vs previous period" delta
+   pill** (↑/↓ + percent, green when the direction is good). New
+   `components/ui/delta-badge.tsx` — generic, direction-aware (a
+   metric where "down" is the good direction, like search rank, flips
+   which way is green), and **only ever rendered where a real previous
+   value was computed** — never a fabricated trend.
+2. **A small inline sparkline next to a stat**. New
+   `components/ui/sparkline.tsx` (plain Recharts line, no axes) with a
+   `reverseY` option for metrics where lower is better.
+
+Applied both to the one place with a clean, real day-over-day number
+already sitting in the data: the Keywords section's **Avg position**
+tile now shows the actual daily average-rank trend (computed from
+every tracked keyword's `ranksByDate`, already fetched) and a delta
+against the previous check date — "down 8%" reads as green, since a
+lower average rank is an improvement.
+
+Also borrowed the **hero gauge** pattern (several references lead with
+one big semi-circle "site health" style dial) — new
+`components/ui/gauge.tsx`, pure SVG, no chart library. Used it for a
+new **Team utilization** summary at the top of `/workload`: the
+average assigned-hours-to-capacity across members who've actually set
+a capacity, explicitly captioned when some haven't (so the gauge never
+quietly treats "no capacity set" as 0%).
+
+Deliberately not pulled from any of the references, because each would
+be either fabricated or a brand decision, not a formatting choice:
+- **A dark theme** — several references (Rankly, WebPulse, the dark
+  "Site Health" dashboard) are dark-mode-first. That's a real brand
+  decision for the agency to make deliberately, not something to flip
+  on as a side effect of a design pass.
+- **Fake "AI Alert" / "Copilot" banners** predicting risk or offering
+  insights — several references feature these prominently, but this
+  app has no model generating real predictions; a banner that looks
+  like AI-driven insight with nothing behind it would be actively
+  misleading.
+- **A world map / country-level traffic panel** — decorative without
+  the underlying per-country breakdown, which this app doesn't
+  currently surface.
+
 ## What's next
 
 Pick from the cut list above, or scope net-new "Stage 10" work. Ask
