@@ -77,3 +77,28 @@ fabricated sparkline.
   the numbers; the page doesn't editorialize them.
 
 (`supabase/migrations/20261112200000_stage10_team_management.sql`)
+
+## Second pass — three specific follow-ups
+
+Picked from a shortlist rather than guessed: tasks surfaced on the
+client itself, a workload drill-down, and overdue visibility in the
+sidebar.
+
+- **Tasks on the Client page** — a new "Tasks" card on the Account
+  Overview tab (`useAccountTasks(accountId)`), so a task linked to a
+  client shows up right there, not only in the standalone Tasks page.
+  Its quick-add form has the client locked in (`lockAccount`), since
+  you're already on that client's page. `TaskList`/`AddTaskForm`/
+  `TaskRowView` moved out of `tasks-page.tsx` into a shared
+  `task-components.tsx` so both places render tasks identically
+  instead of drifting apart as two copies.
+- **Workload drill-down** (`/workload`) — each person's row expands
+  (click, or the chevron) into the actual projects making up their
+  assigned-hours total, with each one linking to its client. Added by
+  extending the existing `useWorkload()` query with the project/account
+  names already available via the `assignments → projects → accounts`
+  relationship — no new query, no new table.
+- **Overdue task badge** — the sidebar's "Tasks" item now shows a small
+  red count when the signed-in member has overdue tasks
+  (`useMyOverdueTaskCount`), a cheap `count: 'exact', head: true` query
+  so it's fine to run on every page load for everyone.

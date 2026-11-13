@@ -2,6 +2,7 @@ import { BarChart3, CheckSquare, Gauge, LayoutDashboard, Settings, UserCog, User
 import { NavLink } from 'react-router-dom'
 
 import { useCurrentMember } from '@/features/team/use-current-member'
+import { useMyOverdueTaskCount } from '@/features/tasks/use-tasks'
 import { useAuth } from '@/providers/auth-provider'
 
 const NAV_ITEMS = [
@@ -13,6 +14,7 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const { signOut } = useAuth()
   const { data: currentMember } = useCurrentMember()
+  const { data: overdueCount } = useMyOverdueTaskCount(currentMember?.id)
   const isAdminOrManager = currentMember?.role === 'admin' || currentMember?.role === 'manager'
   let navItems = NAV_ITEMS
   if (isAdminOrManager) {
@@ -60,7 +62,12 @@ export function Sidebar() {
                     <span className="absolute left-0 top-[6px] bottom-[6px] w-[3px] rounded-full bg-brand" />
                   )}
                   <Icon size={15} strokeWidth={2} className="flex-none opacity-80" />
-                  <span>{item.label}</span>
+                  <span className="flex-1">{item.label}</span>
+                  {item.to === '/tasks' && !!overdueCount && (
+                    <span className="flex-none min-w-[18px] h-[18px] px-[5px] rounded-full bg-signal-red text-white text-[10px] font-mono font-semibold grid place-items-center">
+                      {overdueCount}
+                    </span>
+                  )}
                 </>
               )}
             </NavLink>

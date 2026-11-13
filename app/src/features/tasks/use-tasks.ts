@@ -89,6 +89,46 @@ export function useTeamTasks() {
   })
 }
 
+// Tasks linked to one client — for the Account page's own Tasks card, so
+// "call so-and-so about renewal" style work shows up right where the rest
+// of that client's work already lives.
+export function useAccountTasks(accountId: string | undefined) {
+  return useQuery({
+    queryKey: ['tasks', 'account', accountId],
+    queryFn: async (): Promise<TaskRow[]> => {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select(SELECT)
+        .eq('account_id', accountId!)
+        .order('status')
+        .order('due_on', { nullsFirst: false })
+      if (error) throw new Error(error.message)
+      return (data ?? []).map(toRow)
+    },
+    enabled: !!accountId,
+  })
+}
+
+// Just a count, for the sidebar badge — cheap enough to run on every page
+// load for every signed-in staff member.
+export function useMyOverdueTaskCount(memberId: string | undefined) {
+  return useQuery({
+    queryKey: ['tasks', 'overdue-count', memberId],
+    queryFn: async (): Promise<number> => {
+      const today = new Date().toISOString().slice(0, 10)
+      const { count, error } = await supabase
+        .from('tasks')
+        .select('id', { count: 'exact', head: true })
+        .eq('assignee_id', memberId!)
+        .neq('status', 'done')
+        .lt('due_on', today)
+      if (error) throw new Error(error.message)
+      return count ?? 0
+    },
+    enabled: !!memberId,
+  })
+}
+
 export interface NewTaskInput {
   title: string
   notes: string

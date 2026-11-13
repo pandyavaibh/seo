@@ -1,4 +1,6 @@
+import { ChevronDown } from 'lucide-react'
 import * as React from 'react'
+import { Link } from 'react-router-dom'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProgressBar } from '@/components/ui/progress-bar'
@@ -6,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useCurrentMember } from '@/features/team/use-current-member'
 import { useSetMemberCapacity, useWorkload, type WorkloadRow } from '@/features/workload/use-workload'
 import { initials, tintFor } from '@/lib/avatar'
+import { cn } from '@/lib/utils'
 
 function utilizationColor(pct: number | null) {
   if (pct == null) return 'var(--color-ink-faint)'
@@ -43,30 +46,66 @@ function CapacityInput({ row, canEdit }: { row: WorkloadRow; canEdit: boolean })
 }
 
 function WorkloadRowView({ row, canEdit }: { row: WorkloadRow; canEdit: boolean }) {
-  return (
-    <div className="flex items-center gap-[12px] py-[11px] border-b border-border-light-2 last:border-b-0">
-      <span
-        className="w-7 h-7 flex-none rounded-full grid place-items-center font-mono text-[10px] font-semibold"
-        style={{ background: tintFor(row.name.length) }}
-      >
-        {initials(row.name)}
-      </span>
-      <span className="text-[13px] font-medium flex-[1_1_120px] min-w-0 truncate">{row.name}</span>
+  const [open, setOpen] = React.useState(false)
+  const hasBreakdown = row.assignments.length > 0
 
-      <div className="flex-[2_1_160px] min-w-[120px] flex flex-col gap-[3px]">
-        <ProgressBar pct={Math.min(100, row.utilizationPct ?? 0)} color={utilizationColor(row.utilizationPct)} />
-        <span className="font-mono text-[10.5px] text-ink-muted">
-          {row.assignedHours}h assigned
-          {row.capacityHours != null ? ` of ${row.capacityHours}h` : ' · capacity not set'}
-          {row.utilizationPct != null && ` · ${row.utilizationPct}%`}
+  return (
+    <div className="border-b border-border-light-2 last:border-b-0">
+      <div
+        onClick={() => hasBreakdown && setOpen((o) => !o)}
+        className={cn(
+          'flex items-center gap-[12px] py-[11px] w-full text-left',
+          hasBreakdown ? 'cursor-pointer' : 'cursor-default',
+        )}
+      >
+        <ChevronDown
+          size={13}
+          className={cn('flex-none text-ink-faint transition-transform', !hasBreakdown && 'opacity-0', open && 'rotate-180')}
+        />
+        <span
+          className="w-7 h-7 flex-none rounded-full grid place-items-center font-mono text-[10px] font-semibold"
+          style={{ background: tintFor(row.name.length) }}
+        >
+          {initials(row.name)}
+        </span>
+        <span className="text-[13px] font-medium flex-[1_1_120px] min-w-0 truncate">{row.name}</span>
+
+        <div className="flex-[2_1_160px] min-w-[120px] flex flex-col gap-[3px]">
+          <ProgressBar pct={Math.min(100, row.utilizationPct ?? 0)} color={utilizationColor(row.utilizationPct)} />
+          <span className="font-mono text-[10.5px] text-ink-muted">
+            {row.assignedHours}h assigned
+            {row.capacityHours != null ? ` of ${row.capacityHours}h` : ' · capacity not set'}
+            {row.utilizationPct != null && ` · ${row.utilizationPct}%`}
+          </span>
+        </div>
+
+        <span className="font-mono text-[12px] text-ink-secondary w-[90px] text-right flex-none">
+          {row.loggedHoursThisWeek.toFixed(1)}h logged
+        </span>
+
+        <span onClick={(e) => e.stopPropagation()}>
+          <CapacityInput key={row.capacityHours ?? 'unset'} row={row} canEdit={canEdit} />
         </span>
       </div>
 
-      <span className="font-mono text-[12px] text-ink-secondary w-[90px] text-right flex-none">
-        {row.loggedHoursThisWeek.toFixed(1)}h logged
-      </span>
-
-      <CapacityInput key={row.capacityHours ?? 'unset'} row={row} canEdit={canEdit} />
+      {open && hasBreakdown && (
+        <div className="flex flex-col pl-[48px] pb-[10px] gap-[4px]">
+          {row.assignments.map((a) => (
+            <div key={a.projectId} className="flex items-center justify-between gap-2 text-[12px]">
+              <span className="truncate">
+                {a.accountId ? (
+                  <Link to={`/clients/${a.accountId}`} className="text-brand hover:underline no-underline">
+                    {a.accountName ?? a.projectName}
+                  </Link>
+                ) : (
+                  <span className="text-ink-secondary">{a.projectName}</span>
+                )}
+              </span>
+              <span className="font-mono text-ink-muted flex-none">{a.weeklyHours}h/wk</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

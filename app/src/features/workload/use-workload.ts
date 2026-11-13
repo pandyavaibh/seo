@@ -2,6 +2,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { supabase } from '@/lib/supabase'
 
+export interface WorkloadAssignment {
+  projectId: string
+  projectName: string
+  accountId: string | null
+  accountName: string | null
+  weeklyHours: number
+}
+
 export interface WorkloadRow {
   memberId: string
   name: string
@@ -11,6 +19,7 @@ export interface WorkloadRow {
   // Assigned ÷ capacity, as a percent — null when capacity isn't set yet,
   // so the UI can say "not set" rather than implying 0 capacity.
   utilizationPct: number | null
+  assignments: WorkloadAssignment[]
 }
 
 function startOfWeekIso() {
@@ -34,7 +43,9 @@ export function useWorkload() {
           .select('id, name, weekly_capacity_hours')
           .eq('active', true)
           .order('name'),
-        supabase.from('assignments').select('member_id, weekly_hours, projects(status)'),
+        supabase
+          .from('assignments')
+          .select('member_id, weekly_hours, projects(id, name, status, account_id, accounts(name))'),
         supabase
           .from('time_entries')
           .select('member_id, hours')
@@ -46,12 +57,20 @@ export function useWorkload() {
       if (entriesRes.error) throw new Error(entriesRes.error.message)
 
       const assignedByMember = new Map<string, number>()
+      const assignmentsByMember = new Map<string, WorkloadAssignment[]>()
       for (const a of assignmentsRes.data ?? []) {
-        if (a.projects?.status !== 'active') continue
-        assignedByMember.set(
-          a.member_id,
-          (assignedByMember.get(a.member_id) ?? 0) + Number(a.weekly_hours ?? 0),
-        )
+        if (!a.projects || a.projects.status !== 'active') continue
+        const hours = Number(a.weekly_hours ?? 0)
+        assignedByMember.set(a.member_id, (assignedByMember.get(a.member_id) ?? 0) + hours)
+        const list = assignmentsByMember.get(a.member_id) ?? []
+        list.push({
+          projectId: a.projects.id,
+          projectName: a.projects.name,
+          accountId: a.projects.account_id,
+          accountName: a.projects.accounts?.name ?? null,
+          weeklyHours: hours,
+        })
+        assignmentsByMember.set(a.member_id, list)
       }
 
       const loggedByMember = new Map<string, number>()
@@ -72,6 +91,7 @@ export function useWorkload() {
             capacityHours != null && capacityHours > 0
               ? Math.round((assignedHours / capacityHours) * 100)
               : null,
+          assignments: (assignmentsByMember.get(m.id) ?? []).sort((a, b) => b.weeklyHours - a.weeklyHours),
         }
       })
     },

@@ -33,6 +33,8 @@ import {
 import { AssignedTeamCard, CustomGoalsCard, TrafficGoalCard } from '@/features/projects/project-panels'
 import { useCreateProject } from '@/features/projects/use-projects'
 import { useCurrentMember } from '@/features/team/use-current-member'
+import { AddTaskForm, TaskList } from '@/features/tasks/task-components'
+import { useAccountTasks } from '@/features/tasks/use-tasks'
 import { initials } from '@/lib/avatar'
 import type { ActivityKind } from '@/lib/database.types'
 import { PROJECT_TYPES, PROJECT_TYPE_LABEL } from '@/lib/project-type'
@@ -523,6 +525,24 @@ function PortalUsersCard({ accountId }: { accountId: string }) {
   )
 }
 
+function AccountTasksCard({ accountId }: { accountId: string }) {
+  const { data: currentMember } = useCurrentMember()
+  const { data: tasks, isLoading } = useAccountTasks(accountId)
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Tasks</CardTitle>
+        <AddTaskForm defaultAssigneeId={currentMember?.id ?? ''} defaultAccountId={accountId} lockAccount />
+      </CardHeader>
+      <CardContent className="p-[16px_18px]">
+        {isLoading && <Skeleton className="h-[80px] w-full" />}
+        {!isLoading && <TaskList tasks={tasks ?? []} showAssignee showAccount={false} />}
+      </CardContent>
+    </Card>
+  )
+}
+
 function DeliverablesCard({ accountId }: { accountId: string }) {
   const { data: deliverables, isLoading } = useDeliverables(accountId)
   const addDeliverable = useAddDeliverable(accountId)
@@ -877,6 +897,9 @@ export function AccountOverviewTab() {
       </section>
 
       <section className="flex flex-wrap gap-3 items-start">
+        <div className="flex-[1_1_360px] min-w-0">
+          <AccountTasksCard accountId={accountId} />
+        </div>
         <div className="flex-[1_1_360px] min-w-0">
           <DeliverablesCard accountId={accountId} />
         </div>
