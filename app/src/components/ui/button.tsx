@@ -12,8 +12,8 @@ const buttonVariants = cva(
         primary:
           'bg-brand text-white border border-brand shadow-[var(--shadow-sm)] hover:bg-[#194a39] hover:shadow-[var(--shadow-md)]',
         secondary:
-          'bg-surface text-ink border border-border hover:bg-surface-sunken hover:border-[#CBD2DE]',
-        ghost: 'bg-transparent text-ink-muted hover:text-ink hover:bg-surface-sunken border-none',
+          'bg-white/55 backdrop-blur-sm text-ink border border-white/60 hover:bg-white/75 hover:border-white/80',
+        ghost: 'bg-transparent text-ink-muted hover:text-ink hover:bg-white/40 hover:backdrop-blur-sm border-none',
       },
       size: {
         default: 'px-4 py-[9px]',

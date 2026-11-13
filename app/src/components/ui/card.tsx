@@ -6,7 +6,7 @@ function Card({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       className={cn(
-        'bg-surface border border-border rounded-[14px] overflow-hidden shadow-[var(--shadow-sm)]',
+        'bg-white/65 backdrop-blur-xl backdrop-saturate-150 border border-white/60 rounded-[16px] overflow-hidden shadow-[var(--shadow-md)]',
         className,
       )}
       {...props}
@@ -18,7 +18,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       className={cn(
-        'flex items-baseline justify-between gap-3 px-[18px] py-[15px] border-b border-border-light bg-surface-sunken-2/60',
+        'flex items-baseline justify-between gap-3 px-[18px] py-[15px] border-b border-white/50 bg-white/15',
         className,
       )}
       {...props}

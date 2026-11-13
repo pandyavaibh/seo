@@ -30,7 +30,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="bg-sidebar text-sidebar-text flex flex-col gap-6 p-[20px_14px] min-h-screen">
+    <aside className="bg-sidebar/90 backdrop-blur-xl border-r border-white/5 text-sidebar-text flex flex-col gap-6 p-[20px_14px] min-h-screen">
       <div className="flex items-center gap-[10px] px-2">
         <span className="w-[28px] h-[28px] rounded-[8px] bg-brand grid place-items-center font-mono text-[12px] font-semibold text-white shadow-[var(--shadow-sm)]">
           S
@@ -51,7 +51,7 @@ export function Sidebar() {
                 [
                   'relative flex items-center gap-[10px] w-full text-[13px] font-medium text-left pl-[11px] pr-3 py-[9px] rounded-[9px] transition-colors',
                   isActive
-                    ? 'bg-sidebar-surface text-white'
+                    ? 'bg-sidebar-surface/80 backdrop-blur-sm text-white'
                     : 'text-sidebar-text-muted hover:text-white hover:bg-sidebar-surface/50',
                 ].join(' ')
               }
@@ -75,7 +75,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto flex flex-col gap-2 p-[13px] border border-sidebar-border rounded-[11px] bg-sidebar-surface/40">
+      <div className="mt-auto flex flex-col gap-2 p-[13px] border border-sidebar-border rounded-[11px] bg-sidebar-surface/40 backdrop-blur-sm">
         <span className="font-mono text-[10px] tracking-[0.12em] uppercase text-sidebar-label">
           Signed in{currentMember?.name ? ` as ${currentMember.name.split(' ')[0]}` : ''}
         </span>

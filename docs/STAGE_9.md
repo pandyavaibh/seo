@@ -852,6 +852,47 @@ be either fabricated or a brand decision, not a formatting choice:
   the underlying per-country breakdown, which this app doesn't
   currently surface.
 
+## Unified glass treatment (one visual language, everywhere)
+
+The last ask was to stop varying treatment page-by-page and give the
+whole app one consistent, current-feeling pattern — explicitly
+suggesting glassmorphism. Implemented it at the primitive level so it
+cascades to every page automatically, same leverage trick as the rest
+of this stage:
+
+- **`index.css`** — `body` now carries a fixed, soft multi-blob
+  gradient (brand green, slate-blue, amber — the existing palette,
+  not new colors) instead of a flat `--color-paper` fill. Glass only
+  reads as "glass" when there's visible variation behind it to blur.
+- **`components/ui/card.tsx`** — `Card`/`CardHeader` switched from an
+  opaque `bg-surface` panel to `bg-white/65 backdrop-blur-xl
+  backdrop-saturate-150` with a soft white border. Every major panel
+  in the app renders through this component, so this one edit is most
+  of the visual change.
+- **`components/layout/sidebar.tsx`** — dark glass (`bg-sidebar/90
+  backdrop-blur-xl`) rather than flat solid, kept nearly opaque on
+  purpose so primary nav stays legible.
+- **`components/ui/button.tsx`** — `secondary`/`ghost` variants
+  switched to translucent + blurred to match the cards they usually
+  sit inside. `primary` stays solid brand green deliberately — a
+  frosted UI still needs one fully-opaque, high-contrast element for
+  the actual call to action.
+- **`routes/sign-in.tsx`** — was a standalone box that didn't use
+  `Card` and hardcoded `bg-paper`, so it had been invisible to every
+  earlier pass. Brought onto the same `Card`-style treatment so it's
+  not the one screen left behind.
+
+Deliberately left alone: form inputs, selects, and table cells, which
+still use the solid `--color-surface` token straight. Glass belongs on
+container/panel chrome, not on things people need to read dense data
+in or type into — blurring those would hurt usability for no visual
+gain, and nothing asked for it.
+
+Verified with `tsc --noEmit`, `npm run lint`, `npm run build`, and a
+Playwright screenshot of the sign-in screen (the only route reachable
+without a live Google OAuth session in this environment) — gradient
+and glass card both render with full text contrast intact.
+
 ## What's next
 
 Pick from the cut list above, or scope net-new "Stage 10" work. Ask

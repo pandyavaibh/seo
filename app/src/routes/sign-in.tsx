@@ -5,9 +5,9 @@ export function SignInPage() {
   const { signInWithGoogle } = useAuth()
 
   return (
-    <div className="min-h-screen bg-paper flex items-center justify-center">
-      <div className="bg-surface border border-border rounded-[12px] p-8 flex flex-col items-center gap-4 max-w-[360px] text-center">
-        <span className="w-[36px] h-[36px] rounded-[9px] bg-brand grid place-items-center font-mono text-[15px] font-semibold text-white">
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="bg-white/65 backdrop-blur-xl backdrop-saturate-150 border border-white/60 shadow-[var(--shadow-lg)] rounded-[16px] p-8 flex flex-col items-center gap-4 max-w-[360px] text-center">
+        <span className="w-[36px] h-[36px] rounded-[9px] bg-brand grid place-items-center font-mono text-[15px] font-semibold text-white shadow-[var(--shadow-sm)]">
           S
         </span>
         <div className="flex flex-col gap-1">
